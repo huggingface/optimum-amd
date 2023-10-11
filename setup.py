@@ -1,3 +1,5 @@
+# Copyright 2023 The HuggingFace Team. All rights reserved.
+# Licensed under the MIT License.
 import re
 
 from setuptools import find_namespace_packages, setup

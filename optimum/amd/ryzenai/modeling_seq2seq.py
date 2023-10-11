@@ -16,6 +16,10 @@ import onnxruntime as ort
 import torch
 from huggingface_hub import hf_hub_download
 
+from optimum.onnx.utils import _get_external_data_paths
+from optimum.utils import check_if_transformers_greater
+from optimum.utils.file_utils import validate_file_exists
+from optimum.utils.save_utils import maybe_load_preprocessors
 from transformers import (
     AutoModelForSpeechSeq2Seq,
     GenerationConfig,
@@ -25,17 +29,11 @@ from transformers.file_utils import add_end_docstrings, add_start_docstrings_to_
 from transformers.modeling_outputs import BaseModelOutput, Seq2SeqLMOutput
 from transformers.models.auto.modeling_auto import MODEL_FOR_SPEECH_SEQ_2_SEQ_MAPPING_NAMES
 
-from ..onnx.utils import _get_external_data_paths
-from ..utils import check_if_transformers_greater
-from ..utils.file_utils import validate_file_exists
-from ..utils.save_utils import maybe_load_preprocessors
 from .base import RyzenAIDecoderForSeq2Seq, RyzenAIEncoder
-from .constants import (
+from .modeling import ONNX_MODEL_END_DOCSTRING, RyzenAIModel
+from .utils import (
     DECODER_ONNX_FILE_PATTERN,
     ENCODER_ONNX_FILE_PATTERN,
-)
-from .modeling_ort import ONNX_MODEL_END_DOCSTRING, RyzenAIModel
-from .utils import (
     ONNX_DECODER_NAME,
     ONNX_ENCODER_NAME,
 )
@@ -75,42 +73,6 @@ SPEECH_SEQ2SEQ_ONNX_MODEL_DOCSTRING = r"""
             The tuple is of length `config.n_layers` with each tuple having 2 tensors of shape
             `(batch_size, num_heads, decoder_sequence_length, embed_size_per_head)` and 2 additional tensors of shape
             `(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)`.
-"""
-
-_PROCESSOR_FOR_DOC = "AutoProcessor"
-
-AUTOMATIC_SPEECH_RECOGNITION_EXAMPLE = r"""
-    Example of text generation:
-
-    ```python
-    >>> from transformers import {processor_class}
-    >>> from optimum.onnxruntime import {model_class}
-    >>> from datasets import load_dataset
-
-    >>> processor = {processor_class}.from_pretrained("{checkpoint}")
-    >>> model = {model_class}.from_pretrained("{checkpoint}")
-
-    >>> ds = load_dataset("hf-internal-testing/librispeech_asr_dummy", "clean", split="validation")
-    >>> inputs = processor.feature_extractor(ds[0]["audio"]["array"], return_tensors="pt")
-
-    >>> gen_tokens = model.generate(inputs=inputs.input_features)
-    >>> outputs = processor.tokenizer.batch_decode(gen_tokens)
-    ```
-
-    Example using `transformers.pipeline`:
-
-    ```python
-    >>> from transformers import {processor_class}, pipeline
-    >>> from optimum.onnxruntime import {model_class}
-    >>> from datasets import load_dataset
-
-    >>> processor = {processor_class}.from_pretrained("{checkpoint}")
-    >>> model = {model_class}.from_pretrained("{checkpoint}")
-    >>> speech_recognition = pipeline("automatic-speech-recognition", model=model, tokenizer=processor.tokenizer, feature_extractor=processor.feature_extractor)
-
-    >>> ds = load_dataset("hf-internal-testing/librispeech_asr_dummy", "clean", split="validation")
-    >>> pred = speech_recognition(ds[0]["audio"]["array"])
-    ```
 """
 
 
@@ -544,14 +506,6 @@ class RyzenAIModelForSpeechSeq2Seq(RyzenAIModelForConditionalGeneration, Generat
     def _initialize_encoder(self, session: ort.InferenceSession) -> RyzenAIEncoder:
         return RyzenAIEncoderForSpeech(session, self)
 
-    @add_start_docstrings_to_model_forward(
-        SPEECH_SEQ2SEQ_ONNX_MODEL_DOCSTRING
-        + AUTOMATIC_SPEECH_RECOGNITION_EXAMPLE.format(
-            processor_class=_PROCESSOR_FOR_DOC,
-            model_class="RyzenAIModelForSpeechSeq2Seq",
-            checkpoint="optimum/whisper-tiny.en",
-        )
-    )
     def forward(
         self,
         input_features: Optional[torch.FloatTensor] = None,

@@ -1,16 +1,5 @@
-#  Copyright 2022 The HuggingFace Team. All rights reserved.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
+# Copyright 2023 The HuggingFace Team. All rights reserved.
+# Licensed under the MIT License.
 """Defines the base classes that are used to perform inference with ONNX Runtime of Transformers models."""
 
 from abc import abstractmethod
@@ -20,10 +9,9 @@ import numpy as np
 import torch
 from onnxruntime import InferenceSession
 
+from optimum.utils import NormalizedConfigManager
 from transformers.modeling_outputs import Seq2SeqLMOutput
-
-from ..utils import NormalizedConfigManager
-from .utils import get_ordered_input_names, logging
+from transformers.utils import logging
 
 
 logger = logging.get_logger(__name__)
@@ -55,8 +43,6 @@ class RyzenAIModelPart:
         self.input_names = {input_key.name: idx for idx, input_key in enumerate(self.session.get_inputs())}
         self.output_names = {output_key.name: idx for idx, output_key in enumerate(self.session.get_outputs())}
 
-        self._ordered_input_names = get_ordered_input_names(self.input_names.keys(), func=self.forward)
-
         input_tensor = session.get_inputs()[0]
         self.batch_size = input_tensor.shape[0]
 
@@ -78,7 +64,7 @@ class RyzenAIEncoder(RyzenAIModelPart):
     """
 
 
-class RyzenAIModelDecoder(RyzenAIModelPart):
+class RyzenAIDecoder(RyzenAIModelPart):
     """
     Decoder model with a language modeling head on top for ONNX Runtime inference.
     """
@@ -92,11 +78,8 @@ class RyzenAIModelDecoder(RyzenAIModelPart):
         self.key_value_input_names = [key for key in self.input_names if (".key" in key) or (".value" in key)]
         self.key_value_output_names = [key for key in self.output_names if (".key" in key) or (".value" in key)]
 
-        if len(self.key_value_output_names) == 0:
-            raise RuntimeError("Could not find the past key values in the provided model.")
 
-
-class ORTDecoderForSeq2Seq(RyzenAIModelPart):
+class RyzenAIDecoderForSeq2Seq(RyzenAIDecoder):
     """
     Decoder model with a language modeling head on top for ONNX Runtime inference.
     """
@@ -134,11 +117,12 @@ class ORTDecoderForSeq2Seq(RyzenAIModelPart):
         self.end_of_generation = False
 
     def _update_inputs_after_inference(self):
-        if self.position_ids[0][0] < self.max_decoder_sequence_length - 1:
-            self.decoder_attention_mask[:, self.position_ids[0][0] + 1] = 1
+        pos_id = self.position_ids[0][0]
+        if pos_id < self.max_decoder_sequence_length - 1:
+            self.decoder_attention_mask[:, pos_id + 1] = 1
         self.position_ids += 1
 
-        if self.position_ids[0][0] == self.max_decoder_sequence_length:
+        if pos_id == self.max_decoder_sequence_length:
             self.end_of_generation = True
 
     def prepare_inputs_for_decoder(
