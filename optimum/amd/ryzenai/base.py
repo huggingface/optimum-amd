@@ -109,11 +109,10 @@ class ORTDecoderForSeq2Seq(RyzenAIModelPart):
         super().__init__(session, parent_model)
 
         self.num_pkv = 4
-        self.first_gen = True
-        self.end_of_generation = False
 
         self.max_decoder_sequence_length = self._infer_max_decoder_sequence_length()
         self.encoder_sequence_length = self._infer_encoder_sequence_length()
+
         self._initialize_generation_inputs()
 
     def _infer_max_decoder_sequence_length(self):
@@ -130,6 +129,9 @@ class ORTDecoderForSeq2Seq(RyzenAIModelPart):
         self.decoder_attention_mask = np.zeros((self.batch_size, self.max_decoder_sequence_length)).astype(np.int64)
         self.decoder_attention_mask[0, 0] = 1
         self.position_ids = np.array([[0]]).astype(np.int64)
+
+        self.first_gen = True
+        self.end_of_generation = False
 
     def _update_inputs_after_inference(self):
         if self.position_ids[0][0] < self.max_decoder_sequence_length - 1:
@@ -185,14 +187,14 @@ class ORTDecoderForSeq2Seq(RyzenAIModelPart):
         encoder_attention_mask: Optional[torch.LongTensor] = None,
         past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
     ) -> Seq2SeqLMOutput:
-        if past_key_values is None:
-            self._initialize_generation_inputs()
-
         if self.end_of_generation is True:
             logits = torch.zeros((len(input_ids), 1, self.normalized_config.vocab_size))
             logits[:, :, self.normalized_config.eos_token_id] = 1
 
             return Seq2SeqLMOutput(logits=logits, past_key_values=past_key_values)
+
+        if past_key_values is None:
+            self._initialize_generation_inputs()
 
         use_torch = isinstance(input_ids, torch.Tensor)
 
