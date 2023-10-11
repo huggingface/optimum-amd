@@ -61,39 +61,6 @@ SPEECH_ENCODER_INPUTS_DOCSTRING = r"""
             Mel / fbank features extracted from the raw speech waveform. `(batch_size, feature_size, encoder_sequence_length)`.
 """
 
-DECODER_INPUTS_DOCSTRING = r"""
-    Args:
-        input_ids (`torch.LongTensor`):
-            Indices of decoder input sequence tokens in the vocabulary of shape `(batch_size, decoder_sequence_length)`.
-        encoder_hidden_states (`torch.FloatTensor`):
-            The encoder `last_hidden_state` of shape `(batch_size, encoder_sequence_length, hidden_size)`.
-        encoder_attention_mask (`torch.LongTensor`, *optional*):
-            Mask to avoid performing cross-attention on padding tokens indices of encoder `input_ids`.
-        past_key_values (`tuple(tuple(torch.FloatTensor), *optional*, defaults to `None`)`
-            Contains the precomputed key and value hidden states of the attention blocks used to speed up decoding.
-            The tuple is of length `config.n_layers` with each tuple having 2 tensors of shape
-            `(batch_size, num_heads, decoder_sequence_length, embed_size_per_head)` and 2 additional tensors of shape
-            `(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)`.
-"""
-
-SEQ2SEQ_ONNX_MODEL_DOCSTRING = r"""
-    Args:
-        input_ids (`torch.LongTensor`):
-            Indices of input sequence tokens in the vocabulary of shape `(batch_size, encoder_sequence_length)`.
-        attention_mask (`torch.LongTensor`):
-            Mask to avoid performing attention on padding token indices, of shape
-            `(batch_size, encoder_sequence_length)`. Mask values selected in `[0, 1]`.
-        decoder_input_ids (`torch.LongTensor`):
-            Indices of decoder input sequence tokens in the vocabulary of shape `(batch_size, decoder_sequence_length)`.
-        encoder_outputs (`torch.FloatTensor`):
-            The encoder `last_hidden_state` of shape `(batch_size, encoder_sequence_length, hidden_size)`.
-        past_key_values (`tuple(tuple(torch.FloatTensor), *optional*, defaults to `None`)`
-            Contains the precomputed key and value hidden states of the attention blocks used to speed up decoding.
-            The tuple is of length `config.n_layers` with each tuple having 2 tensors of shape
-            `(batch_size, num_heads, decoder_sequence_length, embed_size_per_head)` and 2 additional tensors of shape
-            `(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)`.
-"""
-
 SPEECH_SEQ2SEQ_ONNX_MODEL_DOCSTRING = r"""
     Args:
         input_features (`torch.FloatTensor`):
@@ -103,49 +70,6 @@ SPEECH_SEQ2SEQ_ONNX_MODEL_DOCSTRING = r"""
             Indices of decoder input sequence tokens in the vocabulary of shape `(batch_size, decoder_sequence_length)`.
         encoder_outputs (`torch.FloatTensor`):
             The encoder `last_hidden_state` of shape `(batch_size, encoder_sequence_length, hidden_size)`.
-        past_key_values (`tuple(tuple(torch.FloatTensor), *optional*, defaults to `None`)`
-            Contains the precomputed key and value hidden states of the attention blocks used to speed up decoding.
-            The tuple is of length `config.n_layers` with each tuple having 2 tensors of shape
-            `(batch_size, num_heads, decoder_sequence_length, embed_size_per_head)` and 2 additional tensors of shape
-            `(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)`.
-"""
-
-VISION_ENCODER_DECODER_SEQ2SEQ_ONNX_MODEL_DOCSTRING = r"""
-    Args:
-        pixel_values (`torch.FloatTensor`):
-            Features extracted from an Image. This tensor should be of shape
-            `(batch_size, num_channels, height, width)`.
-        decoder_input_ids (`torch.LongTensor`):
-            Indices of decoder input sequence tokens in the vocabulary of shape `(batch_size, decoder_sequence_length)`.
-        encoder_outputs (`torch.FloatTensor`):
-            The encoder `last_hidden_state` of shape `(batch_size, encoder_sequence_length, hidden_size)`.
-        past_key_values (`tuple(tuple(torch.FloatTensor), *optional*, defaults to `None`)`
-            Contains the precomputed key and value hidden states of the attention blocks used to speed up decoding.
-            The tuple is of length `config.n_layers` with each tuple having 2 tensors of shape
-            `(batch_size, num_heads, decoder_sequence_length, embed_size_per_head)` and 2 additional tensors of shape
-            `(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)`.
-"""
-
-PIX2STRUCT_ONNX_MODEL_DOCSTRING = r"""
-    Args:
-        flattened_patches (`torch.FloatTensor` of shape `(batch_size, seq_length, hidden_size)`):
-            Flattened pixel patches. the `hidden_size` is obtained by the following formula: `hidden_size` =
-            `num_channels` * `patch_size` * `patch_size`
-            The process of flattening the pixel patches is done by `Pix2StructProcessor`.
-        attention_mask (`torch.FloatTensor` of shape `(batch_size, sequence_length)`, *optional*):
-            Mask to avoid performing attention on padding token indices.
-        decoder_input_ids (`torch.LongTensor` of shape `(batch_size, target_sequence_length)`, *optional*):
-            Indices of decoder input sequence tokens in the vocabulary.
-            Pix2StructText uses the `pad_token_id` as the starting token for `decoder_input_ids` generation. If
-            `past_key_values` is used, optionally only the last `decoder_input_ids` have to be input (see
-            `past_key_values`).
-        decoder_attention_mask (`torch.BoolTensor` of shape `(batch_size, target_sequence_length)`, *optional*):
-            Default behavior: generate a tensor that ignores pad tokens in `decoder_input_ids`. Causal mask will also
-            be used by default.
-        encoder_outputs (`tuple(tuple(torch.FloatTensor)`, *optional*):
-            Tuple consists of (`last_hidden_state`, `optional`: *hidden_states*, `optional`: *attentions*)
-            `last_hidden_state` of shape `(batch_size, sequence_length, hidden_size)` is a sequence of hidden states at
-            the output of the last layer of the encoder. Used in the cross-attention of the decoder.
         past_key_values (`tuple(tuple(torch.FloatTensor), *optional*, defaults to `None`)`
             Contains the precomputed key and value hidden states of the attention blocks used to speed up decoding.
             The tuple is of length `config.n_layers` with each tuple having 2 tensors of shape
@@ -235,28 +159,18 @@ class RyzenAIModelForConditionalGeneration(RyzenAIModel, ABC):
         config ([`PretrainedConfig`]):
             Instance of the configuration associated to the model. Initializing with a config file does
             not load the weights associated with the model, only the configuration.
-        use_io_binding (`Optional[bool]`, defaults to `None`):
-            Whether use IOBinding during inference to avoid memory copy between the host and devices. Defaults to `True`
-            if the device is CUDA, otherwise defaults to `False`.
-        use_cache (`bool`):
-            Whether or not past key/values cache should be used. It is determined by whether an InferenceSession for
-            that was provided or not.
         providers (`List[str`]):
             The list of execution providers the model is running on.
         encoder (`RyzenAIEncoder`):
             The encoder model.
         decoder (`RyzenAIDecoderForSeq2Seq`):
             The decoder model.
-        decoder_with_past (`Optional[RyzenAIDecoderForSeq2Seq]`):
-            The decoder model handling the past key/values if `use_cache=True`, else `None`.
 
     Other attributes:
         encoder_file_name (`str`, defaults to `optimum.onnxruntime.utils.ONNX_ENCODER_NAME`):
             The name of the ONNX file containing the encoder part of the model.
         decoder_file_name (`str`,  defaults to `optimum.onnxruntime.utils.ONNX_DECODER_NAME`):
             The name of the ONNX file containing the decoder part of the model.
-        decoder_file_with_past_name (`str`, defaults to `optimum.onnxruntime.utils.ONNX_DECODER_WITH_PAST_NAME`):
-            The name of the ONNX file containing the decoder with past key/values part of the model.
         model_save_dir (`str`, defaults to `""`):
             The directory under which the model exported to ONNX was saved.
 
@@ -590,7 +504,7 @@ class RyzenAIModelForConditionalGeneration(RyzenAIModel, ABC):
 @add_end_docstrings(ONNX_MODEL_END_DOCSTRING)
 class RyzenAIModelForSpeechSeq2Seq(RyzenAIModelForConditionalGeneration, GenerationMixin):
     """
-    Speech Sequence-to-sequence model with a language modeling head for ONNX Runtime inference. This class officially supports whisper, speech_to_text.
+    Speech Sequence-to-sequence model with a language modeling head for ONNX Runtime inference. This class officially supports whisper.
     """
 
     auto_model_class = AutoModelForSpeechSeq2Seq
@@ -645,7 +559,6 @@ class RyzenAIModelForSpeechSeq2Seq(RyzenAIModelForConditionalGeneration, Generat
         decoder_input_ids: Optional[torch.LongTensor] = None,
         encoder_outputs: Optional[Tuple[Tuple[torch.Tensor]]] = None,
         past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
-        labels: Optional[torch.LongTensor] = None,
         **kwargs,
     ) -> Seq2SeqLMOutput:
         # Encode if needed : first prediction pass
@@ -653,30 +566,13 @@ class RyzenAIModelForSpeechSeq2Seq(RyzenAIModelForConditionalGeneration, Generat
             encoder_outputs = self.encoder(input_features=input_features, attention_mask=attention_mask)
 
         # Decode
-        if past_key_values is None or self.use_cache is False:
-            decoder_outputs = self.decoder(
-                input_ids=decoder_input_ids,
-                encoder_hidden_states=encoder_outputs.last_hidden_state,
-                labels=labels,
-            )
-        elif self.use_merged is True:
-            decoder_outputs = self.decoder(
-                input_ids=decoder_input_ids[:, -1:],
-                encoder_hidden_states=encoder_outputs.last_hidden_state,
-                past_key_values=past_key_values,
-                encoder_attention_mask=attention_mask,
-                labels=labels,
-            )
-        else:
-            decoder_outputs = self.decoder_with_past(
-                input_ids=decoder_input_ids[:, -1:],  # Cut decoder_input_ids if past is used
-                past_key_values=past_key_values,
-                encoder_hidden_states=encoder_outputs.last_hidden_state,
-                labels=labels,
-            )
+        decoder_outputs = self.decoder_with_past(
+            input_ids=decoder_input_ids[:, -1:],
+            past_key_values=past_key_values,
+            encoder_hidden_states=encoder_outputs.last_hidden_state,
+        )
 
         return Seq2SeqLMOutput(
-            loss=decoder_outputs.get("loss", None),
             logits=decoder_outputs.logits,
             past_key_values=decoder_outputs.past_key_values,
         )
@@ -705,17 +601,6 @@ class RyzenAIModelForSpeechSeq2Seq(RyzenAIModelForConditionalGeneration, Generat
 
     def get_encoder(self) -> RyzenAIEncoder:
         return self.encoder
-
-    # Copied from transformers.models.bart.modeling_bart.BartForConditionalGeneration._reorder_cache
-    @staticmethod
-    def _reorder_cache(past, beam_idx) -> Tuple[Tuple[torch.FloatTensor]]:
-        reordered_past = ()
-        for layer_past in past:
-            # Cached cross_attention states don't have to be reordered -> they are always the same
-            reordered_past += (
-                tuple(past_state.index_select(0, beam_idx) for past_state in layer_past[:2]) + layer_past[2:],
-            )
-        return reordered_past
 
     def can_generate(self):
         """Returns True to validate the check that the model using `GenerationMixin.generate()` can indeed generate."""
