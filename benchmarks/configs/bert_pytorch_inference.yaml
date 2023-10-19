@@ -4,9 +4,9 @@ defaults:
   - base_config # inherits from base config
   - _self_ # for hydra 1.1 compatibility
 
-experiment_name: llama_pytorch_inference_${backend.torch_dtype}_${benchmark.input_shapes.batch_size}_${benchmark.new_tokens}
+experiment_name: bert-pytorch-inference-dtype(${backend.torch_dtype})-batch_size(${benchmark.input_shapes.batch_size})
 
-model: meta-llama/Llama-2-7b-chat-hf
+model: bert-base-uncased
 device: cuda
 
 benchmark:
@@ -17,4 +17,3 @@ hydra:
     params:
       backend.torch_dtype: float16,float32
       benchmark.input_shapes.batch_size: 1,16
-      benchmark.new_tokens: 10,100
