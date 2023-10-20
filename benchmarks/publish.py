@@ -2,10 +2,9 @@ import os
 import subprocess
 from pathlib import Path
 
+import shutil
 import pandas as pd
 import requests
-from omegaconf import OmegaConf
-
 from dana import (
     LOGGER,
     add_new_optimum_build,
@@ -14,28 +13,34 @@ from dana import (
     add_new_sample,
     authenticate,
 )
+from huggingface_hub import HfApi
+from omegaconf import OmegaConf
 
-VERBOSE = False
-OVERRIDE = False
-AVERAGE_RANGE = 5
-AVERAGE_MIN_COUNT = 3
 
-PROJECT_ID = "Optimum-AMD"
+OVERRIDE = True
+AVERAGE_RANGE = 5  # 5 percent
+AVERAGE_MIN_COUNT = 3  # 3 samples
+
+HF_TOKEN = os.environ.get("HF_TOKEN", None)
 USERNAME = os.environ.get("DANA_USERNAME", "admin")
 PASSWORD = os.environ.get("DANA_PASSWORD", "admin")
 BEARER_TOKEN = os.environ.get("BEARER_TOKEN", "secret")
+
+PROJECT_ID = "Optimum-AMD"
+DANA_BACKUP_DATASET = "IlyasMoutawwakil/dana-backup"
 PROJECT_DESCRIPTION = "Benchmarking project for AMD devices."
 DANA_DASHBOARD_URL = "https://ilyasmoutawwakil-dana.hf.space"
-TRANSFORMERS_URL = "https://github.com/huggingface/transformers"
-TRANSFORMERS_PATH = os.environ.get("TRANSFORMERS_PATH", "transformers")
-BUILD_ID = int(subprocess.check_output(["git", "rev-list", "--count", "HEAD"], cwd=TRANSFORMERS_PATH).decode().strip())
+
 
 #######################################################################################################################
-COMMIT_HASH = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=TRANSFORMERS_PATH).decode().strip()
+MONITORED_REPO_PATH = "transformers"
+MONITORED_REPO_URL = "https://github.com/huggingface/transformers"
+
+COMMIT_HASH = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=MONITORED_REPO_PATH).decode().strip()
 COMMIT_ABBREV_HASH = (
     subprocess.check_output(
         ["git", "rev-parse", "--short", "HEAD"],
-        cwd=TRANSFORMERS_PATH,
+        cwd=MONITORED_REPO_PATH,
     )
     .decode()
     .strip()
@@ -43,7 +48,7 @@ COMMIT_ABBREV_HASH = (
 COMMIT_AUTHOR_NAME = (
     subprocess.check_output(
         ["git", "show", "-s", "--format=%an", COMMIT_HASH],
-        cwd=TRANSFORMERS_PATH,
+        cwd=MONITORED_REPO_PATH,
     )
     .decode()
     .strip()
@@ -51,7 +56,7 @@ COMMIT_AUTHOR_NAME = (
 COMMIT_AUTHOR_EMAIL = (
     subprocess.check_output(
         ["git", "show", "-s", "--format=%ae", COMMIT_HASH],
-        cwd=TRANSFORMERS_PATH,
+        cwd=MONITORED_REPO_PATH,
     )
     .decode()
     .strip()
@@ -59,18 +64,21 @@ COMMIT_AUTHOR_EMAIL = (
 COMMIT_SUBJECT = (
     subprocess.check_output(
         ["git", "show", "-s", "--format=%s", COMMIT_HASH],
-        cwd=TRANSFORMERS_PATH,
+        cwd=MONITORED_REPO_PATH,
     )
     .decode()
     .strip()
 )
-COMMIT_URL = f"{TRANSFORMERS_URL}/commit/{COMMIT_HASH}"
+COMMIT_URL = f"{MONITORED_REPO_URL}/commit/{COMMIT_HASH}"
+BUILD_ID = int(
+    subprocess.check_output(["git", "rev-list", "--count", "HEAD"], cwd=MONITORED_REPO_PATH).decode().strip()
+)
 #######################################################################################################################
 
-SESSION = requests.Session()
 
+if __name__ == "__main__":
+    SESSION = requests.Session()
 
-def main():
     LOGGER.info(" + Authenticating to DANA dashboard")
     authenticate(session=SESSION, dana_url=DANA_DASHBOARD_URL, username=USERNAME, password=PASSWORD)
 
@@ -105,6 +113,8 @@ def main():
         inference_results = list(series_foler.glob("*/inference_results.csv"))
 
         if len(inference_results) != 1 or len(configs) != 1:
+            LOGGER.info(f" + Deleting folder {series_foler.name}")
+            shutil.rmtree(series_foler)
             continue
 
         inference_results = pd.read_csv(inference_results[0]).to_dict(orient="records")[0]
@@ -169,6 +179,14 @@ def main():
             override=OVERRIDE,
         )
 
+    # If everything is goes well, we can upload the experiments folder to the backup dataset
+    LOGGER.info(" + Uploading experiments folder to backup dataset")
 
-if __name__ == "__main__":
-    main()
+    api = HfApi(token=HF_TOKEN)
+    api.upload_folder(
+        folder_path="experiments",
+        path_in_repo=f"{PROJECT_ID}/{BUILD_ID}",
+        repo_id=DANA_BACKUP_DATASET,
+        repo_type="dataset",
+        delete_patterns="*",
+    )
