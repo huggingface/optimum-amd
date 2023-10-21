@@ -1,6 +1,5 @@
 defaults:
   - experiment # inheriting from experiment config
-  - _self_ # for hydra 1.1 compatibility
   - override hydra/job_logging: colorlog # colorful logging
   - override hydra/hydra_logging: colorlog # colorful logging
 
