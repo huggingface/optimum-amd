@@ -29,6 +29,8 @@ from optimum.utils import (
 from transformers import AutoConfig
 from transformers.utils import is_tf_available
 
+from symbolic_shape_infer import SymbolicShapeInference
+
 
 if TYPE_CHECKING:
     from transformers import PretrainedConfig, PreTrainedModel
@@ -442,7 +444,7 @@ with torch.no_grad():
         dummy_inputs=dummy_inputs,
     )
 
-
+# Remove duplicate weights from the PyTorch ONNX export.
 onnx_model = onnx.load("whisper_onnx/encoder_model.onnx")
 tied_params = find_tied_parameters(model)
 _ = remove_duplicate_weights_from_tied_info(
@@ -454,3 +456,58 @@ tied_params = find_tied_parameters(model)
 _ = remove_duplicate_weights_from_tied_info(
     onnx_model, model, tied_params, save_path="whisper_onnx/decoder_model.onnx"
 )
+
+# Apply custom symbolic shape inference.
+int_max = 2**31 - 1
+guess_output_rank = False
+auto_merge = False
+verbose = 0
+save_as_external_data = False
+all_tensors_to_one_file = False
+external_data_location = "./"
+external_data_size_threshold = 1024
+
+print("Doing symbolic shape inference...")
+output = "whisper_onnx/encoder_model.onnx"
+out_mp = SymbolicShapeInference.infer_shapes(
+    onnx.load(output),
+    int_max,
+    auto_merge,
+    guess_output_rank,
+    verbose,
+)
+if out_mp:
+    if save_as_external_data:
+        onnx.save_model(
+            out_mp,
+            output,
+            save_as_external_data=True,
+            all_tensors_to_one_file=all_tensors_to_one_file,
+            location=external_data_location,
+            size_threshold=external_data_size_threshold,
+            convert_attribute=False,
+        )
+    else:
+        onnx.save(out_mp, output)
+
+output = "whisper_onnx/decoder_model.onnx"
+out_mp = SymbolicShapeInference.infer_shapes(
+    onnx.load(output),
+    int_max,
+    auto_merge,
+    guess_output_rank,
+    verbose,
+)
+if out_mp:
+    if save_as_external_data:
+        onnx.save_model(
+            out_mp,
+            output,
+            save_as_external_data=True,
+            all_tensors_to_one_file=all_tensors_to_one_file,
+            location=external_data_location,
+            size_threshold=external_data_size_threshold,
+            convert_attribute=False,
+        )
+    else:
+        onnx.save(out_mp, output)

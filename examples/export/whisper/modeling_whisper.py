@@ -14,6 +14,8 @@
 # limitations under the License.
 """ PyTorch Whisper model."""
 
+# Patched from Transformers src/transformers/models/whisper/modeling_whisper.py c7b4d0b4e2e55dfcd966200b2366740b952f9ce1
+
 import math
 from typing import Optional, Tuple, Union
 
@@ -304,7 +306,8 @@ class WhisperPositionalEmbedding(nn.Embedding):
         super().__init__(num_positions, embedding_dim)
 
     def forward(self, input_ids, past_key_values_length=0):
-        return self.weight[past_key_values_length : past_key_values_length + input_ids.shape[1]]
+        assert input_ids.shape[1] == 1
+        return self.weight[past_key_values_length : past_key_values_length + 1]
 
 
 class WhisperAttention(nn.Module):

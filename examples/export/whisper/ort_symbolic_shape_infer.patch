@@ -1,0 +1,21 @@
+diff --git a/onnxruntime/python/tools/symbolic_shape_infer.py b/onnxruntime/python/tools/symbolic_shape_infer.py
+index f1ae93cfc1..3e590132b2 100755
+--- a/onnxruntime/python/tools/symbolic_shape_infer.py
++++ b/onnxruntime/python/tools/symbolic_shape_infer.py
+@@ -1846,6 +1846,16 @@ class SymbolicShapeInference:
+ 
+             self._update_computed_dims(new_sympy_shape)
+ 
++        # ORT symbolic shape inference is quite bad for the Slice nodes.
++        if "embed_positions" in node.name and not isinstance(new_sympy_shape[0], int):
++            new_sympy_shape[0] = 1
++
++        if "self_attn/Slice" in node.name:
++            if len(new_sympy_shape) == 4 and not isinstance(new_sympy_shape[2], int):
++                new_sympy_shape[2] = 1
++            elif len(new_sympy_shape) == 1 and not isinstance(new_sympy_shape[0], int):
++                new_sympy_shape[0] = 1
++
+         vi = self.known_vi_[node.output[0]]
+         vi.CopyFrom(
+             helper.make_tensor_value_info(
