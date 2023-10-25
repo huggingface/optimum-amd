@@ -8,7 +8,7 @@ import torch
 
 
 ONNX_WEIGHTS_NAME = "model.onnx"
-
+ONNX_WEIGHTS_NAME_STATIC = "model_static.onnx"
 ONNX_ENCODER_NAME = "encoder_model.onnx"
 ONNX_DECODER_NAME = "decoder_model.onnx"
 ENCODER_ONNX_FILE_PATTERN = r"(.*)?encoder(.*)?\.onnx"
@@ -19,10 +19,10 @@ def get_device_for_provider(provider: str, provider_options: Dict) -> torch.devi
     """
     Gets the PyTorch device (CPU/CUDA) associated with an ONNX Runtime provider.
     """
-    if provider in ["VitisAIExecutionProvider"]:
-        return NotImplementedError("VitisAIExecutionProvider is not supported!")
-    else:
-        return torch.device("cpu")
+    # if provider in ["VitisAIExecutionProvider"]:
+    #     return NotImplementedError("VitisAIExecutionProvider is not supported!")
+    # else:
+    return torch.device("cpu")
 
 
 def validate_provider_availability(provider: str):

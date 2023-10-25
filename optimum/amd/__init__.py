@@ -7,21 +7,15 @@ from transformers.utils import OptionalDependencyNotAvailable, _LazyModule
 
 
 _import_structure = {
-    "configuration": [
-        "ORTConfig",
-    ],
-    "modeling_seq2seq": [
-        "RyzenAIModelForSpeechSeq2Seq",
+    "modeling": [
+        "RyzenAIModelForImageClassification",
     ],
 }
 
 
 # Direct imports for type-checking
 if TYPE_CHECKING:
-    from .configuration import RyzenAIConfig
-    from .modeling_seq2seq import (
-        RyzenAIModelForSpeechSeq2Seq,
-    )
+    from .modeling import RyzenAIModelForImageClassification
 else:
     import sys
 

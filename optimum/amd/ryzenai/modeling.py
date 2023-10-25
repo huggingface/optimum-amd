@@ -6,8 +6,10 @@ import logging
 import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
+import numpy as np
+import onnx
 import onnxruntime as ort
 import torch
 from huggingface_hub import HfApi, HfFolder, hf_hub_download
@@ -21,11 +23,16 @@ from optimum.utils.save_utils import maybe_load_preprocessors
 from transformers import (
     AutoConfig,
     AutoModel,
+    AutoModelForImageClassification,
 )
 from transformers.file_utils import add_start_docstrings
+from transformers.modeling_outputs import (
+    ImageClassifierOutput,
+)
 
 from .utils import (
     ONNX_WEIGHTS_NAME,
+    ONNX_WEIGHTS_NAME_STATIC,
     get_device_for_provider,
     validate_provider_availability,
 )
@@ -196,9 +203,12 @@ class RyzenAIModel(OptimizedModel):
     @staticmethod
     def load_model(
         path: Union[str, Path],
-        provider: str = "CPUExecutionProvider",
+        vaip_config: str = None,
+        provider: str = "VitisAIExecutionProvider",
         session_options: Optional[ort.SessionOptions] = None,
         provider_options: Optional[Dict[str, Any]] = None,
+        input_shape_dict: Optional[Dict[str, Tuple[int]]] = None,
+        output_shape_dict: Optional[Dict[str, Tuple[int]]] = None,
     ) -> ort.InferenceSession:
         """
         Loads an ONNX Inference session with a given provider. Default provider is `CPUExecutionProvider` to match the
@@ -207,7 +217,7 @@ class RyzenAIModel(OptimizedModel):
         Args:
             path (`Union[str, Path]`):
                 Path of the ONNX model.
-            provider (`str`, defaults to `"CPUExecutionProvider"`):
+            provider (`str`, defaults to `"VitisAIExecutionProvider"`):
                 ONNX Runtime provider to use for loading the model. See https://onnxruntime.ai/docs/execution-providers/
                 for possible providers.
             session_options (`Optional[onnxruntime.SessionOptions]`, defaults to `None`):
@@ -216,7 +226,6 @@ class RyzenAIModel(OptimizedModel):
                 Provider option dictionary corresponding to the provider used. See available options
                 for each provider: https://onnxruntime.ai/docs/api/c/group___global.html .
         """
-        # TODO: change the default provider to VitisAIExecutionProvider
         validate_provider_availability(provider)  # raise error if the provider is not available
 
         providers = [provider]
@@ -224,11 +233,24 @@ class RyzenAIModel(OptimizedModel):
         if not isinstance(path, str):
             path = str(path)
 
+        if vaip_config is None:
+            vaip_config = Path("optimum/amd/model_configs/default_vaip_config.json")
+
+        vaip_config = Path(vaip_config)
+
         # `providers` and `provider_options` need to be of the same length
         if provider_options is not None:
             providers_options = [provider_options] + [{} for _ in range(len(providers) - 1)]
         else:
             providers_options = None
+
+        provider_options = [
+            {
+                "config_file": vaip_config,
+            }
+        ]
+
+        path = RyzenAIModel._reshape(path, input_shape_dict, output_shape_dict)
 
         return ort.InferenceSession(
             path,
@@ -305,6 +327,7 @@ class RyzenAIModel(OptimizedModel):
         cls,
         model_id: Union[str, Path],
         config: "PretrainedConfig",
+        vaip_config: str = None,
         use_auth_token: Optional[Union[bool, str]] = None,
         revision: Optional[str] = None,
         force_download: bool = False,
@@ -353,6 +376,7 @@ class RyzenAIModel(OptimizedModel):
         if model_path.is_dir():
             model = RyzenAIModel.load_model(
                 model_path / file_name,
+                vaip_config=vaip_config,
                 provider=provider,
                 session_options=session_options,
                 provider_options=provider_options,
@@ -388,7 +412,11 @@ class RyzenAIModel(OptimizedModel):
                 pass
 
             model = RyzenAIModel.load_model(
-                model_cache_path, provider=provider, session_options=session_options, provider_options=provider_options
+                model_cache_path,
+                vaip_config=vaip_config,
+                provider=provider,
+                session_options=session_options,
+                provider_options=provider_options,
             )
             new_model_save_dir = Path(model_cache_path).parent
             preprocessors = maybe_load_preprocessors(model_id, subfolder=subfolder)
@@ -410,6 +438,7 @@ class RyzenAIModel(OptimizedModel):
         cls,
         model_id: str,
         config: "PretrainedConfig",
+        vaip_config: str = None,
         use_auth_token: Optional[Union[bool, str]] = None,
         revision: Optional[str] = None,
         force_download: bool = False,
@@ -431,6 +460,7 @@ class RyzenAIModel(OptimizedModel):
     def from_pretrained(
         cls,
         model_id: Union[str, Path],
+        vaip_config: str = None,
         export: bool = False,
         force_download: bool = False,
         use_auth_token: Optional[str] = None,
@@ -465,6 +495,7 @@ class RyzenAIModel(OptimizedModel):
         """
         return super().from_pretrained(
             model_id,
+            vaip_config=vaip_config,
             export=export,
             force_download=force_download,
             use_auth_token=use_auth_token,
@@ -477,3 +508,90 @@ class RyzenAIModel(OptimizedModel):
             provider_options=provider_options,
             **kwargs,
         )
+
+    @staticmethod
+    def _check_is_dynamic(model_path: Union[str, Path]):
+        is_dynamic = False
+        if Path(model_path).suffix == ".onnx":
+            model = onnx.load(model_path)
+            is_dynamic = any(any(dim.dim_param for dim in inp.type.tensor_type.shape.dim) for inp in model.graph.input)
+
+        return is_dynamic
+
+    @staticmethod
+    def _update_inputs_outputs_dims(
+        model_path: Union[str, Path],
+        input_shape_dict: Dict[str, Tuple[int]],
+        output_shape_dict: Dict[str, Tuple[int]],
+    ) -> onnx.ModelProto:
+        from onnx import shape_inference
+        from onnx.tools import update_model_dims
+
+        model = onnx.load(model_path)
+
+        updated_model = update_model_dims.update_inputs_outputs_dims(model, input_shape_dict, output_shape_dict)
+        return shape_inference.infer_shapes(updated_model)
+
+    @staticmethod
+    def _reshape(
+        model_path: Union[str, Path],
+        input_shape_dict: Dict[str, Tuple[int]],
+        output_shape_dict: Dict[str, Tuple[int]],
+    ) -> Union[str, Path]:
+        """
+        Propagates the given input shapes on the model's layers, fixing the input shapes of the model.
+
+        Args:
+            model_path (Union[str, Path]):
+                Path to the model.
+            input_shape_dict (Dict[str, Tuple[int]]):
+                Input shapes for the model.
+            output_shape_dict (Dict[str, Tuple[int]]):
+                Output shapes for the model.
+
+        Returns:
+            Union[str, Path]:
+                Path to the model after updating the input shapes.
+
+        Raises:
+            ValueError: If the model provided has dynamic axes in input/output and no input/output shape is provided.
+        """
+        if isinstance(model_path, (str, Path)) and Path(model_path).suffix == ".onnx":
+            is_dynamic = RyzenAIModel._check_is_dynamic(model_path)
+            if is_dynamic:
+                if input_shape_dict is None or output_shape_dict is None:
+                    raise ValueError(
+                        "The model provided has dynamic axes in input/output. Please provide input and output shapes for compilation."
+                    )
+
+                model = RyzenAIModel._update_inputs_outputs_dims(model_path, input_shape_dict, output_shape_dict)
+
+                static_model_path = Path(model_path).parent / ONNX_WEIGHTS_NAME_STATIC
+                onnx.save(model, static_model_path)
+
+                return static_model_path
+
+        return model_path
+
+
+class RyzenAIModelForImageClassification(RyzenAIModel):
+    export_feature = "image-classification"
+    auto_model_class = AutoModelForImageClassification
+
+    def __init__(self, model=None, config=None, vaip_config=None, **kwargs):
+        super().__init__(model, config, vaip_config, **kwargs)
+        self.input_names = ["pixel_values"]
+
+    def forward(
+        self,
+        pixel_values: Union[torch.Tensor, np.ndarray],
+        **kwargs,
+    ):
+        np_inputs = isinstance(pixel_values, np.ndarray)
+        if not np_inputs:
+            pixel_values = np.array(pixel_values)
+
+        # Run inference
+        outputs = self.sess.run(pixel_values)
+        logits = torch.from_numpy(outputs[0].numpy()) if not np_inputs else outputs[0].numpy()
+        return ImageClassifierOutput(logits=logits)
