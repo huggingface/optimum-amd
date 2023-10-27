@@ -14,6 +14,8 @@ import onnxruntime as ort
 import torch
 from huggingface_hub import HfApi, HfFolder, hf_hub_download
 from huggingface_hub.utils import EntryNotFoundError
+from onnx import shape_inference
+from onnx.tools import update_model_dims
 
 from optimum.exporters import TasksManager
 from optimum.modeling_base import FROM_PRETRAINED_START_DOCSTRING, OptimizedModel
@@ -233,24 +235,25 @@ class RyzenAIModel(OptimizedModel):
         if not isinstance(path, str):
             path = str(path)
 
-        if vaip_config is None:
-            vaip_config = ".\\optimum\\amd\\ryzenai\\model_configs\\vaip_config.json"
-
         # `providers` and `provider_options` need to be of the same length
         if provider_options is not None:
             providers_options = [provider_options] + [{} for _ in range(len(providers) - 1)]
         else:
-            providers_options = None
-
-        providers_options = [
-            {
-                "config_file": vaip_config,
-            }
-        ]
+            if "VitisAIExecutionProvider" in providers:
+                if vaip_config is None:
+                    # path to the default vaip_config if None is provided
+                    vaip_config = ".\\optimum\\amd\\ryzenai\\model_configs\\vaip_config.json"
+                    logger.warning(
+                        f"No vaip_config is provided for VitisAI Ep, using default config {vaip_config}, the RyzenAIModel might "
+                        "not behave as expected."
+                    )
+                providers_options = [
+                    {
+                        "config_file": vaip_config,
+                    }
+                ]
 
         path = RyzenAIModel._reshape(path, input_shape_dict, output_shape_dict)
-
-        # from pdb import set_trace; set_trace()
 
         return ort.InferenceSession(
             path,
@@ -530,9 +533,6 @@ class RyzenAIModel(OptimizedModel):
         input_shape_dict: Dict[str, Tuple[int]],
         output_shape_dict: Dict[str, Tuple[int]],
     ) -> onnx.ModelProto:
-        from onnx import shape_inference
-        from onnx.tools import update_model_dims
-
         model = onnx.load(model_path)
 
         updated_model = update_model_dims.update_inputs_outputs_dims(model, input_shape_dict, output_shape_dict)
