@@ -31,9 +31,11 @@ Now whenever you change the code, you'll be able to run with those changes insta
 ## How to use it?
 
 * Quantize the ONNX model with Optimum or using the RyzenAI quantization tools
+
 For more information on quantization refer to [Model Quantization](https://ryzenai.docs.amd.com/en/latest/modelport.html) guide.
 
 * Load model with Ryzen AI class
+
 To load a model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class. 
 
 ```diff
