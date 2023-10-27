@@ -211,7 +211,7 @@ class RyzenAIModel(OptimizedModel):
         output_shape_dict: Optional[Dict[str, Tuple[int]]] = None,
     ) -> ort.InferenceSession:
         """
-        Loads an ONNX Inference session with a given provider. Default provider is `CPUExecutionProvider` to match the
+        Loads an ONNX Inference session with a given provider. Default provider is `VitisAIExecutionProvider` to match the
         default behaviour in PyTorch/TensorFlow/JAX.
 
         Args:
@@ -234,9 +234,7 @@ class RyzenAIModel(OptimizedModel):
             path = str(path)
 
         if vaip_config is None:
-            vaip_config = Path("optimum/amd/model_configs/default_vaip_config.json")
-
-        vaip_config = Path(vaip_config)
+            vaip_config = ".\\optimum\\amd\\ryzenai\\model_configs\\vaip_config.json"
 
         # `providers` and `provider_options` need to be of the same length
         if provider_options is not None:
@@ -244,13 +242,15 @@ class RyzenAIModel(OptimizedModel):
         else:
             providers_options = None
 
-        provider_options = [
+        providers_options = [
             {
                 "config_file": vaip_config,
             }
         ]
 
         path = RyzenAIModel._reshape(path, input_shape_dict, output_shape_dict)
+
+        # from pdb import set_trace; set_trace()
 
         return ort.InferenceSession(
             path,
@@ -335,10 +335,12 @@ class RyzenAIModel(OptimizedModel):
         file_name: Optional[str] = None,
         subfolder: str = "",
         local_files_only: bool = False,
-        provider: str = "CPUExecutionProvider",
+        provider: str = "VitisAIExecutionProvider",
         session_options: Optional[ort.SessionOptions] = None,
         provider_options: Optional[Dict[str, Any]] = None,
         model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
+        input_shape_dict: Optional[Dict[str, Tuple[int]]] = None,
+        output_shape_dict: Optional[Dict[str, Tuple[int]]] = None,
         **kwargs,
     ) -> "RyzenAIModel":
         model_path = Path(model_id)
@@ -380,6 +382,8 @@ class RyzenAIModel(OptimizedModel):
                 provider=provider,
                 session_options=session_options,
                 provider_options=provider_options,
+                input_shape_dict=input_shape_dict,
+                output_shape_dict=output_shape_dict,
             )
             new_model_save_dir = model_path
             preprocessors = maybe_load_preprocessors(model_id)
@@ -417,6 +421,8 @@ class RyzenAIModel(OptimizedModel):
                 provider=provider,
                 session_options=session_options,
                 provider_options=provider_options,
+                input_shape_dict=input_shape_dict,
+                output_shape_dict=output_shape_dict,
             )
             new_model_save_dir = Path(model_cache_path).parent
             preprocessors = maybe_load_preprocessors(model_id, subfolder=subfolder)
@@ -446,7 +452,7 @@ class RyzenAIModel(OptimizedModel):
         subfolder: str = "",
         local_files_only: bool = False,
         trust_remote_code: bool = False,
-        provider: str = "CPUExecutionProvider",
+        provider: str = "VitisAIExecutionProvider",
         session_options: Optional[ort.SessionOptions] = None,
         provider_options: Optional[Dict[str, Any]] = None,
         task: Optional[str] = None,
@@ -468,13 +474,13 @@ class RyzenAIModel(OptimizedModel):
         subfolder: str = "",
         config: Optional["PretrainedConfig"] = None,
         local_files_only: bool = False,
-        provider: str = "CPUExecutionProvider",
+        provider: str = "VitisAIExecutionProvider",
         session_options: Optional[ort.SessionOptions] = None,
         provider_options: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
         """
-        provider (`str`, defaults to `"CPUExecutionProvider"`):
+        provider (`str`, defaults to `"VitisAIExecutionProvider"`):
             ONNX Runtime provider to use for loading the model. See https://onnxruntime.ai/docs/execution-providers/ for
             possible providers.
         session_options (`Optional[onnxruntime.SessionOptions]`, defaults to `None`),:
@@ -578,20 +584,25 @@ class RyzenAIModelForImageClassification(RyzenAIModel):
     export_feature = "image-classification"
     auto_model_class = AutoModelForImageClassification
 
-    def __init__(self, model=None, config=None, vaip_config=None, **kwargs):
-        super().__init__(model, config, vaip_config, **kwargs)
-        self.input_names = ["pixel_values"]
-
     def forward(
         self,
         pixel_values: Union[torch.Tensor, np.ndarray],
         **kwargs,
     ):
-        np_inputs = isinstance(pixel_values, np.ndarray)
-        if not np_inputs:
-            pixel_values = np.array(pixel_values)
+        use_torch = isinstance(pixel_values, torch.Tensor)
+        if use_torch:
+            pixel_values = pixel_values.cpu().detach().numpy()
 
-        # Run inference
-        outputs = self.sess.run(pixel_values)
-        logits = torch.from_numpy(outputs[0].numpy()) if not np_inputs else outputs[0].numpy()
+        onnx_inputs = {
+            "pixel_values": pixel_values,
+        }
+
+        # run inference
+        outputs = self.model.run(None, onnx_inputs)
+        logits = outputs[self.output_names["logits"]]
+
+        if use_torch:
+            logits = torch.from_numpy(logits).to(self.device)
+
+        # converts output to namedtuple for pipelines post-processing
         return ImageClassifierOutput(logits=logits)
