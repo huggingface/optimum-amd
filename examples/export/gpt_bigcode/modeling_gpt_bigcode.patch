@@ -1,4 +1,4 @@
---- /home/ubuntu/miniconda2/envs/optimummain/lib/python3.8/site-packages/transformers/models/gpt_bigcode/modeling_gpt_bigcode.py	2023-11-03 12:51:03.929825408 +0000
+--- /home/ubuntu/miniconda2/envs/optimummain/lib/python3.8/site-packages/transformers/models/gpt_bigcode/modeling_gpt_bigcode.py	2023-11-06 13:18:44.884610884 +0000
 +++ modeling_gpt_bigcode.py	2023-11-03 11:48:08.528225345 +0000
 @@ -21,22 +21,22 @@
  from torch import nn
@@ -37,18 +37,11 @@
          present = key_value if use_cache else None
  
          key, value = key_value.split((self.head_dim, self.head_dim), dim=-1)
-@@ -847,14 +847,8 @@
+@@ -847,7 +847,8 @@
          # Self-attention mask.
          query_length = input_shape[-1]
          key_length = past_length + query_length
 -        self_attention_mask = self.bias[None, key_length - query_length : key_length, :key_length]
--
--        print(self.bias.shape)
--        print(input_ids)
--        print(self_attention_mask.shape)
--        print(attention_mask.shape)
--        print(input_ids.shape)
--        print()
 +        max_length = past_length if past_length > 0 else key_length
 +        self_attention_mask = self.bias[None, past_length:key_length, :max_length]
  
