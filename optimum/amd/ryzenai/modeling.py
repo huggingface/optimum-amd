@@ -252,6 +252,8 @@ class RyzenAIModel(OptimizedModel):
                         "config_file": vaip_config,
                     }
                 ]
+            else:
+                providers_options = None
 
         path = RyzenAIModel._reshape(path, input_shape_dict, output_shape_dict)
 
