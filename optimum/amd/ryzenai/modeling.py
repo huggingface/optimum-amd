@@ -243,9 +243,8 @@ class RyzenAIModel(OptimizedModel):
                 if vaip_config is None:
                     # path to the default vaip_config if None is provided
                     vaip_config = ".\\optimum\\amd\\ryzenai\\model_configs\\vaip_config.json"
-                    logger.warning(
-                        f"No vaip_config is provided for VitisAI Ep, using default config {vaip_config}, the RyzenAIModel might "
-                        "not behave as expected."
+                    raise ValueError(
+                        "No vaip_config is provided for VitisAI Ep. Please provide the config for inference on RyzenAI"
                     )
                 providers_options = [
                     {
@@ -255,7 +254,7 @@ class RyzenAIModel(OptimizedModel):
             else:
                 providers_options = None
 
-        path = RyzenAIModel._reshape(path, input_shape_dict, output_shape_dict)
+        path = RyzenAIModel.reshape(path, input_shape_dict, output_shape_dict)
 
         return ort.InferenceSession(
             path,
@@ -375,7 +374,7 @@ class RyzenAIModel(OptimizedModel):
 
         if file_name not in regular_onnx_filenames:
             logger.warning(
-                f"The ONNX file {file_name} is not a regular name used in optimum.onnxruntime, the RyzenAIModel might "
+                f"The ONNX file {file_name} is not a regular name used in optimum.amd.ryzenai, the RyzenAIModel might "
                 "not behave as expected."
             )
 
@@ -541,7 +540,7 @@ class RyzenAIModel(OptimizedModel):
         return shape_inference.infer_shapes(updated_model)
 
     @staticmethod
-    def _reshape(
+    def reshape(
         model_path: Union[str, Path],
         input_shape_dict: Dict[str, Tuple[int]],
         output_shape_dict: Dict[str, Tuple[int]],
