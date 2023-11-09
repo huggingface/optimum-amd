@@ -64,6 +64,7 @@ def llama_flashattention_forward(
 
     past_key_value = (key_states, value_states) if use_cache else None
 
+    # NOTE@AMD: The Triton kernel expects the layout [batch_size, seqlen, nheads, headdim].
     query_states = query_states.transpose(1, 2)
     key_states = key_states.transpose(1, 2)
     value_states = value_states.transpose(1, 2)
