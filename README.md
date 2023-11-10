@@ -51,7 +51,7 @@ image = Image.open(requests.get(url, stream=True).raw)
 
 model_id = <path of the model>
 - model = AutoModelForImageClassification.from_pretrained(model_id)
-+ model = RyzenAIModelForImageClassification.from_pretrained(model_id)
++ model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config=<path to config file>)
 feature_extractor = AutoFeatureExtractor.from_pretrained(model_id)
 cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
 outputs = cls_pipe(image)
