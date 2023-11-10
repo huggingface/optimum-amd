@@ -207,12 +207,12 @@ class RyzenAIModel(OptimizedModel):
         src_paths = [self.model_path]
         dst_paths = [Path(save_directory) / self.model_path.name]
 
+        # add external data paths in case of large models
+        src_paths, dst_paths = _get_external_data_paths(src_paths, dst_paths)
+
         if self.vaip_config:
             src_paths.append(self.vaip_config)
             dst_paths.append(Path(save_directory) / self.vaip_config.name)
-
-        # add external data paths in case of large models
-        src_paths, dst_paths = _get_external_data_paths(src_paths, dst_paths)
 
         for src_path, dst_path in zip(src_paths, dst_paths):
             shutil.copyfile(src_path, dst_path)
