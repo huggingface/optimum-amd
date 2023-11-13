@@ -9,11 +9,11 @@ hydra:
   sweep:
     dir: experiments/${experiment_name}
   job:
-    chdir: true # to change the working directory during the run/sweep directory
+    chdir: true
     env_set:
       CUDA_VISIBLE_DEVICES: 0
       CUDA_DEVICE_ORDER: PCI_BUS_ID
 
 backend:
-  initial_isolation_check: false
-  continous_isolation_check: false
+  initial_isolation_check: true
+  continous_isolation_check: true

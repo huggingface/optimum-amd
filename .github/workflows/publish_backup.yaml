@@ -1,0 +1,25 @@
+name: Publish Backup Dataset to Dana Server
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish_backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v3
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install git+https://github.com/IlyasMoutawwakil/dana-client.git
+
+      - name: Publish backup dataset
+        run: |
+          publish-backup --url https://optimum-amd-dana.hf.space --dataset-id optimum-amd/backup
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
