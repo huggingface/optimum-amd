@@ -60,9 +60,9 @@ class RyzenAIModel(OptimizedModel):
     transformers models to ONNX using `optimum.exporters.onnx` toolchain.
 
     Class attributes:
-        - model_type (`str`, *optional*, defaults to `"onnx_model"`) -- The name of the model type to use when
+        - model_type (`str`, defaults to `"onnx_model"`) -- The name of the model type to use when
         registering the RyzenAIModel classes.
-        - auto_model_class (`Type`, *optional*, defaults to `AutoModel`) -- The "AutoModel" class to represented by the
+        - auto_model_class (`Type`, defaults to `AutoModel`) -- The "AutoModel" class to represented by the
         current RyzenAIModel class.
 
     Common attributes:
@@ -181,7 +181,7 @@ class RyzenAIModel(OptimizedModel):
         else:
             providers_options = None
 
-        is_dynamic = RyzenAIModel._check_is_dynamic(path)
+        is_dynamic = RyzenAIModel._check_uses_static_shape(path)
         if is_dynamic and provider == "VitisAIExecutionProvider":
             raise ValueError(
                 "The model provided has dynamic axes in input/output. Please provide model with static shapes for inference with RyzenAI."
@@ -227,7 +227,7 @@ class RyzenAIModel(OptimizedModel):
         cls,
         model_id: Union[str, Path],
         config: "PretrainedConfig",
-        vaip_config: str = None,
+        vaip_config: Optional[str] = None,
         use_auth_token: Optional[Union[bool, str]] = None,
         revision: Optional[str] = None,
         force_download: bool = False,
@@ -427,7 +427,7 @@ class RyzenAIModel(OptimizedModel):
         )
 
     @staticmethod
-    def _check_is_dynamic(model_path: Union[str, Path]):
+    def _check_uses_static_shape(model_path: Union[str, Path]):
         is_dynamic = False
         if Path(model_path).suffix == ".onnx":
             model = onnx.load(model_path)
