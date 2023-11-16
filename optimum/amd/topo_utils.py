@@ -1,6 +1,7 @@
+from itertools import combinations
+
 import amdsmi
 import numpy as np
-from itertools import combinations
 
 
 def get_bandwidth_matrix():
@@ -20,7 +21,7 @@ def get_bandwidth_matrix():
                     curr_bandwidth = amdsmi.amdsmi_get_minmax_bandwidth(src_device, dst_device)["max_bandwidth"]
                     if curr_bandwidth != 0:
                         bandwidth_matrix[i][j] = curr_bandwidth
-                except:
+                except Exception:
                     pass
 
     # indirect bandwidth
@@ -68,6 +69,7 @@ def extract_max_avg_bandwidth_cluster(bandwidth_matrix, cluster_num_devices):
             max_bandwidth_cluster = list(cluster)
 
     return max_bandwidth_cluster, max_avg_bandwidth
+
 
 def extract_min_avg_bandwidth_cluster(bandwidth_matrix, cluster_num_devices):
     if len(bandwidth_matrix) < cluster_num_devices:

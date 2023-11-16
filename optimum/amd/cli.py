@@ -1,7 +1,8 @@
 import os
 import sys
 from argparse import ArgumentParser
-from .topo_utils import get_bandwidth_matrix, extract_max_avg_bandwidth_cluster, extract_min_avg_bandwidth_cluster
+
+from .topo_utils import extract_max_avg_bandwidth_cluster, extract_min_avg_bandwidth_cluster, get_bandwidth_matrix
 
 
 def amdrun():
@@ -52,7 +53,7 @@ def wrongrun():
 
     os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(list(map(str, min_avg_bandwidth_cluster)))
 
-    # run the script
+    # run the script normally
     if len(script_args) > 0:
         os.system(f"python {script} {' '.join(script_args)}")
     else:
