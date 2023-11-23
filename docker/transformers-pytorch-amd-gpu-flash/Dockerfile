@@ -40,6 +40,6 @@ RUN git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git && \
     rm -rf flash-attention
 
 WORKDIR /
-RUN git clone --depth 1 --single-branch main https://github.com/huggingface/transformers && cd transformers
+RUN git clone --depth 1 --branch main https://github.com/huggingface/transformers.git && cd transformers
 RUN pip install --no-cache-dir -e ./transformers[dev-torch,testing,video]
 RUN pip uninstall -y tensorflow flax
