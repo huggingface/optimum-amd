@@ -28,14 +28,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
     python -m pip install -U pip
 
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.6
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.6 --no-cache-dir
 RUN pip install -U --no-cache-dir ninja packaging git+https://github.com/facebookresearch/detectron2.git pytesseract "itsdangerous<2.1.0"
 
-RUN git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git && cd flash-attention && \
-    git submodule init && git submodule update && GPU_ARCHS="gfx90a" python setup.py install
+RUN git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git && \
+    cd flash-attention && \
+    git submodule init && \
+    git submodule update && \
+    GPU_ARCHS="gfx90a" python setup.py install && \
+    cd .. && \
+    rm -rf flash-attention
 
-ARG REF=main
 WORKDIR /
-RUN git clone https://github.com/huggingface/transformers && cd transformers && git checkout $REF
+RUN git clone --depth 1 --single-branch main https://github.com/huggingface/transformers && cd transformers
 RUN pip install --no-cache-dir -e ./transformers[dev-torch,testing,video]
 RUN pip uninstall -y tensorflow flax
