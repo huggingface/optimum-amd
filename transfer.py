@@ -23,8 +23,8 @@ def benchmark(i, j):
 
 def main():
     latencies = {}
-    for i in range(torch.cuda.device_count()):
-        for j in range(torch.cuda.device_count()):
+    for i in range(int(WORLD_SIZE)):
+        for j in range(int(WORLD_SIZE)):
             if i == j:
                 continue
 
@@ -49,7 +49,10 @@ def main():
 if __name__ == "__main__":
     import os
 
+    WORLD_SIZE = os.environ.get("WORLD_SIZE", None)
     LOCAL_RANK = os.environ.get("LOCAL_RANK", None)
 
     if LOCAL_RANK is None or LOCAL_RANK == "0":
+        print(f"World Size: {WORLD_SIZE}")
+        print(f"Local Rank: {LOCAL_RANK}")
         main()
