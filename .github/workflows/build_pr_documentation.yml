@@ -1,0 +1,77 @@
+name: Build PR documentation
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "optimum/**.py"
+      - "docs/**"
+      - ".github/workflows/build_pr_documentation.yml"
+      - ".github/workflows/delete_doc_comment.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build_documentation:
+    runs-on: self-hosted
+    env:
+      COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.number }}
+      EVENT_CONTEXT: ${{ toJSON(github.event) }}
+      PR_CLONE_URL: ${{ github.event.pull_request.head.repo.clone_url }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: 'huggingface/doc-builder'
+          path: doc-builder
+
+      - uses: actions/checkout@v2
+        with:
+          repository: 'huggingface/optimum-amd'
+          path: optimum-amd
+
+      - name: Create and start a virtual environment
+        run: |
+          python -m venv venv_docs
+          source venv_docs/bin/activate
+          python -m pip install --upgrade pip
+
+      - name: Setup environment
+        run: |
+          source venv_docs/bin/activate
+          pip uninstall -y doc-builder
+          cd doc-builder
+          git pull origin main
+          pip install .
+          pip install black
+          cd ..
+          cd optimum-amd
+          pip install .
+          cd ..
+
+      - name: Make documentation
+        run: |
+          source venv_docs/bin/activate
+          cd optimum-amd
+          doc-builder build optimum.amd docs/source/ --build_dir amd-doc-build --version pr_$PR_NUMBER --version_tag_suffix "" --html --clean
+          cd ..
+
+      - name: Save commit_sha & pr_number
+        run: |
+          source venv_docs/bin/activate
+          cd optimum-amd/amd-doc-build
+          sudo mv optimum.amd optimum-amd
+          echo ${{ env.COMMIT_SHA }} > ./commit_sha
+          echo ${{ env.PR_NUMBER }} > ./pr_number
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: doc-build-artifact
+          path: optimum-amd/amd-doc-build/
+
+      - name: Cleanup
+        run: |
+         rm -rf venv_docs
