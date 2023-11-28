@@ -2,7 +2,7 @@ import os
 import sys
 from argparse import ArgumentParser
 
-from .topo_utils import extract_max_avg_bandwidth_cluster, get_bandwidth_matrix
+from .topology_utils import extract_max_avg_bandwidth_cluster, get_bandwidth_matrix
 
 
 def amdrun():
