@@ -5,6 +5,9 @@ import numpy as np
 
 
 def get_bandwidth_matrix():
+    """
+    Returns a matrix of bandwidths between all GPU devices in the system.
+    """
     amdsmi.amdsmi_init()
     devices = amdsmi.amdsmi_get_device_handles()
 
@@ -50,6 +53,9 @@ def get_bandwidth_matrix():
 
 
 def extract_max_avg_bandwidth_cluster(bandwidth_matrix, cluster_num_devices):
+    """
+    Returns the cluster of a given number of devices that has the maximum average bandwidth between devices.
+    """
     if len(bandwidth_matrix) < cluster_num_devices:
         raise ValueError("Number of devices in the cluster cannot be greater than the number of devices in the system")
 
@@ -69,25 +75,3 @@ def extract_max_avg_bandwidth_cluster(bandwidth_matrix, cluster_num_devices):
             max_bandwidth_cluster = list(cluster)
 
     return max_bandwidth_cluster, max_avg_bandwidth
-
-
-def extract_min_avg_bandwidth_cluster(bandwidth_matrix, cluster_num_devices):
-    if len(bandwidth_matrix) < cluster_num_devices:
-        raise ValueError("Number of devices in the cluster cannot be greater than the number of devices in the system")
-
-    if cluster_num_devices == 1:
-        return [0], float("inf")
-
-    num_devices = range(len(bandwidth_matrix))
-
-    min_avg_bandwidth = float("inf")
-    min_bandwidth_cluster = None
-
-    for cluster in combinations(num_devices, cluster_num_devices):
-        curr_bandwidth_matrix = [[bandwidth_matrix[i][j] for i in cluster] for j in cluster]
-        curr_avg_bandwidth = np.mean(curr_bandwidth_matrix, where=~np.eye(len(curr_bandwidth_matrix), dtype=bool))
-        if curr_avg_bandwidth < min_avg_bandwidth:
-            min_avg_bandwidth = curr_avg_bandwidth
-            min_bandwidth_cluster = list(cluster)
-
-    return min_bandwidth_cluster, min_avg_bandwidth

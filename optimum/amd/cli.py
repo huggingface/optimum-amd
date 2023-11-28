@@ -2,12 +2,12 @@ import os
 import sys
 from argparse import ArgumentParser
 
-from .topo_utils import extract_max_avg_bandwidth_cluster, extract_min_avg_bandwidth_cluster, get_bandwidth_matrix
+from .topo_utils import extract_max_avg_bandwidth_cluster, get_bandwidth_matrix
 
 
 def amdrun():
     """
-    An alternative to torchrun that's optimized to maximize NUMA bandwidth.
+    An alternative to torchrun that's optimized to maximize inter-devices bandwidth.
 
     Usage: amdrun --ngpus <num_gpus> <script> <script_args>
     """
