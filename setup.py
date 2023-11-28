@@ -51,6 +51,7 @@ setup(
     author_email="hardware@huggingface.co",
     license="MIT",
     packages=find_namespace_packages(include=["optimum*"]),
+    entry_points={"console_scripts": ["amdrun=optimum.amd.cli:amdrun"]},
     install_requires=INSTALL_REQUIRE,
     extras_require=EXTRAS_REQUIRE,
     include_package_data=True,
