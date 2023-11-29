@@ -10,9 +10,7 @@ When using Hugging Face libraries with AMD Instinct MI210 or MI250 GPUs in a mul
 
 <Tip>
 
-Using several devices on an AMD Instinct machine? We recommend using `amdrun --ngpus <num_gpus>` to check which GPUs should be used together for maximum performance.
-
-If using `torchrun` on a single node, `amdrun --ngpus <num_gpus> <script> <script_args>` allows to directly dispath to the best `num_gpus` available.
+Using several devices on an AMD Instinct machine through `torchrun` on a single node? We recommend using `amdrun --ngpus <num_gpus> <script> <script_args>` instead to automatically dispatch to the best `num_gpus` available for maximum performance.
 
 </Tip>
 
