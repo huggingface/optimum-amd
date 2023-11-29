@@ -2,11 +2,11 @@
 Licensed under the MIT License.
 -->
 
-## AMD Instinct GPU connectivity
+# AMD Instinct GPU connectivity
 
 When using Hugging Face libraries with AMD Instinct MI210 or MI250 GPUs in a multi-GPU settings where collective operations are used, training and inference performance may vary depending on which devices are used together on a node. Some use cases are for example tensor parallelism, pipeline paralellism or data parallelism.
 
-### Dual-die topology
+## Dual-die topology
 
 <Tip>
 
@@ -68,7 +68,7 @@ Format: min-max; Units: mps
 
 This table only gives theoretical minimum/maximum bandwidth. A good option to validate which devices to use together is to run the [rocm_bandwidth_test](https://github.com/RadeonOpenCompute/rocm_bandwidth_test) on your device.
 
-### NUMA nodes
+## NUMA nodes
 
 On certain AMD machines as seen in the figure below, some devices may have a privileged connectivity with certain CPU cores.
 
@@ -133,10 +133,9 @@ When benchmarking for optimal performances, we advise testing both without/with 
 
 An alternative can be to use `numactl --membind`, binding a process using a GPU to its corresponding NUMA node cores. More details [here](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#numa-best-practices).
 
+## Infinity Fabric
 
-### Infinity Fabric
-
-As seen on the below architecture for an MI210 machine, some GPU devices may be linked by an [Infinity Fabric link](https://en.wikichip.org/wiki/amd/infinity_fabric) that typically has a higher bandwidth than PCIe switch (100 GB/s per Infinity Fabric link).
+As seen on the below architecture for an MI210 machine, some GPU devices may be linked by an [Infinity Fabric link](https://en.wikichip.org/wiki/amd/infinity_fabric) that typically has a higher bandwidth than PCIe switch (up to 100 GB/s per Infinity Fabric link).
 
 In fact measuring unidirectional copy peak bandwidth, we see that MI210 GPUs linked by Infinity Fabric can communicate ~1.7x times faster than through PCIe switch.
 

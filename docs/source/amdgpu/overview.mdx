@@ -47,17 +47,22 @@ with torch.device("cuda"):
 
 Hosted wheels are available for ROCm, please check out the [installation instructions](https://github.com/PanQiWei/AutoGPTQ#quick-installation).
 
+### Text Generation Inference library
+
+Hugging Face's [Text Generation Inference](https://huggingface.co/docs/text-generation-inference/index) library (TGI) is designed for low latency LLMs serving, and natively supports AMD Instinct MI210 and MI250 GPUs from its version 1.2 onwards. Please refer to the [Quick Tour section](https://huggingface.co/docs/text-generation-inference/quicktour) for more details.
+
+Using TGI on ROCm with AMD Instinct MI210 or MI250 GPUs is as simple as using the docker image [`ghcr.io/huggingface/text-generation-inference:1.2-rocm`](https://huggingface.co/docs/text-generation-inference/quicktour).
+
+Detailed benchmarks of Text Generation Inference on MI250 GPUs will soon be published.
+
 ### Bitsandbytes quantization
 
-[Bitsandbytes](https://github.com/TimDettmers/bitsandbytes) (integrated in HF's [Transformers](https://huggingface.co/docs/transformers/perf_infer_gpu_one#bitsandbytes) and [Text Generation Inference](https://huggingface.co/docs/text-generation-inference/conceptual/quantization#quantization-with-bitsandbytes)) currently does not support ROCm. We are working towards its validation on ROCm and through Hugging Face libraries.
+[Bitsandbytes](https://github.com/TimDettmers/bitsandbytes) (integrated in HF's [Transformers](https://huggingface.co/docs/transformers/perf_infer_gpu_one#bitsandbytes) and [Text Generation Inference](https://huggingface.co/docs/text-generation-inference/conceptual/quantization#quantization-with-bitsandbytes)) currently does not natively support ROCm. We are working towards its validation on ROCm and through Hugging Face libraries.
 
+Meanwhile, advanced users may want to use [ROCmSoftwarePlatform/bitsandbytes](https://github.com/ROCmSoftwarePlatform/bitsandbytes/tree/rocm_enabled) fork for now, or work in progess [community version](https://github.com/TimDettmers/bitsandbytes/pull/756).
 
 ### AWQ quantization
 
-AWQ quantization, that is [supported in Transformers](https://huggingface.co/docs/transformers/main_classes/quantization#awq-integration) is currently not available on ROCm. We look forward to a port or to the developement of a compatible Triton kernel.
+[AWQ](https://arxiv.org/abs/2306.00978) quantization, that is supported [in Transformers](https://huggingface.co/docs/transformers/main_classes/quantization#awq-integration) and [Text Generation Inference](https://huggingface.co/docs/text-generation-inference/basic_tutorials/preparing_model#quantization), is currently not available on ROCm GPUs.
 
-### Text Generation Inference library
-
-[Text Generation Inference](https://huggingface.co/docs/text-generation-inference/index) library supports AMD Instinct MI210 and MI250 GPUs from its version 1.2 onwards. Please refer to the [Quick Tour section](https://huggingface.co/docs/text-generation-inference/quicktour) for more details.
-
-Detailed benchmarks of Text Generation Inference on MI250 GPUs will soon be published.
+We look forward to a port or to the [ongoing developement of a compatible Triton kernel](https://github.com/vllm-project/vllm/blob/qmm/vllm/model_executor/layers/quantized_ops/awq.py).
