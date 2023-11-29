@@ -1,0 +1,13 @@
+- sections:
+  - local: index
+    title: 🤗 Optimum AMD
+  - local: installation
+    title: Installation
+  - local: amdgpu/overview
+    title: AMD GPUs
+  - local: amdgpu/perf_hardware
+    title: Multi-GPU usage
+  - local: ryzenai/overview
+    title: Ryzen AI
+  title: Optimum AMD
+  isExpanded: false
