@@ -34,12 +34,15 @@ GPU  Temp (DieEdge)  AvgPwr  SCLK    MCLK     Fan  Perf  PwrCap  VRAM%  GPU%
 
 However, as can be seen on the [description of the machine architecture](https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf), some devices effectively have a privileged connection and two devices (two GCDs, Graphics Compute Die) from `rocm-smi` actually correspond to one MI250 (one OAM, OCP Accelerator Module).
 
+<div style="text-align: center">
 <img
   src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/mi250_topology.png"
   width="512"
   height="512"
   alt="4xMI250 machine topology"
 />
+</div>
+
 [4xMI250 machine topology](https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf)
 
 This can be checked by running `rocm-smi --shownodesbw`: some device <-> device link have a higher maximum bandwith. For example, from the table below, we can conclude that:
@@ -69,12 +72,15 @@ This table only gives theoretical minimum/maximum bandwidth. A good option to va
 
 On certain AMD machines as seen in the figure below, some devices may have a privileged connectivity with certain CPU cores.
 
+<div style="text-align: center">
 <img
   src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/mi250_topology2.png"
   width="512"
   height="512"
   alt="4xMI250 machine topology"
 />
+</div>
+
 [4xMI250 machine topology](https://www.supermicro.com/products/brief/product-brief-Universal-GPU.pdf)
 
 This can be checked using `rocm-smi --showtoponuma` that gives the NUMA topology:
@@ -118,10 +124,12 @@ cpu1         N/A         N/A
 
 When benchmarking for optimal performances, we advise testing both without/with [NUMA balancing](https://access.redhat.com/documentation/en-en/red_hat_enterprise_linux/7/html/virtualization_tuning_and_optimization_guide/sect-virtualization_tuning_optimization_guide-numa-auto_numa_balancing) at `/proc/sys/kernel/numa_balancing`, which may impact performances. The table below shows the difference in performance of [Text Generation Inference](https://github.com/huggingface/text-generation-inference) in a specific case where disabling NUMA balancing greatly increased performances.
 
+<div style="text-align: center">
 <img
   src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/tgi_numa_llama70b.png"
   alt="Text Generation Inference latency comparison without/with NUMA balancing"
 />
+</div>
 
 An alternative can be to use `numactl --membind`, binding a process using a GPU to its corresponding NUMA node cores. More details [here](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#numa-best-practices).
 
@@ -132,10 +140,13 @@ As seen on the below architecture for an MI210 machine, some GPU devices may be 
 
 In fact measuring unidirectional copy peak bandwidth, we see that MI210 GPUs linked by Infinity Fabric can communicate ~1.7x times faster than through PCIe switch.
 
+<div style="text-align: center">
 <img
   src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/mi210_topology.png"
   width="512"
   height="512"
   alt="8xMI210 machine topology"
 />
+</div>
+
 [8xMI210 machine topology](https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf)
