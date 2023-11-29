@@ -1,3 +1,63 @@
-Transformers library supports natively AMD MI210 and MI250 libraries! Check out the following integrations:
+<!--Copyright 2023 The HuggingFace Team. All rights reserved.
+Licensed under the MIT License.
+-->
 
-TODO
+# Using Hugging Face libraries on AMD GPUs
+
+Hugging Face libraries supports natively AMD Instinct MI210 and MI250 GPUs. For other [ROCm-powered](https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html) GPUs, the support has currently not been validated but most features are expected to be used smoothly.
+
+The integration is summarized here.
+
+### Flash Attention 2
+
+Flash Attention 2 is available on ROCm (validated on MI210 and MI250) through [ROCmSoftwarePlatform/flash-attention](https://github.com/ROCmSoftwarePlatform/flash-attention) library, and can be used in [Transformers](https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2):
+
+```python
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("tiiuae/falcon-7b")
+
+with torch.device("cuda"):
+    model = AutoModelForCausalLM.from_pretrained(
+        "tiiuae/falcon-7b",
+        torch_dtype=torch.float16,
+        use_flash_attention_2=True,
+)
+```
+
+We recommend using [this example Dockerfile](https://github.com/huggingface/optimum-amd/blob/main/docker/transformers-pytorch-amd-gpu-flash/Dockerfile) to use Flash Attention on ROCm, or to follow the [official installation instructions](https://github.com/ROCmSoftwarePlatform/flash-attention#amd-gpurocm-support).
+
+### GPTQ quantization
+
+[GPTQ](https://arxiv.org/abs/2210.17323) quantized models can be loaded in Transformers, using in the backend [AutoGPTQ library](https://github.com/PanQiWei/AutoGPTQ):
+
+```python
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("TheBloke/Llama-2-7B-Chat-GPTQ")
+
+with torch.device("cuda"):
+    model = AutoModelForCausalLM.from_pretrained(
+        "TheBloke/Llama-2-7B-Chat-GPTQ",
+        torch_dtype=torch.float16,
+    )
+```
+
+Hosted wheels are available for ROCm, please check out the [installation instructions](https://github.com/PanQiWei/AutoGPTQ#quick-installation).
+
+### Bitsandbytes quantization
+
+[Bitsandbytes](https://github.com/TimDettmers/bitsandbytes) (integrated in HF's [Transformers](https://huggingface.co/docs/transformers/perf_infer_gpu_one#bitsandbytes) and [Text Generation Inference](https://huggingface.co/docs/text-generation-inference/conceptual/quantization#quantization-with-bitsandbytes)) currently does not support ROCm. We are working towards its validation on ROCm and through Hugging Face libraries.
+
+
+### AWQ quantization
+
+AWQ quantization, that is [supported in Transformers](https://huggingface.co/docs/transformers/main_classes/quantization#awq-integration) is currently not available on ROCm. We look forward to a port or to the developement of a compatible Triton kernel.
+
+### Text Generation Inference library
+
+[Text Generation Inference](https://huggingface.co/docs/text-generation-inference/index) library supports AMD Instinct MI210 and MI250 GPUs from its version 1.2 onwards. Please refer to the [Quick Tour section](https://huggingface.co/docs/text-generation-inference/quicktour) for more details.
+
+Detailed benchmarks of Text Generation Inference on MI250 GPUs will soon be published.
