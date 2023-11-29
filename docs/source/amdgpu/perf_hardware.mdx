@@ -34,14 +34,13 @@ GPU  Temp (DieEdge)  AvgPwr  SCLK    MCLK     Fan  Perf  PwrCap  VRAM%  GPU%
 
 However, as can be seen on the [description of the machine architecture](https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf), some devices effectively have a privileged connection and two devices (two GCDs, Graphics Compute Die) from `rocm-smi` actually correspond to one MI250 (one OAM, OCP Accelerator Module).
 
-<a href="https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf">
 <img
   src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/mi250_topology.png"
   width="512"
   height="512"
   alt="4xMI250 machine topology"
 />
-</a>
+[4xMI250 machine topology](https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf)
 
 This can be checked by running `rocm-smi --shownodesbw`: some device <-> device link have a higher maximum bandwith. For example, from the table below, we can conclude that:
 * If using two devices, using `CUDA_VISIBLE_DEVICES="0,1"`, or `"2,3"`, or `"4,5"` or `"6,7"` should be privileged.
@@ -70,14 +69,13 @@ This table only gives theoretical minimum/maximum bandwidth. A good option to va
 
 On certain AMD machines as seen in the figure below, some devices may have a privileged connectivity with certain CPU cores.
 
-<a href="https://www.supermicro.com/products/brief/product-brief-Universal-GPU.pdf">
 <img
   src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/mi250_topology2.png"
   width="512"
   height="512"
   alt="4xMI250 machine topology"
 />
-</a>
+[4xMI250 machine topology](https://www.supermicro.com/products/brief/product-brief-Universal-GPU.pdf)
 
 This can be checked using `rocm-smi --showtoponuma` that gives the NUMA topology:
 ```
@@ -134,11 +132,10 @@ As seen on the below architecture for an MI210 machine, some GPU devices may be 
 
 In fact measuring unidirectional copy peak bandwidth, we see that MI210 GPUs linked by Infinity Fabric can communicate ~1.7x times faster than through PCIe switch.
 
-<a href="https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf">
 <img
   src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/mi210_topology.png"
   width="512"
   height="512"
   alt="8xMI210 machine topology"
 />
-</a>
+[8xMI210 machine topology](https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf)
