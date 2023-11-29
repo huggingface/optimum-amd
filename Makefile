@@ -9,7 +9,10 @@ style:
 	black .
 	ruff . --fix
 
-doc:
+build_doc_docker_image:
+	docker build -t doc_maker --build-arg commit_sha=$(COMMIT_SHA_SUBPACKAGE) --build-arg clone_url=$(REAL_CLONE_URL) ./docs
+
+doc: build_doc_docker_image
 	@test -n "$(BUILD_DIR)" || (echo "BUILD_DIR is empty." ; exit 1)
 	@test -n "$(VERSION)" || (echo "VERSION is empty." ; exit 1)
 	docker run -v $(CURRENT_DIR):/doc_folder --workdir=/doc_folder doc_maker \
