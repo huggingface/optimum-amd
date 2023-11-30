@@ -55,11 +55,33 @@ Using TGI on ROCm with AMD Instinct MI210 or MI250 GPUs is as simple as using th
 
 Detailed benchmarks of Text Generation Inference on MI250 GPUs will soon be published.
 
+### ONNX Runtime integration
+
+[🤗 Optimum](https://huggingface.co/docs/optimum/onnxruntime/quickstart) supports running [Transformers](https://github.com/huggingface/transformers) and [Diffusers](https://github.com/huggingface/diffusers) models through [ONNX Runtime](https://onnxruntime.ai/) on ROCm-powered AMD GPUs. It is as simple as:
+
+```python
+from transformers import AutoTokenizer
+from optimum.onnxruntime import ORTModelForSequenceClassification
+
+tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
+
+ort_model = ORTModelForSequenceClassification.from_pretrained(
+  "distilbert-base-uncased-finetuned-sst-2-english",
+  export=True,
+  provider="ROCMExecutionProvider",
+)
+
+inp = tokenizer("Both the music and visual were astounding, not to mention the actors performance.", return_tensors="np")
+result = ort_model(**inp)
+```
+
+Check out more details about the support in [this guide](https://huggingface.co/docs/optimum/onnxruntime/usage_guides/amdgpu).
+
 ### Bitsandbytes quantization
 
-[Bitsandbytes](https://github.com/TimDettmers/bitsandbytes) (integrated in HF's [Transformers](https://huggingface.co/docs/transformers/perf_infer_gpu_one#bitsandbytes) and [Text Generation Inference](https://huggingface.co/docs/text-generation-inference/conceptual/quantization#quantization-with-bitsandbytes)) currently does not natively support ROCm. We are working towards its validation on ROCm and through Hugging Face libraries.
+[Bitsandbytes](https://github.com/TimDettmers/bitsandbytes) (integrated in HF's [Transformers](https://huggingface.co/docs/transformers/perf_infer_gpu_one#bitsandbytes) and [Text Generation Inference](https://huggingface.co/docs/text-generation-inference/conceptual/quantization#quantization-with-bitsandbytes)) currently does not officially support ROCm. We are working towards its validation on ROCm and through Hugging Face libraries.
 
-Meanwhile, advanced users may want to use [ROCmSoftwarePlatform/bitsandbytes](https://github.com/ROCmSoftwarePlatform/bitsandbytes/tree/rocm_enabled) fork for now, or work in progess [community version](https://github.com/TimDettmers/bitsandbytes/pull/756).
+Meanwhile, advanced users may want to use [ROCmSoftwarePlatform/bitsandbytes](https://github.com/ROCmSoftwarePlatform/bitsandbytes/tree/rocm_enabled) fork for now, or a work in progess [community version](https://github.com/TimDettmers/bitsandbytes/pull/756).
 
 ### AWQ quantization
 

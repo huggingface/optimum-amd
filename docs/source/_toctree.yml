@@ -4,10 +4,12 @@
   - local: installation
     title: Installation
   - local: amdgpu/overview
-    title: AMD GPUs
+    title: AMD GPUs quicktour
   - local: amdgpu/perf_hardware
     title: Multi-GPU usage
   - local: ryzenai/overview
-    title: Ryzen AI
+    title: Ryzen AI quicktour
+  - local: ryzenai/package_reference
+    title: Ryzen AI package reference
   title: Optimum AMD
   isExpanded: false
