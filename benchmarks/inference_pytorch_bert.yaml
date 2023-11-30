@@ -1,0 +1,19 @@
+defaults:
+  - backend: pytorch # default backend
+  - benchmark: inference # default benchmark
+  - _base_ # inherits from base config
+  - _self_ # for hydra 1.1 compatibility
+
+experiment_name: benchmark(inference)+backend(pytorch)+model(bert)+torch_dtype(${backend.torch_dtype})+batch_size(${benchmark.input_shapes.batch_size})
+
+model: bert-base-uncased
+device: cuda
+
+benchmark:
+  memory: true
+
+hydra:
+  sweeper:
+    params:
+      backend.torch_dtype: float16,float32
+      benchmark.input_shapes.batch_size: 1,16

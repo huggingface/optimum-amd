@@ -1,0 +1,77 @@
+name: Update ROCm Projects on Dana Server
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */3 * * *"
+
+jobs:
+  update_rocm_projects:
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          [
+            { rocm: 5.6.1, torch_whl: rocm5.6, torch_pre_release: 0 },
+            { rocm: 5.7, torch_whl: rocm5.7, torch_pre_release: 1 },
+          ]
+        machine:
+          [
+            { runner: hf-amd-mi210-dev, gpu: AMD-MI210 },
+            { runner: hf-amd-mi250-dev, gpu: AMD-MI250 },
+          ]
+
+    runs-on: ${{ matrix.machine.runner }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build image
+        run: docker build
+          --file docker/rocm.dockerfile
+          --build-arg USER_ID=$(id -u)
+          --build-arg GROUP_ID=$(id -g)
+          --build-arg ROCM=$ROCM
+          --build-arg TORCH_WHL=$TORCH_WHL
+          --build-arg TORCH_PRE_RELEASE=$TORCH_PRE_RELEASE
+          --tag opt-amd-rocm:$ROCM
+          .
+        env:
+          ROCM: ${{ matrix.image.rocm }}
+          TORCH_WHL: ${{ matrix.image.torch_whl }}
+          TORCH_PRE_RELEASE: ${{ matrix.image.torch_pre_release }}
+
+      - name: Run Benchmarks
+        run: docker run
+          --rm
+          --net host
+          --pid host
+          --shm-size 64G
+          --env USE_ROCM="1"
+          --env HF_TOKEN=$HF_TOKEN
+          --env API_TOKEN=$API_TOKEN
+          --env ADMIN_USERNAME=$ADMIN_USERNAME
+          --env ADMIN_PASSWORD=$ADMIN_PASSWORD
+          --volume $HOME/.cache/huggingface:/home/user/.cache/huggingface
+          --volume $(pwd):/workspace/optimum-amd
+          --workdir /workspace/optimum-amd
+          --entrypoint /bin/bash
+          --device /dev/kfd
+          --device /dev/dri/renderD135
+          opt-amd-rocm:$ROCM
+          -c "pip install git+https://github.com/huggingface/optimum-benchmark.git &&
+          pip install git+https://github.com/IlyasMoutawwakil/dana-client.git &&
+          update-project
+          --url https://optimum-amd-dana.hf.space
+          --dataset-id optimum-amd/backup
+          --project-id $GPU+$TORCH_WHL
+          --watch-repo https://github.com/huggingface/transformers
+          --num-commits 10"
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          GPU: ${{ matrix.machine.gpu }}
+          ROCM: ${{ matrix.image.rocm }}
+          TORCH_WHL: ${{ matrix.image.torch_whl }}

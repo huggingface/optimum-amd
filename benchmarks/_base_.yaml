@@ -1,0 +1,19 @@
+defaults:
+  - experiment # inheriting from experiment config
+  - override hydra/job_logging: colorlog # colorful logging
+  - override hydra/hydra_logging: colorlog # colorful logging
+
+hydra:
+  run:
+    dir: experiments/${experiment_name}
+  sweep:
+    dir: experiments/${experiment_name}
+  job:
+    chdir: true
+    env_set:
+      CUDA_VISIBLE_DEVICES: 0
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+
+backend:
+  initial_isolation_check: true
+  continous_isolation_check: true

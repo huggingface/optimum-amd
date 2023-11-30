@@ -1,0 +1,20 @@
+defaults:
+  - backend: pytorch # default backend
+  - benchmark: inference # default benchmark
+  - _base_ # inherits from base config
+  - _self_ # for hydra 1.1 compatibility
+
+experiment_name: benchmark(inference)+backend(pytorch)+model(llama-2-7b)+torch_dtype(${backend.torch_dtype})+batch_size(${benchmark.input_shapes.batch_size})+new_tokens(${benchmark.new_tokens})
+
+model: NousResearch/Nous-Hermes-llama-2-7b
+device: cuda
+
+benchmark:
+  memory: true
+
+hydra:
+  sweeper:
+    params:
+      backend.torch_dtype: float16,float32
+      benchmark.input_shapes.batch_size: 1,16
+      benchmark.new_tokens: 10,100
