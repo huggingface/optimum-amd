@@ -46,7 +46,7 @@ jobs:
           cd doc-builder
           git pull origin main
           pip install .
-          pip install black
+          pip install black wheel
           cd ..
           git clone --depth 1 --branch v3.5 https://github.com/Xilinx/Vitis-AI.git && cd Vitis-AI/src/vai_quantizer/vai_q_onnx && sh build.sh && pip install pkgs/*.whl
 
