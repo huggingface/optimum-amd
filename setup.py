@@ -13,7 +13,7 @@ try:
 except Exception as error:
     assert False, "Error: Could not open '%s' due %s\n" % (filepath, error)
 
-INSTALL_REQUIRE = ["optimum", "transformers"]
+INSTALL_REQUIRE = ["optimum", "transformers", "onnx", "onnxruntime"]
 
 TESTS_REQUIRE = ["pytest", "parameterized"]
 
