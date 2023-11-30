@@ -48,7 +48,9 @@ jobs:
           pip install .
           pip install black
           cd ..
-          cd optimum-amd
+          git clone --depth 1 --branch v3.5 https://github.com/Xilinx/Vitis-AI.git && cd Vitis-AI/src/vai_quantizer/vai_q_onnx && sh build.sh && pip install pkgs/*.whl
+
+          cd ../../../../optimum-amd
           pip install .
           cd ..
 
