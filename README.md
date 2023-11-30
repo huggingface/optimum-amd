@@ -1,10 +1,22 @@
-# optimum-amd
-AMD related optimizations for transformer models
+# Optimum AMD
+
+🤗 Optimum AMD is an extension to Hugging Face libraries enabling performance optimizations for [ROCm-powered GPUs](https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html) and [AMD Ryzen AI](https://ryzenai.docs.amd.com/en/latest/index.html) IPU accelerator.
+
+## AMD GPUs with ROCm support
+
+Hugging Face libraries natively support AMD GPUs through [PyTorch for ROCm](https://pytorch.org/get-started/locally/) with zero code change.
+
+🤗 Transformers natively supports [Flash Attention 2](https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2), [GPTQ quantization](https://huggingface.co/docs/transformers/main_classes/quantization#autogptq-integration) with ROCm, and Flash Attention 2, [Paged Attention](https://huggingface.co/docs/text-generation-inference/conceptual/paged_attention), fused positional encoding & layer norm kernels are natively supported with ROCm in [🤗 Text Generation Inference](https://huggingface.co/docs/text-generation-inference/quicktour).
+
+[Find out more about these integrations in the documentation](https://huggingface.co/docs/optimum/main/en/amd/amdgpu/overview)!
+
+In the future, Optimum-AMD may host more ROCm-specific optimizations.
 
 ## Ryzen AI
+
 The AMD Ryzen™ AI Software Platform enables developers to take machine learning models trained in PyTorch or TensorFlow and run them on laptops powered by [Ryzen AI](https://www.amd.com/en/products/ryzen-ai). Ryzen AI is a dedicated AI accelerator integrated on-chip with the CPU cores. The Ryzen AI software platform intelligently optimizes tasks and workloads, freeing-up CPU and GPU resources, and ensuring optimal performance at lower power.
 
-`optimum-amd` provides easy interface for loading and inference of Hugging Face models on Ryzen AI accelerator. 
+Optimum-AMD provides easy interface for loading and inference of Hugging Face models on Ryzen AI accelerator.
 
 ### Ryzen AI Environment setup
 A Ryzen AI environment needs to be enabled to use this library. Please refer to Ryzen AI's [Installation](https://ryzenai.docs.amd.com/en/latest/inst.html) and [Runtime Setup](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html).

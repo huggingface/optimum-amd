@@ -2,17 +2,15 @@
 Licensed under the MIT License.
 -->
 
-## AMD Instinct GPU connectivity
+# AMD Instinct GPU connectivity
 
 When using Hugging Face libraries with AMD Instinct MI210 or MI250 GPUs in a multi-GPU settings where collective operations are used, training and inference performance may vary depending on which devices are used together on a node. Some use cases are for example tensor parallelism, pipeline paralellism or data parallelism.
 
-### Dual-die topology
+## Dual-die topology
 
 <Tip>
 
-Using several devices on an AMD Instinct machine? We recommend using `amdrun --ngpus <num_gpus>` to check which GPUs should be used together for maximum performance.
-
-If using `torchrun` on a single node, `amdrun --ngpus <num_gpus> <script> <script_args>` allows to directly dispath to the best `num_gpus` available.
+Using several devices on an AMD Instinct machine through `torchrun` on a single node? We recommend using `amdrun --ngpus <num_gpus> <script> <script_args>` instead to automatically dispatch to the best `num_gpus` available for maximum performance.
 
 </Tip>
 
@@ -36,14 +34,16 @@ GPU  Temp (DieEdge)  AvgPwr  SCLK    MCLK     Fan  Perf  PwrCap  VRAM%  GPU%
 
 However, as can be seen on the [description of the machine architecture](https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf), some devices effectively have a privileged connection and two devices (two GCDs, Graphics Compute Die) from `rocm-smi` actually correspond to one MI250 (one OAM, OCP Accelerator Module).
 
-<a href="https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf">
+<div style="text-align: center">
 <img
-  src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/mi250_topology.png"
+  src="https://huggingface.co/datasets/optimum/documentation-images/resolve/main/amd/mi250_topology.png"
   width="512"
   height="512"
   alt="4xMI250 machine topology"
 />
-</a>
+</div>
+
+[4xMI250 machine topology](https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf)
 
 This can be checked by running `rocm-smi --shownodesbw`: some device <-> device link have a higher maximum bandwith. For example, from the table below, we can conclude that:
 * If using two devices, using `CUDA_VISIBLE_DEVICES="0,1"`, or `"2,3"`, or `"4,5"` or `"6,7"` should be privileged.
@@ -68,18 +68,20 @@ Format: min-max; Units: mps
 
 This table only gives theoretical minimum/maximum bandwidth. A good option to validate which devices to use together is to run the [rocm_bandwidth_test](https://github.com/RadeonOpenCompute/rocm_bandwidth_test) on your device.
 
-### NUMA nodes
+## NUMA nodes
 
 On certain AMD machines as seen in the figure below, some devices may have a privileged connectivity with certain CPU cores.
 
-<a href="https://www.supermicro.com/products/brief/product-brief-Universal-GPU.pdf">
+<div style="text-align: center">
 <img
-  src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/mi250_topology2.png"
+  src="https://huggingface.co/datasets/optimum/documentation-images/resolve/main/amd/mi250_topology2.png"
   width="512"
   height="512"
   alt="4xMI250 machine topology"
 />
-</a>
+</div>
+
+[4xMI250 machine topology](https://www.supermicro.com/products/brief/product-brief-Universal-GPU.pdf)
 
 This can be checked using `rocm-smi --showtoponuma` that gives the NUMA topology:
 ```
@@ -122,25 +124,28 @@ cpu1         N/A         N/A
 
 When benchmarking for optimal performances, we advise testing both without/with [NUMA balancing](https://access.redhat.com/documentation/en-en/red_hat_enterprise_linux/7/html/virtualization_tuning_and_optimization_guide/sect-virtualization_tuning_optimization_guide-numa-auto_numa_balancing) at `/proc/sys/kernel/numa_balancing`, which may impact performances. The table below shows the difference in performance of [Text Generation Inference](https://github.com/huggingface/text-generation-inference) in a specific case where disabling NUMA balancing greatly increased performances.
 
+<div style="text-align: center">
 <img
-  src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/tgi_numa_llama70b.png"
+  src="https://huggingface.co/datasets/optimum/documentation-images/resolve/main/amd/tgi_numa_llama70b.png"
   alt="Text Generation Inference latency comparison without/with NUMA balancing"
 />
+</div>
 
 An alternative can be to use `numactl --membind`, binding a process using a GPU to its corresponding NUMA node cores. More details [here](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#numa-best-practices).
 
+## Infinity Fabric
 
-### Infinity Fabric
-
-As seen on the below architecture for an MI210 machine, some GPU devices may be linked by an [Infinity Fabric link](https://en.wikichip.org/wiki/amd/infinity_fabric) that typically has a higher bandwidth than PCIe switch (100 GB/s per Infinity Fabric link).
+As seen on the below architecture for an MI210 machine, some GPU devices may be linked by an [Infinity Fabric link](https://en.wikichip.org/wiki/amd/infinity_fabric) that typically has a higher bandwidth than PCIe switch (up to 100 GB/s per Infinity Fabric link).
 
 In fact measuring unidirectional copy peak bandwidth, we see that MI210 GPUs linked by Infinity Fabric can communicate ~1.7x times faster than through PCIe switch.
 
-<a href="https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf">
+<div style="text-align: center">
 <img
-  src="https://raw.githubusercontent.com/huggingface/optimum-amd/main/docs/assets/mi210_topology.png"
+  src="https://huggingface.co/datasets/optimum/documentation-images/resolve/main/amd/mi210_topology.png"
   width="512"
   height="512"
   alt="8xMI210 machine topology"
 />
-</a>
+</div>
+
+[8xMI210 machine topology](https://www.amd.com/content/dam/amd/en/documents/instinct-business-docs/white-papers/amd-cdna2-white-paper.pdf)
