@@ -2,6 +2,12 @@
 
 🤗 Optimum AMD is an extension to Hugging Face libraries enabling performance optimizations for [ROCm for AMD GPUs](https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html) and [Ryzen AI for AMD NPU](https://ryzenai.docs.amd.com/en/latest/index.html) IPU accelerator.
 
+## Install
+
+Optimum-AMD is a fast-moving project, and you may want to install from source for now.
+
+`pip install git+https://github.com/huggingface/optimum-amd.git`
+
 ## ROCm support for AMD GPUs
 
 Hugging Face libraries natively support AMD GPUs through [PyTorch for ROCm](https://pytorch.org/get-started/locally/) with zero code change.
@@ -37,7 +43,7 @@ curl 127.0.0.1:8080/generate \
 Optimum ONNX Runtime integration [supports ROCm for AMD GPUs](https://huggingface.co/docs/optimum/onnxruntime/usage_guides/amdgpu). Usage is as follow:
 
 1. Install [ROCm 5.7](https://rocm.docs.amd.com/en/latest/deploy/linux/index.html) on the host machine.
-2. Use the example [Dockerfile](https://github.com/huggingface/optimum-amd/blob/main/docker/onnx-runtime-amd-gpu/Dockerfile) or install `onnxruntime-rocm` package locally from source.
+2. Use the example [Dockerfile](https://github.com/huggingface/optimum-amd/blob/main/docker/onnx-runtime-amd-gpu/Dockerfile) or install `onnxruntime-rocm` package locally from source. Pip wheels are not available at the time.
 3. Run a BERT text classification ONNX model by using `ROCMExecutionProvider`:
 
 ```bash
@@ -65,25 +71,6 @@ Optimum-AMD provides easy interface for loading and inference of Hugging Face mo
 
 ### Ryzen AI Environment setup
 A Ryzen AI environment needs to be enabled to use this library. Please refer to Ryzen AI's [Installation](https://ryzenai.docs.amd.com/en/latest/inst.html) and [Runtime Setup](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html).
-
-### Install
-Optimum AMD is a fast-moving project, and you may want to install from source.
-
-`pip install git+https://github.com/huggingface/optimum-amd.git`
-
-**Installing in developer mode.**
-
-If you are working on the `optimum-amd` code then you should use an editable install
-by cloning and installing `optimum` and `optimum-amd`:
-
-```
-git clone https://github.com/huggingface/optimum
-git clone https://github.com/huggingface/optimum-amd
-pip install -e optimum -e optimum-amd
-```
-
-Now whenever you change the code, you'll be able to run with those changes instantly.
-
 
 ### How to use it?
 
