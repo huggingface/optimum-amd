@@ -1,6 +1,6 @@
 # Optimum AMD
 
-🤗 Optimum AMD is an extension to Hugging Face libraries enabling performance optimizations for [ROCm for AMD GPUs](https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html) and [Ryzen AI for AMD NPU](https://ryzenai.docs.amd.com/en/latest/index.html) IPU accelerator.
+🤗 Optimum AMD is an extension to Hugging Face libraries enabling performance optimizations for [ROCm for AMD GPUs](https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html) and [Ryzen AI for AMD](https://ryzenai.docs.amd.com/en/latest/index.html) NPU/IPU accelerator.
 
 ## Install
 
