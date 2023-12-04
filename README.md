@@ -1,8 +1,8 @@
 # Optimum AMD
 
-🤗 Optimum AMD is an extension to Hugging Face libraries enabling performance optimizations for [ROCm-powered GPUs](https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html) and [AMD Ryzen AI](https://ryzenai.docs.amd.com/en/latest/index.html) IPU accelerator.
+🤗 Optimum AMD is an extension to Hugging Face libraries enabling performance optimizations for [ROCm for AMD GPUs](https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html) and [Ryzen AI for AMD NPU](https://ryzenai.docs.amd.com/en/latest/index.html) IPU accelerator.
 
-## AMD GPUs with ROCm support
+## ROCm support for AMD GPUs
 
 Hugging Face libraries natively support AMD GPUs through [PyTorch for ROCm](https://pytorch.org/get-started/locally/) with zero code change.
 
@@ -11,6 +11,51 @@ Hugging Face libraries natively support AMD GPUs through [PyTorch for ROCm](http
 [Find out more about these integrations in the documentation](https://huggingface.co/docs/optimum/main/en/amd/amdgpu/overview)!
 
 In the future, Optimum-AMD may host more ROCm-specific optimizations.
+
+### How to use it: Text Generation Inference
+
+[Text Generation Inference](https://github.com/huggingface/text-generation-inference) library for LLM deployment supports AMD Instinct MI210/MI250 GPUs. Deployment can be done as follow:
+
+1. Install [ROCm5.7](https://rocm.docs.amd.com/en/latest/deploy/linux/index.html) to the host machine
+2. Example LLM server setup: launch a Falcon-7b model server on the ROCm-enabled docker.
+```bash
+model=tiiuae/falcon-7b-instruct
+volume=$PWD/data # share a volume with the Docker container to avoid downloading weights every run
+
+docker run --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --device=/dev/kfd --device=/dev/dri --group-add video --ipc=host --shm-size 1g -p 8080:80 -v $volume:/data ghcr.io/huggingface/text-generation-inference:1.2-rocm --model-id $model
+```
+3. Client setup: Open another shell and run:
+```bash
+curl 127.0.0.1:8080/generate \
+    -X POST \
+    -d '{"inputs":"What is Deep Learning?","parameters":{"max_new_tokens":20}}' \
+    -H 'Content-Type: application/json'
+```
+
+### How to use it: ONNX Runtime with ROCm
+
+Optimum ONNX Runtime integration [supports ROCm for AMD GPUs](https://huggingface.co/docs/optimum/onnxruntime/usage_guides/amdgpu). Usage is as follow:
+
+1. Install [ROCm 5.7](https://rocm.docs.amd.com/en/latest/deploy/linux/index.html) on the host machine.
+2. Use the example [Dockerfile](https://github.com/huggingface/optimum-amd/blob/main/docker/onnx-runtime-amd-gpu/Dockerfile) or install `onnxruntime-rocm` package locally from source.
+3. Run a BERT text classification ONNX model by using `ROCMExecutionProvider`:
+
+```bash
+from optimum.onnxruntime import ORTModelForSequenceClassification
+from optimum.pipelines import pipeline
+from transformers import AutoTokenizer
+
+ort_model = ORTModelForSequenceClassification.from_pretrained(
+  "distilbert-base-uncased-finetuned-sst-2-english",
+  export=True,
+  provider="ROCMExecutionProvider",
+)
+tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
+pipe = pipeline(task="text-classification", model=ort_model, tokenizer=tokenizer, device="cuda:0")
+result = pipe("Both the music and visual were astounding, not to mention the actors performance.")
+print(result)
+# [{'label': 'POSITIVE', 'score': 0.9997727274894714}]
+```
 
 ## Ryzen AI
 
@@ -21,12 +66,12 @@ Optimum-AMD provides easy interface for loading and inference of Hugging Face mo
 ### Ryzen AI Environment setup
 A Ryzen AI environment needs to be enabled to use this library. Please refer to Ryzen AI's [Installation](https://ryzenai.docs.amd.com/en/latest/inst.html) and [Runtime Setup](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html).
 
-## Install
+### Install
 Optimum AMD is a fast-moving project, and you may want to install from source.
 
 `pip install git+https://github.com/huggingface/optimum-amd.git`
 
-### Installing in developer mode
+**Installing in developer mode.**
 
 If you are working on the `optimum-amd` code then you should use an editable install
 by cloning and installing `optimum` and `optimum-amd`:
@@ -40,7 +85,7 @@ pip install -e optimum -e optimum-amd
 Now whenever you change the code, you'll be able to run with those changes instantly.
 
 
-## How to use it?
+### How to use it?
 
 * Quantize the ONNX model with Optimum or using the RyzenAI quantization tools
 
