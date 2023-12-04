@@ -13,9 +13,8 @@ ARG PYTHON_VERSION=3.10
 RUN chsh -s /bin/bash
 SHELL ["/bin/bash", "-c"]
 
-# Install and update tools to minimize security vulnerabilities
-RUN apt-get update
-RUN apt-get install -y \
+# Install and update tools to minimize security vulnerabilities - are all of these really necessary?
+RUN apt-get update && apt-get install -y \
     software-properties-common \
     wget \
     apt-utils \
@@ -44,10 +43,10 @@ RUN $PYTHON_EXE -m pip install cmake onnx ninja transformers --no-cache-dir
 # Install ONNXRuntime from source
 RUN git clone --recursive  https://github.com/ROCmSoftwarePlatform/onnxruntime.git && cd onnxruntime && git checkout rocm5.7_internal_testing_eigen-3.4.zip_hash
 
-RUN ./build.sh --config Release --build_wheel --update --build --parallel --cmake_extra_defines ONNXRUNTIME_VERSION=$(cat ./VERSION_NUMBER) --use_rocm --rocm_home=/opt/rocm
-RUN pip install build/Linux/Release/dist/*
+RUN cd onnxruntime && ./build.sh --config Release --build_wheel --allow_running_as_root --update --build --parallel --cmake_extra_defines ONNXRUNTIME_VERSION=$(cat ./VERSION_NUMBER) --use_rocm --rocm_home=/opt/rocm
+RUN pip install onnxruntime/build/Linux/Release/dist/*
 
-RUN $PYTHON_EXE -m pip install git+https://github.com/huggingface/optimum.git[onnx,onnxruntime]
+RUN $PYTHON_EXE -m pip install git+https://github.com/huggingface/optimum.git
 
 WORKDIR .
 
