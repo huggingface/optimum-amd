@@ -46,15 +46,15 @@ Optimum ONNX Runtime integration [supports ROCm for AMD GPUs](https://huggingfac
 2. Use the example [Dockerfile](https://github.com/huggingface/optimum-amd/blob/main/docker/onnx-runtime-amd-gpu/Dockerfile) or install `onnxruntime-rocm` package locally from source. Pip wheels are not available at the time.
 3. Run a BERT text classification ONNX model by using `ROCMExecutionProvider`:
 
-```bash
+```python
 from optimum.onnxruntime import ORTModelForSequenceClassification
 from optimum.pipelines import pipeline
 from transformers import AutoTokenizer
 
 ort_model = ORTModelForSequenceClassification.from_pretrained(
-  "distilbert-base-uncased-finetuned-sst-2-english",
-  export=True,
-  provider="ROCMExecutionProvider",
+    "distilbert-base-uncased-finetuned-sst-2-english",
+    export=True,
+    provider="ROCMExecutionProvider",
 )
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
 pipe = pipeline(task="text-classification", model=ort_model, tokenizer=tokenizer, device="cuda:0")
