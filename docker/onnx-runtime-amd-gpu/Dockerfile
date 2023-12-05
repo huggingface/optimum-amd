@@ -1,13 +1,13 @@
 # Use rocm image
-FROM rocm/pytorch:rocm5.7_ubuntu22.04_py3.10_pytorch_2.0.1
+FROM rocm/pytorch:latest
 CMD rocm-smi
 
 # Ignore interactive questions during `docker build`
 ENV DEBIAN_FRONTEND noninteractive
 
 # Versions
-# available options 3.10
-ARG PYTHON_VERSION=3.10
+# available options 3.9
+ARG PYTHON_VERSION=3.9
 
 # Bash shell
 RUN chsh -s /bin/bash
