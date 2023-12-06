@@ -1,6 +1,6 @@
 - sections:
   - local: index
-    title: 🤗 Optimum AMD
+    title: 🤗 Optimum-AMD
   - local: installation
     title: Installation
   - local: amdgpu/overview
@@ -11,5 +11,5 @@
     title: Ryzen AI quicktour
   - local: ryzenai/package_reference
     title: Ryzen AI package reference
-  title: Optimum AMD
+  title: Optimum-AMD
   isExpanded: false

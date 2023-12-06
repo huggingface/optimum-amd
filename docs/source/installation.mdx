@@ -4,7 +4,16 @@ Licensed under the MIT License.
 
 # Installation
 
-Optimum AMD library should be installed from source for now:
+Optimum-AMD library can be installed through pip:
+
 ```bash
-python -m pip install git+https://github.com/huggingface/optimum-amd.git
+pip install --upgrade-strategy eager optimum[amd]
+```
+
+Installation is possible from source as well:
+
+```bash
+git clone https://github.com/huggingface/optimum-amd.git
+cd optimum-amd
+pip install -e .
 ```

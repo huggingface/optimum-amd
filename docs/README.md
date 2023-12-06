@@ -1,4 +1,4 @@
-# Optimum AMD documentation
+# Optimum-AMD documentation
 
 1. Setup
 ```bash
