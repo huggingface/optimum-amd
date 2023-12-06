@@ -65,7 +65,7 @@ print(result)
 
 ## Ryzen AI
 
-The AMD Ryzen™ AI Software Platform enables developers to take machine learning models trained in PyTorch or TensorFlow and run them on laptops powered by [Ryzen AI](https://www.amd.com/en/products/ryzen-ai). Ryzen AI is a dedicated AI accelerator integrated on-chip with the CPU cores. The Ryzen AI software platform intelligently optimizes tasks and workloads, freeing-up CPU and GPU resources, and ensuring optimal performance at lower power.
+AMD's [Ryzen™ AI](https://www.amd.com/en/products/ryzen-ai) family of laptop processors provide users with an integrated Neural Processing Unit (NPU) which offloads the host CPU and GPU from AI processing tasks. Ryzen™ AI software consists of the Vitis™ AI execution provider (EP) for ONNX Runtime combined with quantization tools and a pre-optimized model zoo. All of this is made possible based on Ryzen™ AI technology built on AMD XDNA™ architecture, purpose-built to run AI workloads efficiently and locally, offering a host of benefits for the developer innovating the next groundbreaking AI app.
 
 Optimum-AMD provides easy interface for loading and inference of Hugging Face models on Ryzen AI accelerator.
 
