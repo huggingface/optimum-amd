@@ -3,10 +3,11 @@
 """RyzenAIModelForXXX classes, allowing to run ONNX Models with ONNX Runtime VITIS-AI EP using the same API as Transformers."""
 
 import logging
+import os
 import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import onnx
@@ -24,6 +25,7 @@ from transformers import (
     AutoConfig,
     AutoModel,
     AutoModelForImageClassification,
+    PretrainedConfig,
 )
 from transformers.file_utils import add_start_docstrings
 from transformers.modeling_outputs import (
@@ -37,11 +39,9 @@ from .utils import (
 )
 
 
-if TYPE_CHECKING:
-    from transformers import PretrainedConfig
-
-
 logger = logging.getLogger(__name__)
+
+CONFIG_NAME = "config.json"
 
 
 class classproperty:
@@ -118,7 +118,7 @@ class RyzenAIModel(OptimizedModel):
     def __init__(
         self,
         model: ort.InferenceSession,
-        config: "PretrainedConfig",
+        config: PretrainedConfig,
         vaip_config: Union[str, Path] = None,
         model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
         preprocessors: Optional[List] = None,
@@ -226,7 +226,7 @@ class RyzenAIModel(OptimizedModel):
     def _from_pretrained(
         cls,
         model_id: Union[str, Path],
-        config: "PretrainedConfig",
+        config: PretrainedConfig,
         vaip_config: Optional[str] = None,
         use_auth_token: Optional[Union[bool, str]] = None,
         revision: Optional[str] = None,
@@ -355,7 +355,7 @@ class RyzenAIModel(OptimizedModel):
     def _from_transformers(
         cls,
         model_id: str,
-        config: "PretrainedConfig",
+        config: PretrainedConfig,
         use_auth_token: Optional[Union[bool, str]] = None,
         revision: Optional[str] = None,
         force_download: bool = False,
@@ -372,6 +372,7 @@ class RyzenAIModel(OptimizedModel):
             "Exporting the model from transformers is not supported. Please follow the documentation to export the model and run the model using the RyzenAIModel!"
         )
 
+    # TODO: Fix Optimum modeling_base.OptimizedModel.from_pretrained so that it uses PretrainedConfig instead of AutoConfig.
     @classmethod
     @add_start_docstrings(FROM_PRETRAINED_START_DOCSTRING)
     def from_pretrained(
@@ -383,11 +384,13 @@ class RyzenAIModel(OptimizedModel):
         use_auth_token: Optional[str] = None,
         cache_dir: Optional[str] = None,
         subfolder: str = "",
-        config: Optional["PretrainedConfig"] = None,
+        config: Optional[PretrainedConfig] = None,
         local_files_only: bool = False,
         provider: str = "VitisAIExecutionProvider",
         session_options: Optional[ort.SessionOptions] = None,
         provider_options: Optional[Dict[str, Any]] = None,
+        trust_remote_code: bool = False,
+        revision: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -410,21 +413,123 @@ class RyzenAIModel(OptimizedModel):
         Returns:
             `RyzenAIModel`: The loaded RyzenAIModel model.
         """
-        return super().from_pretrained(
-            model_id,
-            vaip_config=vaip_config,
-            export=export,
+        if isinstance(model_id, Path):
+            model_id = model_id.as_posix()
+
+        from_transformers = kwargs.pop("from_transformers", None)
+        if from_transformers is not None:
+            logger.warning(
+                "The argument `from_transformers` is deprecated, and will be removed in optimum 2.0.  Use `export` instead"
+            )
+            export = from_transformers
+
+        if len(model_id.split("@")) == 2:
+            if revision is not None:
+                logger.warning(
+                    f"The argument `revision` was set to {revision} but will be ignored for {model_id.split('@')[1]}"
+                )
+            model_id, revision = model_id.split("@")
+
+        if config is None:
+            if os.path.isdir(os.path.join(model_id, subfolder)) and cls.config_name == CONFIG_NAME:
+                if CONFIG_NAME in os.listdir(os.path.join(model_id, subfolder)):
+                    config = PretrainedConfig.from_pretrained(
+                        os.path.join(model_id, subfolder, CONFIG_NAME), trust_remote_code=trust_remote_code
+                    )
+                elif CONFIG_NAME in os.listdir(model_id):
+                    config = PretrainedConfig.from_pretrained(
+                        os.path.join(model_id, CONFIG_NAME), trust_remote_code=trust_remote_code
+                    )
+                    logger.info(
+                        f"config.json not found in the specified subfolder {subfolder}. Using the top level config.json."
+                    )
+                else:
+                    raise OSError(f"config.json not found in {model_id} local folder")
+            else:
+                config = cls._load_config(
+                    model_id,
+                    revision=revision,
+                    cache_dir=cache_dir,
+                    use_auth_token=use_auth_token,
+                    force_download=force_download,
+                    subfolder=subfolder,
+                    trust_remote_code=trust_remote_code,
+                )
+        elif isinstance(config, (str, os.PathLike)):
+            config = cls._load_config(
+                config,
+                revision=revision,
+                cache_dir=cache_dir,
+                use_auth_token=use_auth_token,
+                force_download=force_download,
+                subfolder=subfolder,
+                trust_remote_code=trust_remote_code,
+            )
+
+        if not export and trust_remote_code:
+            logger.warning(
+                "The argument `trust_remote_code` is to be used along with export=True. It will be ignored."
+            )
+        elif export and trust_remote_code is None:
+            trust_remote_code = False
+
+        from_pretrained_method = cls._from_transformers if export else cls._from_pretrained
+        return from_pretrained_method(
+            model_id=model_id,
+            config=config,
+            revision=revision,
+            cache_dir=cache_dir,
             force_download=force_download,
             use_auth_token=use_auth_token,
-            cache_dir=cache_dir,
             subfolder=subfolder,
-            config=config,
             local_files_only=local_files_only,
+            trust_remote_code=trust_remote_code,
+            vaip_config=vaip_config,
             provider=provider,
             session_options=session_options,
             provider_options=provider_options,
             **kwargs,
         )
+
+    # TODO: Fix Optimum _load_config so that it uses PretrainedConfig instead of AutoConfig.
+    @classmethod
+    def _load_config(
+        cls,
+        config_name_or_path: Union[str, os.PathLike],
+        revision: Optional[str] = None,
+        cache_dir: Optional[str] = None,
+        use_auth_token: Optional[Union[bool, str]] = False,
+        force_download: bool = False,
+        subfolder: str = "",
+        trust_remote_code: bool = False,
+    ) -> PretrainedConfig:
+        try:
+            config = PretrainedConfig.from_pretrained(
+                pretrained_model_name_or_path=config_name_or_path,
+                revision=revision,
+                cache_dir=cache_dir,
+                force_download=force_download,
+                use_auth_token=use_auth_token,
+                subfolder=subfolder,
+                trust_remote_code=trust_remote_code,
+            )
+        except OSError as e:
+            # if config not found in subfolder, search for it at the top level
+            if subfolder != "":
+                config = PretrainedConfig.from_pretrained(
+                    pretrained_model_name_or_path=config_name_or_path,
+                    revision=revision,
+                    cache_dir=cache_dir,
+                    force_download=force_download,
+                    use_auth_token=use_auth_token,
+                    trust_remote_code=trust_remote_code,
+                )
+                logger.info(
+                    f"config.json not found in the specified subfolder {subfolder}. Using the top level config.json."
+                )
+            else:
+                raise OSError(e)
+        return config
 
     @staticmethod
     def _check_uses_static_shape(model_path: Union[str, Path]):
