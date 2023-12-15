@@ -7,7 +7,7 @@ import logging
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import Callable, Optional, Union
 
 import onnx
 from datasets import Dataset, load_dataset
@@ -15,13 +15,10 @@ from onnxruntime.quantization import CalibrationDataReader
 from vai_q_onnx import quantize_static
 
 from optimum.quantization_base import OptimumQuantizer
-from transformers import AutoConfig
+from transformers import PretrainedConfig
 
 from .configuration import QuantizationConfig, RyzenAIConfig
 
-
-if TYPE_CHECKING:
-    from transformers import PretrainedConfig
 
 LOGGER = logging.getLogger(__name__)
 
@@ -80,7 +77,7 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
         self.config = config
         if self.config is None:
             try:
-                self.config = AutoConfig.from_pretrained(self.onnx_model_path.parent)
+                self.config = PretrainedConfig.from_pretrained(self.onnx_model_path.parent)
             except OSError:
                 LOGGER.warning(
                     f"Could not load the config for {self.onnx_model_path} automatically, this might make "
@@ -170,7 +167,7 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
             calibrate_method=quantization_config.calibration_method,
             weight_type=quantization_config.weights_dtype,
             activation_type=quantization_config.activations_dtype,
-            enable_dpu=quantization_config.enable_dpu,
+            use_dpu=quantization_config.enable_dpu,
             extra_options={
                 "WeightSymmetric": quantization_config.weights_symmetric,
                 "ActivationSymmetric": quantization_config.activations_symmetric,
