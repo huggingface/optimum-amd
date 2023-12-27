@@ -167,7 +167,7 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
             calibrate_method=quantization_config.calibration_method,
             weight_type=quantization_config.weights_dtype,
             activation_type=quantization_config.activations_dtype,
-            use_dpu=quantization_config.enable_dpu,
+            enable_dpu=quantization_config.enable_dpu,
             extra_options={
                 "WeightSymmetric": quantization_config.weights_symmetric,
                 "ActivationSymmetric": quantization_config.activations_symmetric,
