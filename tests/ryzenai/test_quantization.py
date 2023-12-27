@@ -181,4 +181,4 @@ class TestTimmQuantization(unittest.TestCase):
         self.assertTrue((timm_accuracy - quantized_accuracy) / timm_accuracy < 0.05)
 
         export_dir.cleanup()
-        quantization_dir.cleanup()
+        # quantization_dir.cleanup()
