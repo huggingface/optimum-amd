@@ -3,6 +3,7 @@
 
 import tempfile
 import unittest
+from pathlib import Path
 from typing import Dict
 
 import evaluate
@@ -66,8 +67,7 @@ class TestTimmQuantization(unittest.TestCase):
 
         quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name)
 
-        # NOTE: Vitis AI Quantizer 3.5 is broken with enable_dpu=True.
-        quantization_config = QuantizationConfig(enable_dpu=False)
+        quantization_config = QuantizationConfig(enable_dpu=True)
 
         cfg = PretrainedConfig.from_pretrained(export_dir.name)
         if (
@@ -99,16 +99,17 @@ class TestTimmQuantization(unittest.TestCase):
         export_dir = tempfile.TemporaryDirectory()
         quantization_dir = tempfile.TemporaryDirectory()
 
-        main_export(
-            model_name_or_path=model_name,
-            output=export_dir.name,
-            task="image-classification",
+        main_export(model_name_or_path=model_name, output=export_dir.name, task="image-classification", opset=13)
+
+        static_onnx_path = RyzenAIModelForImageClassification.reshape(
+            Path(export_dir.name) / "model.onnx",
+            input_shape_dict={"pixel_values": [1, 3, 224, 224]},
+            output_shape_dict={"logits": [1, 1000]},
         )
 
-        quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name)
+        quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name, file_name=static_onnx_path.name)
 
-        # NOTE: Vitis AI Quantizer 3.5 is broken with enable_dpu=True.
-        quantization_config = QuantizationConfig(enable_dpu=False)
+        quantization_config = QuantizationConfig()
 
         calibration_set = load_dataset(dataset_name, split="train", streaming=True)
         calibration_data = {"pixel_values": []}
@@ -137,7 +138,9 @@ class TestTimmQuantization(unittest.TestCase):
 
         # TODO: Evaluate on VitisAIExecutionProvider.
         ryzen_model = RyzenAIModelForImageClassification.from_pretrained(
-            quantization_dir.name, provider="CPUExecutionProvider"
+            quantization_dir.name,
+            vaip_config="C:\\Users\\Mohit\\Work\\optimum-amd-hf\\vaip_config.json",
+            provider="VitisAIExecutionProvider",
         )
 
         iterable_evaluation_set = iter(evaluation_set)

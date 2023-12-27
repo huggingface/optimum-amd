@@ -43,7 +43,7 @@ class QuantizationConfig:
 
     format: QuantFormat = QuantFormat.QDQ
     calibration_method: CalibrationMethod = vai_q_onnx.PowerOfTwoMethod.MinMSE
-    activations_dtype: QuantType = QuantType.QInt8
+    activations_dtype: QuantType = QuantType.QUInt8
     activations_symmetric: bool = True
     weights_dtype: QuantType = QuantType.QInt8
     weights_symmetric: bool = True

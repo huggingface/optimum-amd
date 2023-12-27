@@ -14,9 +14,9 @@ except Exception as error:
     assert False, "Error: Could not open '%s' due %s\n" % (filepath, error)
 
 # ORT 1.16 is not compatible: https://github.com/Xilinx/Vitis-AI/issues/1343
-INSTALL_REQUIRE = ["optimum", "transformers", "onnx", "onnxruntime<1.16.0", "onnxruntime-extensions"]
+INSTALL_REQUIRE = ["optimum", "transformers", "onnx", "onnxruntime-extensions"]
 
-TESTS_REQUIRE = ["pytest", "parameterized"]
+TESTS_REQUIRE = ["pytest", "parameterized", "evaluate", "timm"]
 
 QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]
 
