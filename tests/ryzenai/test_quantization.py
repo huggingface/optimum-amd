@@ -1,8 +1,10 @@
 # Copyright 2023 The HuggingFace Team. All rights reserved.
 # Licensed under the MIT License.
 
+import os
 import tempfile
 import unittest
+from functools import partial
 from pathlib import Path
 from typing import Dict
 
@@ -89,96 +91,102 @@ class TestTimmQuantization(unittest.TestCase):
         export_dir.cleanup()
         quantization_dir.cleanup()
 
-    def test_quantization_quality(self):
+    @parameterized.expand(_get_models_to_test(PYTORCH_TIMM_MODEL))
+    def test_quantization_quality(
+        self,
+        test_name: str,
+        model_type: str,
+        model_name: str,
+        task: str,
+    ):
         dataset_name = "imagenet-1k"
-        model_name = "timm/res2next50.in1k"
-
-        timm_model = timm.create_model("res2next50.in1k", pretrained=True)
-        timm_model = timm_model.eval()
+        batch_size = 1
+        num_calib_samples = 10
+        num_eval_samples = 10
 
         export_dir = tempfile.TemporaryDirectory()
         quantization_dir = tempfile.TemporaryDirectory()
 
+        # export
         main_export(model_name_or_path=model_name, output=export_dir.name, task="image-classification", opset=13)
+        config = PretrainedConfig.from_pretrained(export_dir.name)
 
         static_onnx_path = RyzenAIModelForImageClassification.reshape(
             Path(export_dir.name) / "model.onnx",
-            input_shape_dict={"pixel_values": [1, 3, 224, 224]},
-            output_shape_dict={"logits": [1, 1000]},
+            input_shape_dict={"pixel_values": [batch_size] + config.pretrained_cfg["input_size"]},
+            output_shape_dict={"logits": [batch_size, config.pretrained_cfg["num_classes"]]},
         )
 
-        quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name, file_name=static_onnx_path.name)
-
-        quantization_config = QuantizationConfig()
-
-        calibration_set = load_dataset(dataset_name, split="train", streaming=True)
-        calibration_data = {"pixel_values": []}
-
-        data_config = timm.data.resolve_model_data_config(timm_model)
+        # preprocess config
+        data_config = timm.data.resolve_data_config(pretrained_cfg=config.pretrained_cfg)
         transforms = timm.data.create_transform(**data_config, is_training=False)
 
-        iterable_calibration_set = iter(calibration_set)
-        for i in range(100):
-            pil_image = next(iterable_calibration_set)["image"]
-            if pil_image.mode == "L":
+        def preprocess_fn(ex, transforms):
+            image = ex["image"]
+            if image.mode == "L":
                 # Three channels.
                 print("WARNING: converting greyscale to RGB")
-                pil_image = pil_image.convert("RGB")
-            pixel_values = transforms(pil_image)
-            calibration_data["pixel_values"].append(pixel_values)
+                image = image.convert("RGB")
+            pixel_values = transforms(image)
 
-        calibration_dataset = Dataset.from_dict(calibration_data)
-        calibration_dataset = calibration_dataset.with_format("torch")
+            return {"pixel_values": pixel_values}
+
+        # quantize
+        quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name, file_name=static_onnx_path.name)
+        quantization_config = QuantizationConfig()
+
+        train_calibration_dataset = quantizer.get_calibration_dataset(
+            "imagenet-1k",
+            preprocess_function=partial(preprocess_fn, transforms=transforms),
+            num_samples=num_calib_samples,
+            dataset_split="train",
+            preprocess_batch=False,
+        )
 
         quantizer.quantize(
-            quantization_config=quantization_config, dataset=calibration_dataset, save_dir=quantization_dir.name
+            quantization_config=quantization_config, dataset=train_calibration_dataset, save_dir=quantization_dir.name
         )
 
-        evaluation_set = load_dataset(dataset_name, split="validation", streaming=True)
-
-        # TODO: Evaluate on VitisAIExecutionProvider.
-        ryzen_model = RyzenAIModelForImageClassification.from_pretrained(
-            quantization_dir.name,
-            vaip_config="C:\\Users\\Mohit\\Work\\optimum-amd-hf\\vaip_config.json",
-            provider="VitisAIExecutionProvider",
-        )
-
-        iterable_evaluation_set = iter(evaluation_set)
-
-        timm_evals = []
-        quantized_evals = []
-        reference_labels = []
-        for i in tqdm(range(300), desc="Inference..."):
-            data = next(iterable_evaluation_set)
-
-            reference_labels.append(data["label"])
-
-            pil_image = data["image"]
-
-            if pil_image.mode == "L":
-                # Three channels.
-                print("WARNING: converting greyscale to RGB")
-                pil_image = pil_image.convert("RGB")
-            pixel_values = transforms(pil_image).unsqueeze(0)
-
-            res = ryzen_model(pixel_values)
-            predicted_id = torch.argmax(res.logits, dim=-1).item()
-            quantized_evals.append(predicted_id)
-
-            res = timm_model(pixel_values)
-            predicted_id = torch.argmax(res, dim=-1).item()
-            timm_evals.append(predicted_id)
-
+        # evaluate
         accuracy = evaluate.load("accuracy")
 
-        quantized_accuracy = accuracy.compute(references=reference_labels, predictions=quantized_evals)["accuracy"]
-        timm_accuracy = accuracy.compute(references=reference_labels, predictions=timm_evals)["accuracy"]
+        def run(use_cpu_runner, compile_reserve_const_data):
+            # Set the environment variables based on the arguments
+            os.environ["XLNX_ENABLE_CACHE"] = "0"
+            os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
+            os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
-        print("quantized_accuracy", quantized_accuracy)
-        print("timm_accuracy", timm_accuracy)
+            # Your original code here
+            ryzen_model = RyzenAIModelForImageClassification.from_pretrained(
+                quantization_dir.name,
+                vaip_config=".\\vaip_config.json",
+                provider="VitisAIExecutionProvider",
+            )
 
-        # TODO: Should get to 1% accuracy drop.
-        self.assertTrue((timm_accuracy - quantized_accuracy) / timm_accuracy < 0.05)
+            evaluation_set = load_dataset(dataset_name, split="validation", streaming=True, trust_remote_code=True)
+            iterable_evaluation_set = iter(evaluation_set)
+
+            evals = []
+            reference_labels = []
+            for i in tqdm(range(num_eval_samples), desc="Inference..."):
+                data = next(iterable_evaluation_set)
+
+                reference_labels.append(data["label"])
+
+                pixel_values = preprocess_fn(data, transforms)["pixel_values"]
+                logits = ryzen_model(pixel_values.unsqueeze(0)).logits
+
+                predicted_id = torch.argmax(logits, dim=-1).item()
+                evals.append(predicted_id)
+
+            quantized_accuracy = accuracy.compute(references=reference_labels, predictions=evals)["accuracy"]
+
+            return quantized_accuracy
+
+        quantized_accuracy_ipu = run(use_cpu_runner=0, compile_reserve_const_data=1)
+        quantized_accuracy_cpu = run(use_cpu_runner=1, compile_reserve_const_data=0)
+
+        self.assertTrue((quantized_accuracy_cpu - quantized_accuracy_ipu) / quantized_accuracy_cpu < 0.01)
 
         export_dir.cleanup()
         quantization_dir.cleanup()
