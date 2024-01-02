@@ -7,7 +7,7 @@ import logging
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Optional, Union
+from typing import Callable, List, Optional, Union
 
 import onnx
 from datasets import Dataset, load_dataset
@@ -193,8 +193,9 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
         dataset_split: Optional[str] = None,
         preprocess_function: Optional[Callable] = None,
         preprocess_batch: bool = True,
-        seed: int = 2016,
-        use_auth_token: bool = False,
+        seed: Optional[bool] = 2016,
+        token: bool = None,
+        streaming: bool = True,
     ) -> Dataset:
         """
         Creates the calibration `datasets.Dataset` to use for the post-training static quantization calibration step.
@@ -215,7 +216,7 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
                 Whether the `preprocess_function` should be batched.
             seed (`int`, defaults to 2016):
                 The random seed to use when shuffling the calibration dataset.
-            use_auth_token (`bool`, defaults to `False`):
+            token (`bool`, defaults to `False`):
                 Whether to use the token generated when running `transformers-cli login` (necessary for some datasets
                 like ImageNet).
         Returns:
@@ -227,22 +228,29 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
             dataset_name,
             name=dataset_config_name,
             split=dataset_split,
-            use_auth_token=use_auth_token,
+            token=token,
+            streaming=streaming
         )
 
         if num_samples is not None:
-            num_samples = min(num_samples, len(calib_dataset))
-            calib_dataset = calib_dataset.shuffle(seed=seed).select(range(num_samples))
+            if streaming is True:
+                calib_dataset = calib_dataset.shuffle(seed=seed)
+                calib_dataset = calib_dataset.take(num_samples)
+            else:
+                num_samples = min(num_samples, len(calib_dataset))
+                calib_dataset = calib_dataset.shuffle(seed=seed).select(range(num_samples))
+
+        ignored_columns = self.identify_unused_columns(calib_dataset)
 
         if preprocess_function is not None:
-            processed_calib_dataset = calib_dataset.map(preprocess_function, batched=preprocess_batch)
+            processed_calib_dataset = calib_dataset.map(preprocess_function, batched=preprocess_batch, remove_columns=ignored_columns)
         else:
-            processed_calib_dataset = calib_dataset
+            processed_calib_dataset = calib_dataset.remove_columns(ignored_columns)
 
-        return self.clean_calibration_dataset(processed_calib_dataset)
+        return processed_calib_dataset
 
-    def clean_calibration_dataset(self, dataset: Dataset) -> Dataset:
+    def identify_unused_columns(self, dataset: Dataset) -> List[str]:
         model = onnx.load(self.onnx_model_path)
         model_inputs = {input.name for input in model.graph.input}
         ignored_columns = list(set(dataset.column_names) - model_inputs)
-        return dataset.remove_columns(ignored_columns)
+        return ignored_columns
