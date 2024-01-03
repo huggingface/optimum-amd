@@ -184,8 +184,8 @@ class TestTimmQuantization(unittest.TestCase):
 
             return quantized_accuracy
 
-        quantized_accuracy_ipu = run(use_cpu_runner=0, compile_reserve_const_data=1)
-        quantized_accuracy_cpu = run(use_cpu_runner=1, compile_reserve_const_data=0)
+        quantized_accuracy_ipu = run(use_cpu_runner=0, compile_reserve_const_data=0)
+        quantized_accuracy_cpu = run(use_cpu_runner=1, compile_reserve_const_data=1)
 
         self.assertTrue((quantized_accuracy_cpu - quantized_accuracy_ipu) / quantized_accuracy_cpu < 0.05)
 
