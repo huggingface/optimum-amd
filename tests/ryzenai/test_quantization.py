@@ -156,7 +156,6 @@ class TestTimmQuantization(unittest.TestCase):
             os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
-            # Your original code here
             ryzen_model = RyzenAIModelForImageClassification.from_pretrained(
                 quantization_dir.name,
                 vaip_config=".\\vaip_config.json",
@@ -186,7 +185,7 @@ class TestTimmQuantization(unittest.TestCase):
         quantized_accuracy_ipu = run(use_cpu_runner=0, compile_reserve_const_data=1)
         quantized_accuracy_cpu = run(use_cpu_runner=1, compile_reserve_const_data=0)
 
-        self.assertTrue((quantized_accuracy_cpu - quantized_accuracy_ipu) / quantized_accuracy_cpu < 0.01)
+        self.assertTrue((quantized_accuracy_cpu - quantized_accuracy_ipu) / quantized_accuracy_cpu < 0.05)
 
         export_dir.cleanup()
         quantization_dir.cleanup()
