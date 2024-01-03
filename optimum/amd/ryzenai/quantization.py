@@ -225,11 +225,7 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
         """
 
         calib_dataset = load_dataset(
-            dataset_name,
-            name=dataset_config_name,
-            split=dataset_split,
-            token=token,
-            streaming=streaming
+            dataset_name, name=dataset_config_name, split=dataset_split, token=token, streaming=streaming
         )
 
         if num_samples is not None:
@@ -243,7 +239,9 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
         ignored_columns = self.identify_unused_columns(calib_dataset)
 
         if preprocess_function is not None:
-            processed_calib_dataset = calib_dataset.map(preprocess_function, batched=preprocess_batch, remove_columns=ignored_columns)
+            processed_calib_dataset = calib_dataset.map(
+                preprocess_function, batched=preprocess_batch, remove_columns=ignored_columns
+            )
         else:
             processed_calib_dataset = calib_dataset.remove_columns(ignored_columns)
 

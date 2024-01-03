@@ -69,6 +69,36 @@ class QuantizationConfig:
         )
 
 
+class AutoQuantizationConfig:
+    @staticmethod
+    def ipu_cnn_config():
+        return QuantizationConfig(
+            format=QuantFormat.QDQ,
+            calibration_method=vai_q_onnx.PowerOfTwoMethod.MinMSE,
+            activations_dtype=QuantType.QUInt8,
+            activations_symmetric=True,
+            weights_dtype=QuantType.QInt8,
+            weights_symmetric=True,
+            enable_dpu=True,
+        )
+
+    @staticmethod
+    def cpu_cnn_config(
+        use_symmetric_activations: bool = False,
+        use_symmetric_weights: bool = True,
+        enable_dpu: bool = False,
+    ):
+        return QuantizationConfig(
+            format=QuantFormat.QDQ,
+            calibration_method=vai_q_onnx.PowerOfTwoMethod.MinMax,
+            activations_dtype=QuantType.QUInt8,
+            activations_symmetric=use_symmetric_activations,
+            weights_dtype=QuantType.QInt8,
+            weights_symmetric=use_symmetric_weights,
+            enable_dpu=enable_dpu,
+        )
+
+
 class RyzenAIConfig(BaseConfig):
     """
     RyzenAIConfig is the configuration class handling all the VitisAI parameters related to the ONNX IR model export,
