@@ -16,7 +16,11 @@ from parameterized import parameterized
 from testing_utils import PYTORCH_TIMM_MODEL
 from tqdm import tqdm
 
-from optimum.amd.ryzenai import QuantizationConfig, RyzenAIModelForImageClassification, RyzenAIOnnxQuantizer
+from optimum.amd.ryzenai import (
+    AutoQuantizationConfig,
+    RyzenAIModelForImageClassification,
+    RyzenAIOnnxQuantizer,
+)
 from optimum.exporters.onnx import main_export
 from optimum.exporters.tasks import TasksManager
 from transformers import PretrainedConfig
@@ -61,6 +65,8 @@ class TestTimmQuantization(unittest.TestCase):
         export_dir = tempfile.TemporaryDirectory()
         quantization_dir = tempfile.TemporaryDirectory()
 
+        batch_size = 1
+
         main_export(
             model_name_or_path=model_name,
             output=export_dir.name,
@@ -69,20 +75,13 @@ class TestTimmQuantization(unittest.TestCase):
 
         quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name)
 
-        quantization_config = QuantizationConfig(enable_dpu=True)
+        quantization_config = AutoQuantizationConfig.ipu_cnn_config()
 
         cfg = PretrainedConfig.from_pretrained(export_dir.name)
-        if (
-            hasattr(cfg, "pretrained_cfg")
-            and "input_size" in cfg.pretrained_cfg
-            and len(cfg.pretrained_cfg["input_size"]) == 3
-        ):
-            cfg_input_size = cfg.pretrained_cfg["input_size"]
-            shape = (cfg_input_size[0], cfg_input_size[1], cfg_input_size[2])
-        else:
-            shape = (3, 224, 224)
+        pretrained_cfg = cfg.pretrained_cfg if hasattr(cfg, "pretrained_cfg") else cfg
+        input_size = [batch_size] + pretrained_cfg["input_size"]
 
-        my_dict = {"pixel_values": [torch.rand(shape) for i in range(10)]}
+        my_dict = {"pixel_values": [torch.rand(input_size) for i in range(10)]}
         dataset = Dataset.from_dict(my_dict)
         dataset = dataset.with_format("torch")
 
@@ -111,14 +110,17 @@ class TestTimmQuantization(unittest.TestCase):
         main_export(model_name_or_path=model_name, output=export_dir.name, task="image-classification", opset=13)
         config = PretrainedConfig.from_pretrained(export_dir.name)
 
+        pretrained_cfg = config.pretrained_cfg if hasattr(config, "pretrained_cfg") else config
+        input_size = [batch_size] + pretrained_cfg["input_size"]
+
         static_onnx_path = RyzenAIModelForImageClassification.reshape(
             Path(export_dir.name) / "model.onnx",
-            input_shape_dict={"pixel_values": [batch_size] + config.pretrained_cfg["input_size"]},
-            output_shape_dict={"logits": [batch_size, config.pretrained_cfg["num_classes"]]},
+            input_shape_dict={"pixel_values": input_size},
+            output_shape_dict={"logits": [batch_size, pretrained_cfg["num_classes"]]},
         )
 
         # preprocess config
-        data_config = timm.data.resolve_data_config(pretrained_cfg=config.pretrained_cfg)
+        data_config = timm.data.resolve_data_config(pretrained_cfg=pretrained_cfg)
         transforms = timm.data.create_transform(**data_config, is_training=False)
 
         def preprocess_fn(ex, transforms):
@@ -133,7 +135,7 @@ class TestTimmQuantization(unittest.TestCase):
 
         # quantize
         quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name, file_name=static_onnx_path.name)
-        quantization_config = QuantizationConfig()
+        quantization_config = AutoQuantizationConfig.ipu_cnn_config()
 
         train_calibration_dataset = quantizer.get_calibration_dataset(
             "imagenet-1k",
