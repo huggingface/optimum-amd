@@ -43,7 +43,7 @@ class QuantizationConfig:
 
     format: QuantFormat = QuantFormat.QDQ
     calibration_method: CalibrationMethod = vai_q_onnx.PowerOfTwoMethod.MinMSE
-    activations_dtype: QuantType = QuantType.QInt8
+    activations_dtype: QuantType = QuantType.QUInt8
     activations_symmetric: bool = True
     weights_dtype: QuantType = QuantType.QInt8
     weights_symmetric: bool = True
@@ -66,6 +66,36 @@ class QuantizationConfig:
             f"{self.format} ("
             f"schema: {QuantizationConfig.quantization_type_str(self.activations_dtype, self.weights_dtype)}, "
             f"enable_dpu: {self.enable_dpu})"
+        )
+
+
+class AutoQuantizationConfig:
+    @staticmethod
+    def ipu_cnn_config():
+        return QuantizationConfig(
+            format=QuantFormat.QDQ,
+            calibration_method=vai_q_onnx.PowerOfTwoMethod.MinMSE,
+            activations_dtype=QuantType.QUInt8,
+            activations_symmetric=True,
+            weights_dtype=QuantType.QInt8,
+            weights_symmetric=True,
+            enable_dpu=True,
+        )
+
+    @staticmethod
+    def cpu_cnn_config(
+        use_symmetric_activations: bool = False,
+        use_symmetric_weights: bool = True,
+        enable_dpu: bool = False,
+    ):
+        return QuantizationConfig(
+            format=QuantFormat.QDQ,
+            calibration_method=vai_q_onnx.PowerOfTwoMethod.MinMax,
+            activations_dtype=QuantType.QUInt8,
+            activations_symmetric=use_symmetric_activations,
+            weights_dtype=QuantType.QInt8,
+            weights_symmetric=use_symmetric_weights,
+            enable_dpu=enable_dpu,
         )
 
 
