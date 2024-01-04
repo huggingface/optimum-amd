@@ -161,7 +161,6 @@ class TestTimmQuantization(unittest.TestCase):
             ryzen_model = RyzenAIModelForImageClassification.from_pretrained(
                 quantization_dir.name,
                 vaip_config=".\\vaip_config.json",
-                provider="VitisAIExecutionProvider",
             )
 
             evaluation_set = load_dataset(dataset_name, split="validation", streaming=True, trust_remote_code=True)
