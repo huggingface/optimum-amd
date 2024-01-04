@@ -112,11 +112,12 @@ class TestTimmQuantization(unittest.TestCase):
 
         pretrained_cfg = config.pretrained_cfg if hasattr(config, "pretrained_cfg") else config
         input_size = [batch_size] + pretrained_cfg["input_size"]
+        output_size = [batch_size, pretrained_cfg["num_classes"]]
 
         static_onnx_path = RyzenAIModelForImageClassification.reshape(
             Path(export_dir.name) / "model.onnx",
             input_shape_dict={"pixel_values": input_size},
-            output_shape_dict={"logits": [batch_size, pretrained_cfg["num_classes"]]},
+            output_shape_dict={"logits": output_size},
         )
 
         # preprocess config
@@ -143,6 +144,7 @@ class TestTimmQuantization(unittest.TestCase):
             num_samples=num_calib_samples,
             dataset_split="train",
             preprocess_batch=False,
+            streaming=True,
         )
 
         quantizer.quantize(

@@ -195,7 +195,7 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
         preprocess_batch: bool = True,
         seed: Optional[bool] = 2016,
         token: bool = None,
-        streaming: bool = True,
+        streaming: bool = False,
     ) -> Dataset:
         """
         Creates the calibration `datasets.Dataset` to use for the post-training static quantization calibration step.
