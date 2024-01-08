@@ -425,7 +425,7 @@ class RyzenAIModel(OptimizedModel):
         has_config = True if CONFIG_NAME in all_files else False
 
         if has_config is False and subfolder != "":
-            all_files, _ = TasksManager.get_model_files(model_id, subfolder, cache_dir=cache_dir)
+            all_files, _ = TasksManager.get_model_files(model_id, cache_dir=cache_dir)
             has_config = True if CONFIG_NAME in all_files else False
 
         if has_config:
