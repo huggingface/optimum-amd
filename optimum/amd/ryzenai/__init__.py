@@ -8,11 +8,7 @@ from transformers.utils import OptionalDependencyNotAvailable, _LazyModule
 
 _import_structure = {
     "configuration": ["RyzenAIConfig", "QuantizationConfig"],
-    "modeling": [
-        "RyzenAIModel",
-        "RyzenAIModelForImageClassification",
-        "RyzenAIModelForObjectDetection"
-    ],
+    "modeling": ["RyzenAIModel", "RyzenAIModelForImageClassification", "RyzenAIModelForObjectDetection"],
     "quantization": ["RyzenAIOnnxQuantizer"],
     "version": ["__version__"],
 }

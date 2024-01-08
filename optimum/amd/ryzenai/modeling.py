@@ -3,12 +3,12 @@
 """RyzenAIModelForXXX classes, allowing to run ONNX Models with ONNX Runtime VITIS-AI EP using the same API as Transformers."""
 
 import logging
+import os
 import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-import numpy as np
 import onnx
 import onnxruntime as ort
 import torch
@@ -17,6 +17,7 @@ from huggingface_hub.utils import EntryNotFoundError
 from onnx import shape_inference
 from onnx.tools import update_model_dims
 
+from optimum.exporters import TasksManager
 from optimum.modeling_base import FROM_PRETRAINED_START_DOCSTRING, OptimizedModel
 from optimum.onnx.utils import _get_external_data_paths
 from optimum.utils.save_utils import maybe_load_preprocessors
@@ -24,6 +25,7 @@ from transformers import (
     AutoConfig,
     AutoModel,
     AutoModelForImageClassification,
+    PretrainedConfig,
 )
 from transformers.file_utils import add_start_docstrings
 from transformers.modeling_outputs import ImageClassifierOutput, ModelOutput
@@ -35,11 +37,9 @@ from .utils import (
 )
 
 
-if TYPE_CHECKING:
-    from transformers import PretrainedConfig
-
-
 logger = logging.getLogger(__name__)
+
+CONFIG_NAME = "config.json"
 
 
 class classproperty:
@@ -116,7 +116,7 @@ class RyzenAIModel(OptimizedModel):
     def __init__(
         self,
         model: ort.InferenceSession,
-        config: "PretrainedConfig",
+        config: PretrainedConfig,
         vaip_config: Union[str, Path] = None,
         model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
         preprocessors: Optional[List] = None,
@@ -224,7 +224,7 @@ class RyzenAIModel(OptimizedModel):
     def _from_pretrained(
         cls,
         model_id: Union[str, Path],
-        config: "PretrainedConfig",
+        config: PretrainedConfig,
         vaip_config: Optional[str] = None,
         use_auth_token: Optional[Union[bool, str]] = None,
         revision: Optional[str] = None,
@@ -350,10 +350,10 @@ class RyzenAIModel(OptimizedModel):
         )
 
     @classmethod
-    def _from_transformers(
+    def _export(
         cls,
         model_id: str,
-        config: "PretrainedConfig",
+        config: PretrainedConfig,
         use_auth_token: Optional[Union[bool, str]] = None,
         revision: Optional[str] = None,
         force_download: bool = False,
@@ -381,11 +381,14 @@ class RyzenAIModel(OptimizedModel):
         use_auth_token: Optional[str] = None,
         cache_dir: Optional[str] = None,
         subfolder: str = "",
-        config: Optional["PretrainedConfig"] = None,
+        config: Optional[PretrainedConfig] = None,
         local_files_only: bool = False,
         provider: str = "VitisAIExecutionProvider",
         session_options: Optional[ort.SessionOptions] = None,
         provider_options: Optional[Dict[str, Any]] = None,
+        trust_remote_code: bool = False,
+        revision: Optional[str] = None,
+        library_name: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
         """
@@ -408,16 +411,88 @@ class RyzenAIModel(OptimizedModel):
         Returns:
             `RyzenAIModel`: The loaded RyzenAIModel model.
         """
-        return super().from_pretrained(
-            model_id,
-            vaip_config=vaip_config,
-            export=export,
+        if isinstance(model_id, Path):
+            model_id = model_id.as_posix()
+
+        if len(model_id.split("@")) == 2:
+            if revision is not None:
+                logger.warning(
+                    f"The argument `revision` was set to {revision} but will be ignored for {model_id.split('@')[1]}"
+                )
+            model_id, revision = model_id.split("@")
+
+        all_files, _ = TasksManager.get_model_files(model_id, subfolder, cache_dir=cache_dir)
+        has_config = True if CONFIG_NAME in all_files else False
+
+        if has_config is False and subfolder != "":
+            all_files, _ = TasksManager.get_model_files(model_id, subfolder, cache_dir=cache_dir)
+            has_config = True if CONFIG_NAME in all_files else False
+
+        if has_config:
+            library_name = TasksManager.infer_library_from_model(model_id, subfolder, revision, cache_dir)
+
+            if library_name == "timm":
+                config = PretrainedConfig.from_pretrained(model_id, subfolder, revision)
+
+            if config is None:
+                if os.path.isdir(os.path.join(model_id, subfolder)) and cls.config_name == CONFIG_NAME:
+                    if CONFIG_NAME in os.listdir(os.path.join(model_id, subfolder)):
+                        config = AutoConfig.from_pretrained(
+                            os.path.join(model_id, subfolder, CONFIG_NAME), trust_remote_code=trust_remote_code
+                        )
+                    elif CONFIG_NAME in os.listdir(model_id):
+                        config = AutoConfig.from_pretrained(
+                            os.path.join(model_id, CONFIG_NAME), trust_remote_code=trust_remote_code
+                        )
+                        logger.info(
+                            f"config.json not found in the specified subfolder {subfolder}. Using the top level config.json."
+                        )
+                    else:
+                        raise OSError(f"config.json not found in {model_id} local folder")
+                else:
+                    config = cls._load_config(
+                        model_id,
+                        revision=revision,
+                        cache_dir=cache_dir,
+                        use_auth_token=use_auth_token,
+                        force_download=force_download,
+                        subfolder=subfolder,
+                        trust_remote_code=trust_remote_code,
+                    )
+            elif isinstance(config, (str, os.PathLike)):
+                config = cls._load_config(
+                    config,
+                    revision=revision,
+                    cache_dir=cache_dir,
+                    use_auth_token=use_auth_token,
+                    force_download=force_download,
+                    subfolder=subfolder,
+                    trust_remote_code=trust_remote_code,
+                )
+
+        else:
+            logger.warning("Configuration for the model not found. The RyzenAIModel might not behave as expected.")
+
+        if not export and trust_remote_code:
+            logger.warning(
+                "The argument `trust_remote_code` is to be used along with export=True. It will be ignored."
+            )
+        elif export and trust_remote_code is None:
+            trust_remote_code = False
+
+        from_pretrained_method = cls._export if export else cls._from_pretrained
+
+        return from_pretrained_method(
+            model_id=model_id,
+            config=config,
+            revision=revision,
+            cache_dir=cache_dir,
             force_download=force_download,
             use_auth_token=use_auth_token,
-            cache_dir=cache_dir,
             subfolder=subfolder,
-            config=config,
             local_files_only=local_files_only,
+            trust_remote_code=trust_remote_code,
+            vaip_config=vaip_config,
             provider=provider,
             session_options=session_options,
             provider_options=provider_options,
@@ -482,29 +557,22 @@ class RyzenAIModel(OptimizedModel):
         return model_path
 
 
-class RyzenAIModelForCustomTasks(RyzenAIModel):
-    def forward(self, **kwargs):
-        use_torch = isinstance(next(iter(kwargs.values())), torch.Tensor)
-        # converts pytorch inputs into numpy inputs for onnx
-        onnx_inputs = self._prepare_onnx_inputs(use_torch=use_torch, **kwargs)
+class RyzenAIModelForImageClassification(RyzenAIModel):
+    auto_model_class = AutoModelForImageClassification
+
+    def forward(self, pixel_values):
+        use_torch = isinstance(pixel_values, torch.Tensor)
+        if use_torch:
+            pixel_values = pixel_values.cpu().detach().numpy()
+        onnx_inputs = {
+            list(self.inputs_names.keys())[0]: pixel_values,
+        }
 
         # run inference
         onnx_outputs = self.model.run(None, onnx_inputs)
         outputs = self._prepare_onnx_outputs(onnx_outputs, use_torch=use_torch)
 
-        # converts output to namedtuple for pipelines post-processing
-        return ModelOutput(outputs)
-
-    def _prepare_onnx_inputs(self, use_torch: bool, **kwargs):
-        onnx_inputs = {}
-        # converts pytorch inputs into numpy inputs for onnx
-        for input in self.inputs_names.keys():
-            onnx_inputs[input] = kwargs.pop(input)
-
-            if use_torch:
-                onnx_inputs[input] = onnx_inputs[input].cpu().detach().numpy()
-
-        return onnx_inputs
+        return ImageClassifierOutput(logits=next(iter(outputs.values())))
 
     def _prepare_onnx_outputs(self, onnx_outputs, use_torch: bool):
         outputs = {}
@@ -518,14 +586,18 @@ class RyzenAIModelForCustomTasks(RyzenAIModel):
         return outputs
 
 
-class RyzenAIModelForImageClassification(RyzenAIModelForCustomTasks):
-    auto_model_class = AutoModelForImageClassification
+class RyzenAIModelForObjectDetection(RyzenAIModelForImageClassification):
+    def forward(self, pixel_values):
+        use_torch = isinstance(pixel_values, torch.Tensor)
+        if use_torch:
+            pixel_values = pixel_values.cpu().detach().numpy()
+        onnx_inputs = {
+            list(self.inputs_names.keys())[0]: pixel_values,
+        }
 
-    def forward(self, **kwargs):
-        output = super().forward(**kwargs)
-        return ImageClassifierOutput(logits=next(iter(output.values())))
-        
+        # run inference
+        onnx_outputs = self.model.run(None, onnx_inputs)
+        outputs = self._prepare_onnx_outputs(onnx_outputs, use_torch=use_torch)
 
-class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):
-    def forward(self, **kwargs):
-        return super().forward(**kwargs)
+        # converts output to namedtuple for pipelines post-processing
+        return ModelOutput(outputs)
