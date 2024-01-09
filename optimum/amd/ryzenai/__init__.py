@@ -10,7 +10,11 @@ _import_structure = {
     "configuration": ["RyzenAIConfig", "QuantizationConfig"],
     "modeling": [
         "RyzenAIModel",
+        "RyzenAIModelForCustomTasks",
         "RyzenAIModelForImageClassification",
+        "RyzenAIModelForImageSegmentation",
+        "RyzenAIModelForImageToImage",
+        "RyzenAIModelForObjectDetection",
     ],
     "quantization": ["RyzenAIOnnxQuantizer"],
     "version": ["__version__"],
@@ -20,7 +24,14 @@ _import_structure = {
 # Direct imports for type-checking
 if TYPE_CHECKING:
     from .configuration import QuantizationConfig, RyzenAIConfig
-    from .modeling import RyzenAIModel, RyzenAIModelForImageClassification
+    from .modeling import (
+        RyzenAIModel,
+        RyzenAIModelForCustomTasks,
+        RyzenAIModelForImageClassification,
+        RyzenAIModelForImageSegmentation,
+        RyzenAIModelForImageToImage,
+        RyzenAIModelForObjectDetection,
+    )
     from .quantization import RyzenAIOnnxQuantizer
     from .version import __version__
 else:
