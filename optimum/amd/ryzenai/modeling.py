@@ -557,7 +557,43 @@ class RyzenAIModel(OptimizedModel):
         return model_path
 
 
-class RyzenAIModelForImageClassification(RyzenAIModel):
+class RyzenAIModelForCustomTasks(RyzenAIModel):
+    def forward(self, **kwargs):
+        use_torch = isinstance(next(iter(kwargs.values())), torch.Tensor)
+        # converts pytorch inputs into numpy inputs for onnx
+        onnx_inputs = self._prepare_onnx_inputs(use_torch=use_torch, **kwargs)
+
+        # run inference
+        onnx_outputs = self.model.run(None, onnx_inputs)
+        outputs = self._prepare_onnx_outputs(onnx_outputs, use_torch=use_torch)
+
+        # converts output to namedtuple for pipelines post-processing
+        return ModelOutput(outputs)
+
+    def _prepare_onnx_inputs(self, use_torch: bool, **kwargs):
+        onnx_inputs = {}
+        # converts pytorch inputs into numpy inputs for onnx
+        for input in self.inputs_names.keys():
+            onnx_inputs[input] = kwargs.pop(input)
+
+            if use_torch:
+                onnx_inputs[input] = onnx_inputs[input].cpu().detach().numpy()
+
+        return onnx_inputs
+
+    def _prepare_onnx_outputs(self, onnx_outputs, use_torch: bool):
+        outputs = {}
+        # converts onnxruntime outputs into tensor for standard outputs
+        for output, idx in self.output_names.items():
+            outputs[output] = onnx_outputs[idx]
+
+            if use_torch:
+                outputs[output] = torch.from_numpy(outputs[output])
+
+        return outputs
+
+
+class RyzenAIModelForImageClassification(RyzenAIModelForCustomTasks):
     auto_model_class = AutoModelForImageClassification
 
     def forward(self, pixel_values):
@@ -574,19 +610,8 @@ class RyzenAIModelForImageClassification(RyzenAIModel):
 
         return ImageClassifierOutput(logits=next(iter(outputs.values())))
 
-    def _prepare_onnx_outputs(self, onnx_outputs, use_torch: bool):
-        outputs = {}
-        # converts onnxruntime outputs into tensor for standard outputs
-        for output, idx in self.output_names.items():
-            outputs[output] = onnx_outputs[idx]
 
-            if use_torch:
-                outputs[output] = torch.from_numpy(outputs[output])
-
-        return outputs
-
-
-class RyzenAIModelForObjectDetection(RyzenAIModelForImageClassification):
+class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):
     def forward(self, pixel_values):
         use_torch = isinstance(pixel_values, torch.Tensor)
         if use_torch:
@@ -599,5 +624,12 @@ class RyzenAIModelForObjectDetection(RyzenAIModelForImageClassification):
         onnx_outputs = self.model.run(None, onnx_inputs)
         outputs = self._prepare_onnx_outputs(onnx_outputs, use_torch=use_torch)
 
-        # converts output to namedtuple for pipelines post-processing
         return ModelOutput(outputs)
+
+
+class RyzenAIModelForImageSegmentation(RyzenAIModelForObjectDetection):
+    pass
+
+
+class RyzenAIModelForImageToImage(RyzenAIModelForObjectDetection):
+    pass
