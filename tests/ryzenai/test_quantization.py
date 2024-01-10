@@ -54,44 +54,8 @@ def _get_models_to_test(export_models_dict: Dict, library_name: str = "timm"):
 
 
 class TestTimmQuantization(unittest.TestCase):
-    # @parameterized.expand(_get_models_to_test(PYTORCH_TIMM_MODEL))
-    # def test_quantization_integration(
-    #     self,
-    #     test_name: str,
-    #     model_type: str,
-    #     model_name: str,
-    #     task: str,
-    # ):
-    #     export_dir = tempfile.TemporaryDirectory()
-    #     quantization_dir = tempfile.TemporaryDirectory()
-
-    #     batch_size = 1
-
-    #     main_export(
-    #         model_name_or_path=model_name,
-    #         output=export_dir.name,
-    #         task=task,
-    #     )
-
-    #     quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name)
-
-    #     quantization_config = AutoQuantizationConfig.ipu_cnn_config()
-
-    #     cfg = PretrainedConfig.from_pretrained(export_dir.name)
-    #     pretrained_cfg = cfg.pretrained_cfg if hasattr(cfg, "pretrained_cfg") else cfg
-    #     input_size = pretrained_cfg["input_size"]
-
-    #     my_dict = {"pixel_values": [torch.rand(input_size) for i in range(10)]}
-    #     dataset = Dataset.from_dict(my_dict)
-    #     dataset = dataset.with_format("torch")
-
-    #     quantizer.quantize(quantization_config=quantization_config, dataset=dataset, save_dir=quantization_dir.name)
-
-    #     export_dir.cleanup()
-    #     quantization_dir.cleanup()
-
     @parameterized.expand(_get_models_to_test(PYTORCH_TIMM_MODEL))
-    def test_quantization_quality(
+    def test_quantization(
         self,
         test_name: str,
         model_type: str,
@@ -100,7 +64,7 @@ class TestTimmQuantization(unittest.TestCase):
     ):
         dataset_name = "imagenet-1k"
         batch_size = 1
-        num_calib_samples = 10
+        num_calib_samples = 100
         num_eval_samples = 10
 
         export_dir = tempfile.TemporaryDirectory()
@@ -155,8 +119,9 @@ class TestTimmQuantization(unittest.TestCase):
         accuracy = evaluate.load("accuracy")
 
         def run(use_cpu_runner, compile_reserve_const_data):
-            # Set the environment variables based on the arguments
             os.environ["XLNX_ENABLE_CACHE"] = "0"
+            os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+
             os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
@@ -181,12 +146,17 @@ class TestTimmQuantization(unittest.TestCase):
                 predicted_id = torch.argmax(logits, dim=-1).item()
                 evals.append(predicted_id)
 
+            print(reference_labels)
+            print(evals)
+
             quantized_accuracy = accuracy.compute(references=reference_labels, predictions=evals)["accuracy"]
 
             return quantized_accuracy
 
         quantized_accuracy_ipu = run(use_cpu_runner=0, compile_reserve_const_data=0)
         # quantized_accuracy_cpu = run(use_cpu_runner=1, compile_reserve_const_data=1)
+
+        print(quantized_accuracy_ipu)
 
         # self.assertTrue((quantized_accuracy_cpu - quantized_accuracy_ipu) / quantized_accuracy_cpu < 0.05)
 
