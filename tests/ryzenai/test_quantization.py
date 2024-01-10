@@ -8,13 +8,11 @@ from functools import partial
 from pathlib import Path
 from typing import Dict
 
-import evaluate
 import timm
 import torch
 from datasets import load_dataset
 from parameterized import parameterized
 from testing_utils import PYTORCH_TIMM_MODEL
-from tqdm import tqdm
 
 from optimum.amd.ryzenai import (
     AutoQuantizationConfig,
@@ -64,8 +62,7 @@ class TestTimmQuantization(unittest.TestCase):
     ):
         dataset_name = "imagenet-1k"
         batch_size = 1
-        num_calib_samples = 100
-        num_eval_samples = 10
+        num_calib_samples = 10
 
         export_dir = tempfile.TemporaryDirectory()
         quantization_dir = tempfile.TemporaryDirectory()
@@ -115,9 +112,6 @@ class TestTimmQuantization(unittest.TestCase):
             quantization_config=quantization_config, dataset=train_calibration_dataset, save_dir=quantization_dir.name
         )
 
-        # evaluate
-        accuracy = evaluate.load("accuracy")
-
         def run(use_cpu_runner, compile_reserve_const_data):
             os.environ["XLNX_ENABLE_CACHE"] = "0"
             os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
@@ -131,34 +125,17 @@ class TestTimmQuantization(unittest.TestCase):
             )
 
             evaluation_set = load_dataset(dataset_name, split="validation", streaming=True, trust_remote_code=True)
-            iterable_evaluation_set = iter(evaluation_set)
+            data = next(iter(evaluation_set))
 
-            evals = []
-            reference_labels = []
-            for i in tqdm(range(num_eval_samples), desc="Inference..."):
-                data = next(iterable_evaluation_set)
+            pixel_values = preprocess_fn(data, transforms)["pixel_values"]
+            outputs = ryzen_model(pixel_values.unsqueeze(0))
 
-                reference_labels.append(data["label"])
+            return outputs
 
-                pixel_values = preprocess_fn(data, transforms)["pixel_values"]
-                logits = ryzen_model(pixel_values.unsqueeze(0)).logits
+        output_ipu = run(use_cpu_runner=0, compile_reserve_const_data=0)
+        output_cpu = run(use_cpu_runner=1, compile_reserve_const_data=1)
 
-                predicted_id = torch.argmax(logits, dim=-1).item()
-                evals.append(predicted_id)
-
-            print(reference_labels)
-            print(evals)
-
-            quantized_accuracy = accuracy.compute(references=reference_labels, predictions=evals)["accuracy"]
-
-            return quantized_accuracy
-
-        quantized_accuracy_ipu = run(use_cpu_runner=0, compile_reserve_const_data=0)
-        # quantized_accuracy_cpu = run(use_cpu_runner=1, compile_reserve_const_data=1)
-
-        print(quantized_accuracy_ipu)
-
-        # self.assertTrue((quantized_accuracy_cpu - quantized_accuracy_ipu) / quantized_accuracy_cpu < 0.05)
+        self.assertTrue(torch.allclose(output_ipu.logits, output_cpu.logits, atol=1e-4))
 
         export_dir.cleanup()
         quantization_dir.cleanup()
