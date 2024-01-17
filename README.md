@@ -111,4 +111,40 @@ cls_pipe = pipeline("image-classification", model=model, feature_extractor=featu
 outputs = cls_pipe(image)
 ```
 
+### Tests
+
+An extensive test suite is included to test the library's behavior. The test suite can be found in the tests folder. To run the tests, navigate to the root of the repository and specify a path to a subfolder or a specific test file.
+
+Before running the tests, make sure to install the necessary dependencies by using the following command:
+
+```bash
+pip install .[tests]
+```
+
+and then run,
+
+```bash
+pytest -s -v ./tests/ryzenai/
+```
+
+You can also specify a smaller set of tests in order to test only the feature you're working on.
+
+#### Running Slow Tests
+
+By default, slow tests are skipped, but you can set the `RUN_SLOW` environment variable to `1` to run them. 
+
+```bash
+RUN_SLOW=1 pytest -s -v ./tests/ryzenai/
+```
+
+> **_NOTE:_**  Enabling slow tests will involve downloading several gigabytes of models. Ensure you have enough disk space and a good internet connection!
+
+**Windows Powershell**
+
+For Windows Powershell, use the following command to run tests with slow tests enabled:
+
+```bash
+$env:RUN_SLOW=1; pytest -s -v ./tests/ryzenai/
+```
+
 If you find any issue while using those, please open an issue or a pull request.
