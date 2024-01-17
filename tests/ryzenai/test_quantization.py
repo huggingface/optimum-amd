@@ -5,7 +5,6 @@ import os
 import tempfile
 import unittest
 from functools import partial
-from pathlib import Path
 from typing import Dict
 
 import pytest
@@ -65,25 +64,23 @@ class TestTimmQuantization(unittest.TestCase):
         task: str,
     ):
         dataset_name = "imagenet-1k"
-        batch_size = 1
         num_calib_samples = 10
 
         export_dir = tempfile.TemporaryDirectory()
         quantization_dir = tempfile.TemporaryDirectory()
 
         # export
-        main_export(model_name_or_path=model_name, output=export_dir.name, task="image-classification", opset=13)
+        main_export(
+            model_name_or_path=model_name,
+            output=export_dir.name,
+            task="image-classification",
+            opset=13,
+            batch_size=1,
+            no_dynamic_axes=True,
+        )
         config = PretrainedConfig.from_pretrained(export_dir.name)
 
         pretrained_cfg = config.pretrained_cfg if hasattr(config, "pretrained_cfg") else config
-        input_size = [batch_size] + pretrained_cfg["input_size"]
-        output_size = [batch_size, pretrained_cfg["num_classes"]]
-
-        static_onnx_path = RyzenAIModelForImageClassification.reshape(
-            Path(export_dir.name) / "model.onnx",
-            input_shape_dict={"pixel_values": input_size},
-            output_shape_dict={"logits": output_size},
-        )
 
         # preprocess config
         data_config = timm.data.resolve_data_config(pretrained_cfg=pretrained_cfg)
@@ -100,7 +97,7 @@ class TestTimmQuantization(unittest.TestCase):
             return {"pixel_values": pixel_values}
 
         # quantize
-        quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name, file_name=static_onnx_path.name)
+        quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name)
         quantization_config = AutoQuantizationConfig.ipu_cnn_config()
 
         train_calibration_dataset = quantizer.get_calibration_dataset(
