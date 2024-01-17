@@ -8,6 +8,7 @@ from functools import partial
 from pathlib import Path
 from typing import Dict
 
+import pytest
 import timm
 import torch
 from datasets import load_dataset
@@ -22,6 +23,7 @@ from optimum.amd.ryzenai import (
 from optimum.exporters.onnx import main_export
 from optimum.exporters.tasks import TasksManager
 from transformers import PretrainedConfig
+from transformers.testing_utils import slow
 
 
 def _get_models_to_test(export_models_dict: Dict, library_name: str = "timm"):
@@ -53,6 +55,8 @@ def _get_models_to_test(export_models_dict: Dict, library_name: str = "timm"):
 
 class TestTimmQuantization(unittest.TestCase):
     @parameterized.expand(_get_models_to_test(PYTORCH_TIMM_MODEL))
+    @pytest.mark.run_slow
+    @slow
     def test_quantization(
         self,
         test_name: str,
