@@ -23,7 +23,7 @@ Initialize the RyzenAIOnnxQuantizer using the from_pretrained() method:
 
 ## Quantization example
 
-Below you will find an easy end-to-end example on how to quantize VGG model from [Timm](https://huggingface.co/docs/timm/index).
+Below you will find an easy end-to-end example on how to quantize a VGG model from [Timm](https://huggingface.co/docs/timm/index) library.
 
 * To begin, export the VGG model to ONNX using [Optimum Exporters](https://huggingface.co/docs/optimum/main/en/exporters/onnx/overview). Ensure static shapes are specified for inference.
 * Create a preprocessing function to handle specific image format conversions and apply necessary transformations to prepare the input for the model.
@@ -43,8 +43,8 @@ Below you will find an easy end-to-end example on how to quantize VGG model from
     from optimum.exporters.onnx import main_export
 
     # Define paths for exporting ONNX model and saving quantized model
-    export_dir = "/path/to/exported/onnx/model"
-    quantization_dir = "/path/to/quantized/model"
+    export_dir = "/path/to/vgg_onnx"
+    quantization_dir = "/path/to/vgg_onnx_quantized"
 
     # Specify the model ID from Timm
     model_id = "timm/vgg11.tv_in1k"
