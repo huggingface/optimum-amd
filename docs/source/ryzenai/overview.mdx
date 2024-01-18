@@ -38,3 +38,29 @@ feature_extractor = AutoFeatureExtractor.from_pretrained(model_id)
 cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
 outputs = cls_pipe(image)
 ```
+
+## Inference with [pre-optimized models](https://huggingface.co/models?other=RyzenAI)
+
+RyzenAI provides pre-optimized models for various tasks such as image classification, super-resolution, object-detection etc. Here's an example to run Resnet for image classification:
+
+```python
+from datasets import load_dataset
+
+from optimum.amd.ryzenai import RyzenAIModelForImageClassification
+from transformers import AutoImageProcessor
+
+model_id = 'amd/resnet50'
+model = RyzenAIModelForImageClassification.from_pretrained(
+    model_id,
+    file_name="ResNet_int.onnx",
+    vaip_config='vaip_config.json',
+)
+dataset = load_dataset("huggingface/cats-image")
+image = dataset["test"]["image"][0]
+
+processor = AutoImageProcessor.from_pretrained("microsoft/resnet-50")
+inputs = processor(image, return_tensors="pt")
+logits = model(**inputs).logits
+
+predicted_label = logits.argmax(-1).item()
+```

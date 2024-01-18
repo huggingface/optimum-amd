@@ -1,0 +1,99 @@
+<!--Copyright 2023 The HuggingFace Team. All rights reserved.
+Licensed under the MIT License.
+-->
+
+🤗 Optimum AMD provides a RyzenAI Quantizer that enables you to apply quantization on many models hosted on the
+Hugging Face Hub using the [AMD Vitis AI Quantizer](https://ryzenai.docs.amd.com/en/latest/vai_quant/vai_q_onnx.html).
+
+RyzenAI Quantizer provides an easy-to-use Post Training Quantization (PTQ) flow on the pre-trained model saved in the
+ONNX format. It generates a quantized ONNX model ready to be deployed with the Ryzen AI.
+
+The Quantizer supports various configuration and functions to quantize models targeting for deployment on IPU_CNN,
+IPU_Transformer and CPU.
+
+# Creating a RyzenAIOnnxQuantizer
+
+Initialize the RyzenAIOnnxQuantizer using the from_pretrained() method:
+
+```python
+    from optimum.amd.ryzenai import RyzenAIOnnxQuantizer
+
+    quantizer = RyzenAIOnnxQuantizer.from_pretrained("path/to/model")
+```
+
+## Quantization example
+
+Below you will find an easy end-to-end example on how to quantize VGG model from [Timm](https://huggingface.co/docs/timm/index).
+
+* To begin, export the VGG model to ONNX using [Optimum Exporters](https://huggingface.co/docs/optimum/main/en/exporters/onnx/overview). Ensure static shapes are specified for inference.
+* Create a preprocessing function to handle specific image format conversions and apply necessary transformations to prepare the input for the model.
+* Initialize the RyzenAI quantizer (RyzenAIOnnxQuantizer) and configure the quantization settings using AutoQuantizationConfig. The recommended quantization configuration for CNN models to be deployed on the IPU is loaded using `ipu_cnn_config`.
+* Obtain a calibration dataset using the quantizer's `get_calibration_dataset` method. This dataset is crucial for computing quantization parameters during the quantization process.
+* Run the quantizer with the specified quantization configuration and calibration data. The quantization parameters computed during this process are embedded as constants in the quantized model.
+* The resulting quantized model is saved in the specified quantization directory.
+
+```python
+    from functools import partial
+    import timm
+    from optimum.amd.ryzenai import (
+        AutoQuantizationConfig,
+        RyzenAIModelForImageClassification,
+        RyzenAIOnnxQuantizer,
+    )
+    from optimum.exporters.onnx import main_export
+
+    # Define paths for exporting ONNX model and saving quantized model
+    export_dir = "/path/to/exported/onnx/model"
+    quantization_dir = "/path/to/quantized/model"
+
+    # Specify the model ID from Timm
+    model_id = "timm/vgg11.tv_in1k"
+
+    # Step 1: Export the model to ONNX format using Optimum Exporters
+    main_export(
+        model_name_or_path=model_id,
+        output=export_dir,
+        task="image-classification",
+        opset=13,
+        batch_size=1,
+        no_dynamic_axes=True,
+    )
+
+    # Step 2: Preprocess configuration and data transformations
+    config = PretrainedConfig.from_pretrained(export_dir)
+    data_config = timm.data.resolve_data_config(pretrained_cfg=config.pretrained_cfg)
+    transforms = timm.data.create_transform(**data_config, is_training=False)
+
+    def preprocess_fn(ex, transforms):
+        image = ex["image"]
+        if image.mode == "L":
+            # Convert greyscale to RGB if needed
+            print("WARNING: converting greyscale to RGB")
+            image = image.convert("RGB")
+        pixel_values = transforms(image)
+        return {"pixel_values": pixel_values}
+
+    # Step 3: Initialize the RyzenAIOnnxQuantizer with the exported model
+    quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir)
+
+    # Step 4: Load recommended quantization config for model
+    quantization_config = AutoQuantizationConfig.ipu_cnn_config()
+
+    # Step 5: Obtain a calibration dataset for computing quantization parameters
+    train_calibration_dataset = quantizer.get_calibration_dataset(
+        "imagenet-1k",
+        preprocess_function=partial(preprocess_fn, transforms=transforms),
+        num_samples=100,
+        dataset_split="train",
+        preprocess_batch=False,
+        streaming=True,
+    )
+
+    # Step 6: Run the quantizer with the specified configuration and calibration data
+    quantizer.quantize(
+        quantization_config=quantization_config,
+        dataset=train_calibration_dataset,
+        save_dir=quantization_dir
+    )
+
+```
