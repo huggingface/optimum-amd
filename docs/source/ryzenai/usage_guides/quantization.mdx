@@ -35,12 +35,10 @@ Below you will find an easy end-to-end example on how to quantize a VGG model fr
 ```python
     from functools import partial
     import timm
-    from optimum.amd.ryzenai import (
-        AutoQuantizationConfig,
-        RyzenAIModelForImageClassification,
-        RyzenAIOnnxQuantizer,
-    )
+
+    from optimum.amd.ryzenai import AutoQuantizationConfig, RyzenAIOnnxQuantizer
     from optimum.exporters.onnx import main_export
+    from transformers import PretrainedConfig
 
     # Define paths for exporting ONNX model and saving quantized model
     export_dir = "/path/to/vgg_onnx"
