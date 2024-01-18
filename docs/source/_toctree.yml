@@ -11,8 +11,8 @@
     - local: ryzenai/overview
       title: Ryzen AI quicktour
     - sections:
-        title: How to apply quantization
       - local: ryzenai/usage_guides/quantization
+        title: How to apply quantization
       title: How-to guides
       isExpanded: false
     - sections:
