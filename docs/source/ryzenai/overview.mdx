@@ -18,9 +18,14 @@ Optimum-AMD provides easy interface for loading and inference of Hugging Face mo
 
 A Ryzen AI environment needs to be enabled to use this library. Please refer to Ryzen AI's [Installation](https://ryzenai.docs.amd.com/en/latest/inst.html) and [Runtime Setup](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html).
 
+Note:
+The RyzenAI Model requires a runtime configuration file. A default version of this runtime configuration file can be found in the voe-4.0-win_amd64 folder of the Ryzen AI Software installation package under the name vaip_config.json.
+For more information refer to [runtime-configuration-file](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html#runtime-configuration-file)
+
 ## Minimal working example
 
 To load a model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class.
+
 
 ```python
 import requests
@@ -33,7 +38,13 @@ url = "http://images.cocodataset.org/val2017/000000039769.jpg"
 image = Image.open(requests.get(url, stream=True).raw)
 
 model_id = <path of the model>
-model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config=<path to config file>)
+
+# The path and name of the runtime configuration file. A default version of this file can be
+# found in the voe-4.0-win_​amd64 folder of the Ryzen AI software installation package under
+# the name vaip_​config.json
+vaip_config = <path of the config file>
+
+model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config=vaip_config)
 feature_extractor = AutoFeatureExtractor.from_pretrained(model_id)
 cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
 outputs = cls_pipe(image)
