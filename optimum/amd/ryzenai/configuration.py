@@ -90,7 +90,7 @@ class AutoQuantizationConfig:
     ):
         return QuantizationConfig(
             format=QuantFormat.QDQ,
-            calibration_method=vai_q_onnx.PowerOfTwoMethod.MinMax,
+            calibration_method=vai_q_onnx.CalibrationMethod.MinMax,
             activations_dtype=QuantType.QUInt8,
             activations_symmetric=use_symmetric_activations,
             weights_dtype=QuantType.QInt8,
