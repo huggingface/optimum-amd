@@ -67,7 +67,6 @@ Ryzen pre-optimized models are not compatible with transformer pipelines for inf
 ### Pre-requisites
 * Export the model using [Optimum Exporters](https://huggingface.co/docs/optimum/main/en/exporters/onnx/usage_guides/export_a_model)
 * Quantize the ONNX model using the RyzenAI quantization tools. For more information on quantization refer to [Model Quantization guide](https://huggingface.co/docs/optimum/main/en/amd/ryzenai/usage_guides/quantization.mdx).
-* See [quantize.py](https://huggingface.co/mohitsha/timm-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details
 
 ### Load model with Ryzen AI class
 
@@ -84,6 +83,7 @@ Ryzen pre-optimized models are not compatible with transformer pipelines for inf
     url = "http://images.cocodataset.org/val2017/000000039769.jpg"
     image = Image.open(requests.get(url, stream=True).raw)
 
+    #  See [quantize.py](https://huggingface.co/mohitsha/timm-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details on quantization.
     quantized_model_path = "mohitsha/timm_resnet18_onnx_quantized_ryzen"
 
     # The path and name of the runtime configuration file. A default version of this file can be
@@ -113,7 +113,6 @@ Timm models are not compatible with transformer pipelines for inference.
 ### Pre-requisites
 * Export the model using [Optimum Exporters](https://huggingface.co/docs/optimum/main/en/exporters/onnx/usage_guides/export_a_model)
 * Quantize the ONNX model using the RyzenAI quantization tools. For more information on quantization refer to [Model Quantization guide](https://huggingface.co/docs/optimum/main/en/amd/ryzenai/usage_guides/quantization.mdx).
-* See [quantize.py](https://huggingface.co/mohitsha/transformers-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details
 
 ### Load model with Ryzen AI class
 To load a transformers model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class.
@@ -130,7 +129,8 @@ See below example for Image classification.
 
     url = "http://images.cocodataset.org/val2017/000000039769.jpg"
     image = Image.open(requests.get(url, stream=True).raw)
-
+    
+    # See [quantize.py](https://huggingface.co/mohitsha/transformers-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details on quantization.
     quantized_model_path = "mohitsha/transformers-resnet18-onnx-quantized-ryzen"
 
     # The path and name of the runtime configuration file. A default version of this file can be
