@@ -24,30 +24,29 @@ For more information refer to [runtime-configuration-file](https://ryzenai.docs.
 
 ## Minimal working example
 
-To load a model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class.
-
+To load a transformers model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class.
 
 ```python
-import requests
-from PIL import Image
+    import requests
+    from PIL import Image
 
-from optimum.amd.ryzenai import RyzenAIModelForImageClassification
-from transformers import AutoFeatureExtractor, pipeline
+    from optimum.amd.ryzenai import RyzenAIModelForImageClassification
+    from transformers import AutoFeatureExtractor, pipeline
 
-url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-image = Image.open(requests.get(url, stream=True).raw)
+    url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    image = Image.open(requests.get(url, stream=True).raw)
 
-model_id = <path of the model>
+    model_id = <path of the model>
 
-# The path and name of the runtime configuration file. A default version of this file can be
-# found in the voe-4.0-win_​amd64 folder of the Ryzen AI software installation package under
-# the name vaip_​config.json
-vaip_config = <path of the config file>
+    # The path and name of the runtime configuration file. A default version of this file can be
+    # found in the voe-4.0-win_​amd64 folder of the Ryzen AI software installation package under
+    # the name vaip_​config.json
+    vaip_config = <path of the config file>
 
-model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config=vaip_config)
-feature_extractor = AutoFeatureExtractor.from_pretrained(model_id)
-cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
-outputs = cls_pipe(image)
+    model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config=vaip_config)
+    feature_extractor = AutoFeatureExtractor.from_pretrained(model_id)
+    cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
+    outputs = cls_pipe(image)
 ```
 
 ## Inference with [pre-optimized models](https://huggingface.co/models?other=RyzenAI)
@@ -55,23 +54,31 @@ outputs = cls_pipe(image)
 RyzenAI provides pre-optimized models for various tasks such as image classification, super-resolution, object-detection, etc. Here's an example to run Resnet for image classification:
 
 ```python
-from datasets import load_dataset
+    from datasets import load_dataset
 
-from optimum.amd.ryzenai import RyzenAIModelForImageClassification
-from transformers import AutoImageProcessor
+    from optimum.amd.ryzenai import RyzenAIModelForImageClassification
+    from transformers import AutoImageProcessor
 
-model_id = 'amd/resnet50'
-model = RyzenAIModelForImageClassification.from_pretrained(
-    model_id,
-    file_name="ResNet_int.onnx",
-    vaip_config='vaip_config.json',
-)
-dataset = load_dataset("huggingface/cats-image")
-image = dataset["test"]["image"][0]
+    model_id = 'amd/resnet50'
+    model = RyzenAIModelForImageClassification.from_pretrained(
+        model_id,
+        file_name="ResNet_int.onnx",
+        vaip_config='vaip_config.json',
+    )
 
-processor = AutoImageProcessor.from_pretrained("microsoft/resnet-50")
-inputs = processor(image, return_tensors="pt")
-logits = model(**inputs).logits
+    # Load image
+    dataset = load_dataset("imagenet-1k", split="validation", streaming=True, trust_remote_code=True)
+    data = next(iter(dataset))
+    image = data["image"]
 
-predicted_label = logits.argmax(-1).item()
+    processor = AutoImageProcessor.from_pretrained("microsoft/resnet-50")
+    inputs = processor(image, return_tensors="pt")
+
+    # convert NCHW to NHWC
+    key, value = next(iter(inputs.items()))
+    inputs[key] = value.permute(0, 2, 3, 1)
+
+    logits = model(**inputs).logits
+
+    predicted_label = logits.argmax(-1).item()
 ```
