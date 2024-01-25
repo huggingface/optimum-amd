@@ -297,6 +297,9 @@ class RyzenAIModel(OptimizedModel):
 
             vaip_config = provider_options["config_file"]
 
+            if not os.path.exists(vaip_config):
+                raise ValueError(f"Config file not found: {vaip_config}")
+
         preprocessors = None
         if model_path.is_dir():
             model = RyzenAIModel.load_model(

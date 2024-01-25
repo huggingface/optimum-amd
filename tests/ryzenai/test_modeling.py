@@ -61,7 +61,7 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase):
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
             model = RyzenAIModelForImageClassification.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\vaip_config.json"
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
             outputs = model(ort_input)
@@ -104,7 +104,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase):
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
             model = RyzenAIModelForImageSegmentation.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\vaip_config.json"
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
             outputs = model(ort_input)
@@ -145,7 +145,7 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase):
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
             model = RyzenAIModelForImageSegmentation.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\vaip_config.json"
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
             outputs = model(ort_input)
@@ -186,7 +186,7 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase):
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
             model = RyzenAIModelForImageToImage.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\vaip_config.json"
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
             outputs = model(ort_input)
@@ -229,7 +229,7 @@ class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase):
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
             model = RyzenAIModelForCustomTasks.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\vaip_config.json"
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
             outputs = model(**ort_input)
