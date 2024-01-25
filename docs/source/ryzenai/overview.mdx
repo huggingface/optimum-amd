@@ -17,7 +17,7 @@ Optimum-AMD provides easy interface for loading and inference of Hugging Face mo
 A Ryzen AI environment needs to be enabled to use this library. Please refer to Ryzen AI's [Installation](https://ryzenai.docs.amd.com/en/latest/inst.html) and [Runtime Setup](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html).
 
 Note:
-The RyzenAI Model requires a runtime configuration file. A default version of this runtime configuration file can be found in the voe-4.0-win_amd64 folder of the Ryzen AI Software installation package under the name vaip_config.json.
+The RyzenAI Model requires a runtime configuration file. A default version of this runtime configuration file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
 For more information refer to [runtime-configuration-file](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html#runtime-configuration-file)
 
 
@@ -86,9 +86,8 @@ Ryzen pre-optimized models are not compatible with transformer pipelines for inf
     #  See [quantize.py](https://huggingface.co/mohitsha/timm-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details on quantization.
     quantized_model_path = "mohitsha/timm_resnet18_onnx_quantized_ryzen"
 
-    # The path and name of the runtime configuration file. A default version of this file can be
-    # found in the voe-4.0-win_​amd64 folder of the Ryzen AI software installation package under
-    # the name vaip_​config.json
+    # The path and name of the runtime configuration file. A default version of this runtime configuration
+    # file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
     vaip_config = ".\\vaip_config.json"
 
     model = RyzenAIModelForImageClassification.from_pretrained(quantized_model_path, vaip_config=vaip_config)
@@ -133,9 +132,8 @@ See below example for Image classification.
     # See [quantize.py](https://huggingface.co/mohitsha/transformers-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details on quantization.
     quantized_model_path = "mohitsha/transformers-resnet18-onnx-quantized-ryzen"
 
-    # The path and name of the runtime configuration file. A default version of this file can be
-    # found in the voe-4.0-win_​amd64 folder of the Ryzen AI software installation package under
-    # the name vaip_​config.json
+    # The path and name of the runtime configuration file. A default version of this runtime configuration
+    # file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
     vaip_config = ".\\vaip_config.json"
 
     model = RyzenAIModelForImageClassification.from_pretrained(quantized_model_path, vaip_config=vaip_config)
