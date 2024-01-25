@@ -34,7 +34,6 @@ RyzenAI provides pre-optimized models for various tasks such as image classifica
     model_id = 'amd/resnet50'
     model = RyzenAIModelForImageClassification.from_pretrained(
         model_id,
-        file_name="ResNet_int.onnx",
         vaip_config='vaip_config.json',
     )
 
@@ -43,14 +42,17 @@ RyzenAI provides pre-optimized models for various tasks such as image classifica
     data = next(iter(dataset))
     image = data["image"]
 
-    processor = AutoImageProcessor.from_pretrained("microsoft/resnet-50")
-    inputs = processor(image, return_tensors="pt")
+    # Utilize the model-specific pre-processing function. Note that this may vary for other models.
+    def preprocess(image):
+        processor = AutoImageProcessor.from_pretrained("microsoft/resnet-50")
+        inputs = processor(image, return_tensors="pt")
 
-    # convert NCHW to NHWC
-    key, value = next(iter(inputs.items()))
-    inputs[key] = value.permute(0, 2, 3, 1)
+        # convert NCHW to NHWC
+        key, value = next(iter(inputs.items()))
+        inputs[key] = value.permute(0, 2, 3, 1)
+        return inputs
 
-    logits = model(**inputs).logits
+    logits = model(**preprocess(image)).logits
 
     predicted_label = logits.argmax(-1).item()
 ```
