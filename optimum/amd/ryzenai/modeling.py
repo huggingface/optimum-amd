@@ -192,6 +192,14 @@ class RyzenAIModel(OptimizedModel):
             provider_options=providers_options,
         )
 
+    def _save_config(self, save_directory):
+        """
+        Saves a model configuration into a directory, so that it can be re-loaded using the
+        [`from_pretrained`] class method.
+        """
+        if self.config is not None:
+            self.config.save_pretrained(save_directory)
+
     def _save_pretrained(self, save_directory: Union[str, Path]):
         """
         Saves a model and its configuration file to a directory, so that it can be re-loaded using the
