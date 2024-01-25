@@ -5,9 +5,7 @@ Licensed under the MIT License.
 # AMD Ryzen AI
 
 <Tip>
-
 Ryzen AI support is work in progress and will greatly be improved and extended in the coming months.
-
 </Tip>
 
 AMD's Ryzen™ AI family of laptop processors provide users with an integrated Neural Processing Unit (NPU) which offloads the host CPU and GPU from AI processing tasks. Ryzen™ AI software consists of the Vitis™ AI execution provider (EP) for ONNX Runtime combined with quantization tools and a [pre-optimized model zoo](https://huggingface.co/models?other=RyzenAI). All of this is made possible based on Ryzen™ AI technology built on AMD XDNA™ architecture, purpose-built to run AI workloads efficiently and locally, offering a host of benefits for the developer innovating the next groundbreaking AI app.
@@ -22,9 +20,17 @@ Note:
 The RyzenAI Model requires a runtime configuration file. A default version of this runtime configuration file can be found in the voe-4.0-win_amd64 folder of the Ryzen AI Software installation package under the name vaip_config.json.
 For more information refer to [runtime-configuration-file](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html#runtime-configuration-file)
 
-## Minimal working example
+## Minimal working example for [🤗 Transformers](https://huggingface.co/docs/transformers/index)
 
+### Pre-requisites
+* Export the model using [Optimum Exporters](https://huggingface.co/docs/optimum/main/en/exporters/onnx/usage_guides/export_a_model)
+* Quantize the ONNX model using the RyzenAI quantization tools. For more information on quantization refer to [Model Quantization guide](https://huggingface.co/docs/optimum/main/en/amd/ryzenai/usage_guides/quantization.mdx).
+* See [quantize.py](https://huggingface.co/mohitsha/transformers-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details
+
+### Load model with Ryzen AI class
 To load a transformers model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class.
+
+See below example for Image classification.
 
 ```python
     import requests
@@ -33,21 +39,72 @@ To load a transformers model and run inference with RyzenAI, you can just replac
     from optimum.amd.ryzenai import RyzenAIModelForImageClassification
     from transformers import AutoFeatureExtractor, pipeline
 
+
     url = "http://images.cocodataset.org/val2017/000000039769.jpg"
     image = Image.open(requests.get(url, stream=True).raw)
 
-    model_id = <path of the model>
+    quantized_model_path = "mohitsha/transformers-resnet18-onnx-quantized-ryzen"
 
     # The path and name of the runtime configuration file. A default version of this file can be
     # found in the voe-4.0-win_​amd64 folder of the Ryzen AI software installation package under
     # the name vaip_​config.json
-    vaip_config = <path of the config file>
+    vaip_config = ".\\vaip_config.json"
 
-    model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config=vaip_config)
-    feature_extractor = AutoFeatureExtractor.from_pretrained(model_id)
+    model = RyzenAIModelForImageClassification.from_pretrained(quantized_model_path, vaip_config=vaip_config)
+    feature_extractor = AutoFeatureExtractor.from_pretrained(quantized_model_path)
+
     cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
     outputs = cls_pipe(image)
 ```
+
+<Tip warning={true}>
+ Note only Resnet model supported for Transformers
+<Tip>
+
+## Minimal working example for [🤗 Timm](https://huggingface.co/docs/timm/index)
+
+### Pre-requisites
+* Export the model using [Optimum Exporters](https://huggingface.co/docs/optimum/main/en/exporters/onnx/usage_guides/export_a_model)
+* Quantize the ONNX model using the RyzenAI quantization tools. For more information on quantization refer to [Model Quantization guide](https://huggingface.co/docs/optimum/main/en/amd/ryzenai/usage_guides/quantization.mdx).
+* See [quantize.py](https://huggingface.co/mohitsha/timm-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details
+
+### Load model with Ryzen AI class
+
+```python
+    import requests
+    from PIL import Image
+
+    from optimum.amd.ryzenai import RyzenAIModelForImageClassification
+    from transformers import PretrainedConfig, pipeline
+
+    import timm
+    import torch
+
+    url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    image = Image.open(requests.get(url, stream=True).raw)
+
+    quantized_model_path = "mohitsha/timm_resnet18_onnx_quantized_ryzen"
+
+    # The path and name of the runtime configuration file. A default version of this file can be
+    # found in the voe-4.0-win_​amd64 folder of the Ryzen AI software installation package under
+    # the name vaip_​config.json
+    vaip_config = ".\\vaip_config.json"
+
+    model = RyzenAIModelForImageClassification.from_pretrained(quantized_model_path, vaip_config=vaip_config)
+
+    config = PretrainedConfig.from_pretrained(quantized_model_path)
+
+    # preprocess config
+    data_config = timm.data.resolve_data_config(pretrained_cfg=config.pretrained_cfg)
+    transforms = timm.data.create_transform(**data_config, is_training=False)
+
+    output = model(transforms(image).unsqueeze(0)).logits  # unsqueeze single image into batch of 1
+    top5_probabilities, top5_class_indices = torch.topk(torch.softmax(output, dim=1) * 100, k=5)
+```
+
+<Tip warning={true}>
+   Timm models are not compatible with transformer pipelines for inference.
+<Tip>
 
 ## Inference with [pre-optimized models](https://huggingface.co/models?other=RyzenAI)
 
@@ -82,3 +139,7 @@ RyzenAI provides pre-optimized models for various tasks such as image classifica
 
     predicted_label = logits.argmax(-1).item()
 ```
+
+<Tip warning={true}>
+   Ryzen pre-optimized models are not compatible with transformer pipelines for inference.
+<Tip>
