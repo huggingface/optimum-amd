@@ -65,7 +65,7 @@ class RyzenAIModelIntegrationTest(unittest.TestCase):
             os.environ["XLNX_ENABLE_CACHE"] = "0"
             os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-            model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID,  vaip_config=".\\tests\\ryzenai\\vaip_config.json")
+            model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\tests\\ryzenai\\vaip_config.json")
             model.save_pretrained(tmpdirname)
             folder_contents = os.listdir(tmpdirname)
             self.assertTrue("ResNet_int.onnx" in folder_contents)
