@@ -20,46 +20,45 @@ Note:
 The RyzenAI Model requires a runtime configuration file. A default version of this runtime configuration file can be found in the voe-4.0-win_amd64 folder of the Ryzen AI Software installation package under the name vaip_config.json.
 For more information refer to [runtime-configuration-file](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html#runtime-configuration-file)
 
-## Minimal working example for [🤗 Transformers](https://huggingface.co/docs/transformers/index)
 
-### Pre-requisites
-* Export the model using [Optimum Exporters](https://huggingface.co/docs/optimum/main/en/exporters/onnx/usage_guides/export_a_model)
-* Quantize the ONNX model using the RyzenAI quantization tools. For more information on quantization refer to [Model Quantization guide](https://huggingface.co/docs/optimum/main/en/amd/ryzenai/usage_guides/quantization.mdx).
-* See [quantize.py](https://huggingface.co/mohitsha/transformers-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details
+## Inference with [pre-optimized models](https://huggingface.co/models?other=RyzenAI)
 
-### Load model with Ryzen AI class
-To load a transformers model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class.
-
-See below example for Image classification.
+RyzenAI provides pre-optimized models for various tasks such as image classification, super-resolution, object-detection, etc. Here's an example to run Resnet for image classification:
 
 ```python
-    import requests
-    from PIL import Image
+    from datasets import load_dataset
 
     from optimum.amd.ryzenai import RyzenAIModelForImageClassification
-    from transformers import AutoFeatureExtractor, pipeline
+    from transformers import AutoImageProcessor
 
+    model_id = 'amd/resnet50'
+    model = RyzenAIModelForImageClassification.from_pretrained(
+        model_id,
+        file_name="ResNet_int.onnx",
+        vaip_config='vaip_config.json',
+    )
 
-    url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-    image = Image.open(requests.get(url, stream=True).raw)
+    # Load image
+    dataset = load_dataset("imagenet-1k", split="validation", streaming=True, trust_remote_code=True)
+    data = next(iter(dataset))
+    image = data["image"]
 
-    quantized_model_path = "mohitsha/transformers-resnet18-onnx-quantized-ryzen"
+    processor = AutoImageProcessor.from_pretrained("microsoft/resnet-50")
+    inputs = processor(image, return_tensors="pt")
 
-    # The path and name of the runtime configuration file. A default version of this file can be
-    # found in the voe-4.0-win_​amd64 folder of the Ryzen AI software installation package under
-    # the name vaip_​config.json
-    vaip_config = ".\\vaip_config.json"
+    # convert NCHW to NHWC
+    key, value = next(iter(inputs.items()))
+    inputs[key] = value.permute(0, 2, 3, 1)
 
-    model = RyzenAIModelForImageClassification.from_pretrained(quantized_model_path, vaip_config=vaip_config)
-    feature_extractor = AutoFeatureExtractor.from_pretrained(quantized_model_path)
+    logits = model(**inputs).logits
 
-    cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
-    outputs = cls_pipe(image)
+    predicted_label = logits.argmax(-1).item()
 ```
 
 <Tip warning={true}>
- Note only Resnet model supported for Transformers
+   Ryzen pre-optimized models are not compatible with transformer pipelines for inference.
 <Tip>
+
 
 ## Minimal working example for [🤗 Timm](https://huggingface.co/docs/timm/index)
 
@@ -106,40 +105,44 @@ See below example for Image classification.
    Timm models are not compatible with transformer pipelines for inference.
 <Tip>
 
-## Inference with [pre-optimized models](https://huggingface.co/models?other=RyzenAI)
 
-RyzenAI provides pre-optimized models for various tasks such as image classification, super-resolution, object-detection, etc. Here's an example to run Resnet for image classification:
+## Minimal working example for [🤗 Transformers](https://huggingface.co/docs/transformers/index)
+
+### Pre-requisites
+* Export the model using [Optimum Exporters](https://huggingface.co/docs/optimum/main/en/exporters/onnx/usage_guides/export_a_model)
+* Quantize the ONNX model using the RyzenAI quantization tools. For more information on quantization refer to [Model Quantization guide](https://huggingface.co/docs/optimum/main/en/amd/ryzenai/usage_guides/quantization.mdx).
+* See [quantize.py](https://huggingface.co/mohitsha/transformers-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details
+
+### Load model with Ryzen AI class
+To load a transformers model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class.
+
+See below example for Image classification.
 
 ```python
-    from datasets import load_dataset
+    import requests
+    from PIL import Image
 
     from optimum.amd.ryzenai import RyzenAIModelForImageClassification
-    from transformers import AutoImageProcessor
+    from transformers import AutoFeatureExtractor, pipeline
 
-    model_id = 'amd/resnet50'
-    model = RyzenAIModelForImageClassification.from_pretrained(
-        model_id,
-        file_name="ResNet_int.onnx",
-        vaip_config='vaip_config.json',
-    )
 
-    # Load image
-    dataset = load_dataset("imagenet-1k", split="validation", streaming=True, trust_remote_code=True)
-    data = next(iter(dataset))
-    image = data["image"]
+    url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    image = Image.open(requests.get(url, stream=True).raw)
 
-    processor = AutoImageProcessor.from_pretrained("microsoft/resnet-50")
-    inputs = processor(image, return_tensors="pt")
+    quantized_model_path = "mohitsha/transformers-resnet18-onnx-quantized-ryzen"
 
-    # convert NCHW to NHWC
-    key, value = next(iter(inputs.items()))
-    inputs[key] = value.permute(0, 2, 3, 1)
+    # The path and name of the runtime configuration file. A default version of this file can be
+    # found in the voe-4.0-win_​amd64 folder of the Ryzen AI software installation package under
+    # the name vaip_​config.json
+    vaip_config = ".\\vaip_config.json"
 
-    logits = model(**inputs).logits
+    model = RyzenAIModelForImageClassification.from_pretrained(quantized_model_path, vaip_config=vaip_config)
+    feature_extractor = AutoFeatureExtractor.from_pretrained(quantized_model_path)
 
-    predicted_label = logits.argmax(-1).item()
+    cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
+    outputs = cls_pipe(image)
 ```
 
 <Tip warning={true}>
-   Ryzen pre-optimized models are not compatible with transformer pipelines for inference.
+    Optimum-AMD supports only ResNet models from Transformers for inference.
 <Tip>
