@@ -1,0 +1,9 @@
+name: Standard
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: [self-hosted, single-npu, amd-npu, ryzenai]
+    steps:
+      - run: echo "Test"
