@@ -142,7 +142,7 @@ class RyzenAIModel(OptimizedModel):
         raise NotImplementedError
 
     def to(self, device: Union[torch.device, str, int]):
-        # Necessary for compatibility with transformer pipelines 
+        # Necessary for compatibility with transformer pipelines
         return self
 
     @staticmethod
