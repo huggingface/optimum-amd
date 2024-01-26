@@ -50,7 +50,12 @@ RyzenAI provides pre-optimized models for various tasks such as image classifica
 
 
     model_id = "amd/resnet50"
-    model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config="vaip_config2.json")
+
+    # The path and name of the runtime configuration file. A default version of this runtime configuration
+    # file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
+    vaip_config = ".\\vaip_config.json"
+
+    model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config=vaip_config)
     processor = AutoImageProcessor.from_pretrained(model_id)
 
     # Load image
