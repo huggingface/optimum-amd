@@ -84,7 +84,7 @@ Ryzen pre-optimized models are not compatible with transformer pipelines for inf
     image = Image.open(requests.get(url, stream=True).raw)
 
     #  See [quantize.py](https://huggingface.co/mohitsha/timm-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details on quantization.
-    quantized_model_path = "mohitsha/timm_resnet18_onnx_quantized_ryzen"
+    quantized_model_path = "mohitsha/timm-resnet18-onnx-quantized-ryzen"
 
     # The path and name of the runtime configuration file. A default version of this runtime configuration
     # file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
