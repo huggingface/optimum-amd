@@ -1,4 +1,4 @@
-name: Standard
+name: AMD NPU 
 on:
   workflow_dispatch:
 
