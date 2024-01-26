@@ -1,7 +1,10 @@
 name: AMD NPU 
 on:
   workflow_dispatch:
-
+  pull_request:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/npu_tests.yml"
 jobs:
   test:
     runs-on: [self-hosted, single-npu, amd-npu, ryzenai]
