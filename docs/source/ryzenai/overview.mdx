@@ -12,7 +12,9 @@ AMD's Ryzen™ AI family of laptop processors provide users with an integrated N
 
 Optimum-AMD provides easy interface for loading and inference of Hugging Face models on Ryzen AI accelerator.
 
-## Ryzen AI Environment setup
+## Installation
+
+### Ryzen AI Environment setup
 
 A Ryzen AI environment needs to be enabled to use this library. Please refer to Ryzen AI's [Installation](https://ryzenai.docs.amd.com/en/latest/inst.html) and [Runtime Setup](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html).
 
@@ -20,41 +22,47 @@ Note:
 The RyzenAI Model requires a runtime configuration file. A default version of this runtime configuration file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
 For more information refer to [runtime-configuration-file](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html#runtime-configuration-file)
 
+### Install Optimum-amd
+
+```bash
+git clone https://github.com/huggingface/optimum-amd.git
+cd optimum-amd
+pip install -e .
+```
+
+### Install Optimum from source
+
+```bash
+pip install git+https://github.com/huggingface/optimum.git
+```
 
 ## Inference with [pre-optimized models](https://huggingface.co/models?other=RyzenAI)
 
 RyzenAI provides pre-optimized models for various tasks such as image classification, super-resolution, object-detection, etc. Here's an example to run Resnet for image classification:
 
 ```python
+    from functools import partial
+
     from datasets import load_dataset
 
     from optimum.amd.ryzenai import RyzenAIModelForImageClassification
-    from transformers import AutoImageProcessor
+    from transformers import AutoImageProcessor, pipeline
 
-    model_id = 'amd/resnet50'
-    model = RyzenAIModelForImageClassification.from_pretrained(
-        model_id,
-        vaip_config='vaip_config.json',
-    )
+
+    model_id = "amd/resnet50"
+    model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config="vaip_config2.json")
+    processor = AutoImageProcessor.from_pretrained(model_id)
 
     # Load image
     dataset = load_dataset("imagenet-1k", split="validation", streaming=True, trust_remote_code=True)
     data = next(iter(dataset))
     image = data["image"]
 
-    # Utilize the model-specific pre-processing function. Note that this may vary for other models.
-    def preprocess(image):
-        processor = AutoImageProcessor.from_pretrained("microsoft/resnet-50")
-        inputs = processor(image, return_tensors="pt")
-
-        # convert NCHW to NHWC
-        key, value = next(iter(inputs.items()))
-        inputs[key] = value.permute(0, 2, 3, 1)
-        return inputs
-
-    logits = model(**preprocess(image)).logits
-
-    predicted_label = logits.argmax(-1).item()
+    cls_pipe = pipeline(
+        "image-classification", model=model, image_processor=partial(processor, data_format="channels_last")
+    )
+    outputs = cls_pipe(image)
+    print(outputs)
 ```
 
 <Tip warning={true}>
