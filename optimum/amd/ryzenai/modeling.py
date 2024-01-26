@@ -142,7 +142,8 @@ class RyzenAIModel(OptimizedModel):
         raise NotImplementedError
 
     def to(self, device: Union[torch.device, str, int]):
-        raise NotImplementedError("Setting device for RyzenAi is not supported!")
+        # Necessary for compatibility with transformer pipelines 
+        return self
 
     @staticmethod
     def load_model(
