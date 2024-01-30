@@ -30,6 +30,16 @@ RYZEN_PRETRAINED_MODEL_IMAGE_TO_IMAGE = ["amd/PAN", "amd/rcan", "amd/sesr"]
 
 RYZEN_PRETRAINED_MODEL_CUSTOM_TASKS = ["amd/movenet"]
 
+PYTORCH_TIMM_MODEL_FAST = {
+    "default-timm-config": {
+        "timm/efficientnet_b0.ra_in1k": ["image-classification"],
+        "timm/mobilenetv2_050.lamb_in1k": ["image-classification"],
+        "timm/resnet18.a1_in1k": ["image-classification"],
+        "timm/vgg11.tv_in1k": ["image-classification"],
+        "timm/xception71.tf_in1k": ["image-classification"],
+    }
+}
+
 PYTORCH_TIMM_MODEL = {
     "default-timm-config": {
         "timm/botnet26t_256.c1_in1k": ["image-classification"],
