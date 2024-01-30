@@ -32,11 +32,13 @@ RYZEN_PRETRAINED_MODEL_CUSTOM_TASKS = ["amd/movenet"]
 
 PYTORCH_TIMM_MODEL_FAST = {
     "default-timm-config": {
-        "timm/efficientnet_b0.ra_in1k": ["image-classification"],
-        "timm/mobilenetv2_050.lamb_in1k": ["image-classification"],
-        "timm/resnet18.a1_in1k": ["image-classification"],
-        "timm/vgg11.tv_in1k": ["image-classification"],
-        "timm/xception71.tf_in1k": ["image-classification"],
+        "timm/densenet121.ra_in1k": ["image-classification"],
+        "timm/ese_vovnet19b_dw.ra_in1k": ["image-classification"],
+        "timm/ghostnet_100.in1k": ["image-classification"],
+        "timm/inception_v4.tf_in1k": ["image-classification"],
+        "timm/repvgg_b0.rvgg_in1k": ["image-classification"],
+        "timm/resnet10t.c3_in1k": ["image-classification"],
+        "timm/vgg19.tv_in1k": ["image-classification"],
     }
 }
 
