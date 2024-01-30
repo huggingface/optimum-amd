@@ -12,7 +12,7 @@ import timm
 import torch
 from datasets import load_dataset
 from parameterized import parameterized
-from testing_utils import PYTORCH_TIMM_MODEL, PYTORCH_TIMM_MODEL_FAST
+from testing_utils import PYTORCH_TIMM_MODEL, PYTORCH_TIMM_MODEL_LARGE
 
 from optimum.amd.ryzenai import (
     AutoQuantizationConfig,
@@ -135,7 +135,7 @@ class TestTimmQuantization(unittest.TestCase):
         export_dir.cleanup()
         quantization_dir.cleanup()
 
-    @parameterized.expand(_get_models_to_test(PYTORCH_TIMM_MODEL_FAST, library_name="timm"))
+    @parameterized.expand(_get_models_to_test(PYTORCH_TIMM_MODEL, library_name="timm"))
     def test_timm_quantization(
         self,
         test_name: str,
@@ -145,7 +145,7 @@ class TestTimmQuantization(unittest.TestCase):
     ):
         self._quantize(model_name=model_name)
 
-    @parameterized.expand(_get_models_to_test(PYTORCH_TIMM_MODEL, library_name="timm"))
+    @parameterized.expand(_get_models_to_test(PYTORCH_TIMM_MODEL_LARGE, library_name="timm"))
     @pytest.mark.run_slow
     @slow
     def test_timm_quantization_slow(
