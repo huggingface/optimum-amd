@@ -25,6 +25,7 @@ from optimum.amd.ryzenai import (
     RyzenAIModelForImageClassification,
     RyzenAIModelForImageSegmentation,
     RyzenAIModelForImageToImage,
+    RyzenAIModelForObjectDetection,
 )
 from optimum.utils import (
     DummyInputGenerator,
@@ -138,7 +139,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase):
             os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
-            model = RyzenAIModelForImageSegmentation.from_pretrained(
+            model = RyzenAIModelForObjectDetection.from_pretrained(
                 model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
