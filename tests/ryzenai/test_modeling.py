@@ -3,11 +3,13 @@
 
 import gc
 import os
+import tempfile
 import unittest
 
 import huggingface_hub
 import numpy as np
 import onnx
+import onnxruntime
 from parameterized import parameterized
 from testing_utils import (
     RYZEN_PRETRAINED_MODEL_CUSTOM_TASKS,
@@ -18,10 +20,12 @@ from testing_utils import (
 )
 
 from optimum.amd.ryzenai import (
+    RyzenAIModel,
     RyzenAIModelForCustomTasks,
     RyzenAIModelForImageClassification,
     RyzenAIModelForImageSegmentation,
     RyzenAIModelForImageToImage,
+    RyzenAIModelForObjectDetection,
 )
 from optimum.utils import (
     DummyInputGenerator,
@@ -34,6 +38,38 @@ logger = logging.get_logger()
 
 
 SEED = 42
+
+
+class RyzenAIModelIntegrationTest(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.TEST_MODEL_ID = "amd/resnet50"
+
+    def test_load_model_from_hub(self):
+        os.environ["XLNX_ENABLE_CACHE"] = "0"
+        os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+
+        model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\tests\\ryzenai\\vaip_config.json")
+        self.assertIsInstance(model.model, onnxruntime.InferenceSession)
+        self.assertListEqual(model.providers, ["VitisAIExecutionProvider", "CPUExecutionProvider"])
+
+    def test_load_model_with_invalid_config_path(self):
+        with self.assertRaises(ValueError):
+            RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\invalid_path\\vaip_config.json")
+
+    def test_load_model_no_config_path(self):
+        with self.assertRaises(ValueError):
+            RyzenAIModel.from_pretrained(self.TEST_MODEL_ID)
+
+    def test_save_model(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            os.environ["XLNX_ENABLE_CACHE"] = "0"
+            os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+
+            model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\tests\\ryzenai\\vaip_config.json")
+            model.save_pretrained(tmpdirname)
+            folder_contents = os.listdir(tmpdirname)
+            self.assertTrue("ResNet_int.onnx" in folder_contents)
 
 
 class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase):
@@ -61,7 +97,7 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase):
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
             model = RyzenAIModelForImageClassification.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\vaip_config.json"
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
             outputs = model(ort_input)
@@ -103,8 +139,8 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase):
             os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
-            model = RyzenAIModelForImageSegmentation.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\vaip_config.json"
+            model = RyzenAIModelForObjectDetection.from_pretrained(
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
             outputs = model(ort_input)
@@ -145,7 +181,7 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase):
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
             model = RyzenAIModelForImageSegmentation.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\vaip_config.json"
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
             outputs = model(ort_input)
@@ -186,7 +222,7 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase):
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
             model = RyzenAIModelForImageToImage.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\vaip_config.json"
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
             outputs = model(ort_input)
@@ -229,7 +265,7 @@ class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase):
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
             model = RyzenAIModelForCustomTasks.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\vaip_config.json"
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
             )
 
             outputs = model(**ort_input)

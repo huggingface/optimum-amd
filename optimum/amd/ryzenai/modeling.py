@@ -282,7 +282,7 @@ class RyzenAIModel(OptimizedModel):
         if provider == "VitisAIExecutionProvider":
             if vaip_config is None and "config_file" not in (provider_options or {}):
                 raise ValueError(
-                    "No config file provided. Please provide the necessary config file for" "inference with RyzenAI"
+                    "No config file provided. Please provide the necessary config file for inference with RyzenAI"
                 )
 
             if vaip_config and provider_options and "config_file" in provider_options:
@@ -297,6 +297,9 @@ class RyzenAIModel(OptimizedModel):
                 provider_options["config_file"] = vaip_config
 
             vaip_config = provider_options["config_file"]
+
+            if not os.path.exists(vaip_config):
+                raise ValueError(f"Config file not found: {vaip_config}")
 
         preprocessors = None
         if model_path.is_dir():
