@@ -6,15 +6,6 @@ from typing import TYPE_CHECKING
 from transformers.pipelines import PIPELINE_REGISTRY
 from transformers.utils import OptionalDependencyNotAvailable, _LazyModule
 
-from .modeling import RyzenAIModelForImageClassification
-from .pipelines import TimmImageClassificationPipeline
-
-
-PIPELINE_REGISTRY.register_pipeline(
-    "image-classification-timm",
-    pipeline_class=TimmImageClassificationPipeline,
-    pt_model=RyzenAIModelForImageClassification,
-)
 
 _import_structure = {
     "configuration": ["RyzenAIConfig", "QuantizationConfig", "AutoQuantizationConfig"],
@@ -27,6 +18,7 @@ _import_structure = {
         "RyzenAIModelForObjectDetection",
     ],
     "quantization": ["RyzenAIOnnxQuantizer"],
+    "pipelines": ["pipeline"],
     "version": ["__version__"],
 }
 
@@ -42,6 +34,7 @@ if TYPE_CHECKING:
         RyzenAIModelForImageToImage,
         RyzenAIModelForObjectDetection,
     )
+    from .pipelines import pipeline
     from .quantization import RyzenAIOnnxQuantizer
     from .version import __version__
 else:
