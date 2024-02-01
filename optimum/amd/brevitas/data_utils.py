@@ -42,7 +42,7 @@ def model_eval_accelerate(model, data: List[Dict], context_length: int, tokenize
 
             loss = loss_fct(shift_logits, reference_labels)
 
-            ppls_subsample = torch.exp(loss.mean())
+            ppls_subsample = torch.exp(loss)
 
             ppls += ppls_subsample.tolist()
     
