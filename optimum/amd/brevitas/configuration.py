@@ -93,4 +93,4 @@ class BrevitasQuantizationConfig:
             raise ValueError("Per-row activations quantization requires setting replace_mha_with_quantizable to True.")
 
     def requires_fx_graph(self):
-        return self.activations_equalization == "cross_layer"
+        return self.activations_equalization == "cross_layer" or self.apply_weight_equalization
