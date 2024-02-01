@@ -40,7 +40,6 @@ parser.add_argument(
     default=False,
     help="Replace attention with standard PyTorch implementation (default: %(default)s)",
 )
-
 parser.add_argument(
     "--seqlen",
     type=int,

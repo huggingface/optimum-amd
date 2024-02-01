@@ -214,7 +214,7 @@ def apply_act_equalization(
         with activation_equalization_mode(model, alpha, add_mul_node=True, layerwise=True):
             with torch.no_grad():
                 for inps in tqdm(dataset):
-                    model(model, inps)
+                    model(**inps)
 
     elif act_equalization_type == "cross_layer":
         if not isinstance(model, torch.fx.GraphModule):

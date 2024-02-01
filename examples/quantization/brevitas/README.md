@@ -1,15 +1,12 @@
 # Example of quantizing OPT model with Brevitas from Transformers checkpoints
 
-The example with shows an example on how to quantize an OPT model through Brevitas: 
- - Instantiation of facebook's OPT model from HuggingFace transformers
- - The definition and instantiation of a parametrizable `BrevitasQuantizer` which extends `OptimumQuantizer`
- - Optional conversion of the OPT model to an FX representation, leveraging HuggingFace transformers' tracer
- - Prototype support of executing PTQ algorithms and validation, while leveraging CPU offload from HuggingFace accelerate
- - Quantization of the OPT model using Brevitas' PTQ algorithms
-   - Optionally converting the `OPTAttention` layer to `torch.nn.MultiheadAttention` for finer-grained quantization of MHA layers
-   - Optionally applying: SmoothQuant, GPTQ, weight equalization algorithms
- - Validation of the quantized model
- - (WIP) Export to quantized ONNX (QDQ-style), leveraging HuggingFace optimum's ONNX export
+The example shows an example on how to quantize an OPT model through Brevitas:
+
+- Definition and instantiation of a parametrizable `BrevitasQuantizer`.
+- Optional conversion of the OPT model to an FX representation, leveraging Hugging Face transformers' tracer.
+- Support of executing post-training quantization (PTQ) algorithms and validation (SmoothQuant, GPTQ), while leveraging CPU offload from Hugging Face accelerate.
+- Validation of the quantized model.
+- Export of the quantized model as ONNX, QDQ-style.
 
 ## Prerequisites
 
@@ -22,9 +19,9 @@ The examples were tested using:
 ## Running the Example
 
 ```bash
-python quantize_opt.py --apply-act-equalization fx --with-fx
+python quantize_opt.py --model facebook/opt-125m --activations-equalization layerwise
 ```
-To quantize OPT with the graph-based SmoothQuant PTQ algorithm enabled.
+To quantize OPT with SmoothQuant post-training quantization algorithm.
 
 For all the options, please check:
 
