@@ -25,11 +25,7 @@ def model_eval_accelerate(model, data: List[Dict], context_length: int, tokenize
             subsample = {"input_ids": sample["input_ids"][:, start_index:end_index + 1], "attention_mask": sample["attention_mask"][:, start_index:end_index + 1]}
 
             # Add BOS token.
-            bos_tokens_tensor = torch.tensor([[tokenizer.bos_token_id]]).to(device)
-            subsample["input_ids"] = torch.cat([bos_tokens_tensor, subsample["input_ids"]], dim=1)
-            subsample["attention_mask"] = torch.cat(
-                [torch.ones(bos_tokens_tensor.size(), dtype=torch.int64).to(device), subsample["attention_mask"]], dim=1
-            )
+            subsample["input_ids"][0] = tokenizer.bos_token_id
 
             with torch.no_grad():
                 lm_logits = model(**subsample)["logits"]
