@@ -247,10 +247,6 @@ def offload_call_function(
     """
     Attaches AlignDevicesHook to fx.GraphModule call_function nodes. Although accelerate's `offload_model` attaches hooks
     to submodules, it is unable to detect call_function.
-
-    Returns:
-        device_map (`TODO`):
-            TODO
     """
     max_memory = get_max_memory(max_memory)
     devices = list(max_memory.keys())

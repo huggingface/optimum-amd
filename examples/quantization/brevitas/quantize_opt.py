@@ -27,8 +27,6 @@ parser.add_argument(
 parser.add_argument(
     "--apply-weight-equalization", action="store_true", default=False, help="Apply the weight equalization algorithm"
 )
-
-# TODO: explain what fx and layerwise are.
 parser.add_argument(
     "--activations-equalization",
     type=str,

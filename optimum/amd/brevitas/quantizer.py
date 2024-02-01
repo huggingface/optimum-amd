@@ -10,8 +10,6 @@ from brevitas.graph.calibrate import calibration_mode
 from brevitas.graph.equalize import activation_equalization_mode
 from brevitas.graph.gptq import gptq_mode
 from brevitas_examples.common.generative.quantize import quantize_model
-
-# TODO: rather use Optimum/GPTQ data handlers.
 from brevitas_examples.llm.llm_quant.equalize import apply_weight_equalization
 from brevitas_examples.llm.llm_quant.prepare_for_quantize import replace_mha_with_quantizable_layers
 from tqdm import tqdm
@@ -55,7 +53,31 @@ class BrevitasQuantizer(OptimumQuantizer):
         use_auth_token: Optional[Union[bool, str]] = None,
     ):
         """
-        TODO: doc
+        Loads the BrevitasQuantizer and model.
+
+        Arguments:
+            model_name_or_path (`Union[str, Path]`):
+                Can be either the model id of a model repo on the Hugging Face Hub, or a path to a local directory
+                containing a model.
+            subfolder (`str`, defaults to `""`):
+                In case the model files are located inside a subfolder of the model directory / repo on the Hugging
+                Face Hub, you can specify the subfolder name here.
+            revision (`Optional[str]`, *optional*, defaults to `None`):
+                Revision is the specific model version to use. It can be a branch name, a tag name, or a commit id.
+            cache_dir (`Optional[str]`, *optional*):
+                Path to a directory in which a downloaded pretrained model weights have been cached if the standard cache should not be used.
+            trust_remote_code (`bool`, defaults to `False`):
+                Allows to use custom code for the modeling hosted in the model repository. This option should only be set for repositories
+                you trust and in which you have read the code, as it will execute on your local machine arbitrary code present in the
+                model repository.
+            force_download (`bool`, defaults to `False`):
+                Whether or not to force the (re-)download of the model weights and configuration files, overriding the
+                cached versions if they exist.
+            local_files_only (`Optional[bool]`, defaults to `False`):
+                Whether or not to only look at local files (i.e., do not try to download the model).
+            use_auth_token (`Optional[str]`, defaults to `None`):
+                The token to use as HTTP bearer authorization for remote files. If `True`, will use the token generated
+                when running `transformers-cli login` (stored in `~/.huggingface`).
         """
         task = TasksManager.infer_task_from_model(model_name_or_path)
 
@@ -77,7 +99,14 @@ class BrevitasQuantizer(OptimumQuantizer):
         self, quantization_config: BrevitasQuantizationConfig, calibration_dataset: Optional[List[Dict]] = None
     ) -> torch.nn.Module:
         """
-        TODO: doc
+        Quantizes the model using Brevitas according to the `quantization_config`.
+
+        Arguments:
+            quantization_config (`BrevitasQuantizationConfig`):
+                Quantization configuration to use to quantize the model.
+            calibration_dataset (`Optional[List[Dict]]`, defaults to `None`):
+                In case the quantization involves a calibration phase, this argument needs to be specified as a list of inputs to the model.
+                Example: `calibration_dataset = [{"input_ids": torch.tensor([[1, 2, 3, 4]])}, {"input_ids": torch.tensor([[6, 7, 3, 4]])}]` which is a dataset for a model taking `input_ids` as an argument, and which has two samples.
         """
         self.validate_quant_config(quantization_config)
 
@@ -98,8 +127,9 @@ class BrevitasQuantizer(OptimumQuantizer):
             ):
                 input_names = ["input_ids", "attention_mask", "past_key_values"]
             else:
-                # TODO: implement
-                raise ValueError("Not implemented")
+                raise ValueError(
+                    f"Quantization with an FX graph is currently only supported for models taking `input_ids`, `attention_mask` and `past_key_values` as inputs. The model only has the following inputs: {forward_signature}"
+                )
 
             with torch.no_grad():
                 model = symbolic_trace(self.model, input_names)

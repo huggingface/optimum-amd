@@ -104,8 +104,6 @@ class TestQuantization(unittest.TestCase):
 
         self.assertTrue(isinstance(model, torch.fx.GraphModule))
 
-        # TODO: add asserts
-
     @parameterized.expand(SUPPORTED_MODELS.keys())
     def test_gptq(self, model_type: str):
         model_id = SUPPORTED_MODELS[model_type]
