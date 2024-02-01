@@ -30,9 +30,9 @@ parser.add_argument(
 
 # TODO: explain what fx and layerwise are.
 parser.add_argument(
-    "--apply-act-equalization",
+    "--activations-equalization",
     type=str,
-    choices=[None, "fx", "layerwise"],
+    choices=[None, "cross_layer", "layerwise"],
     default=None,
     help="Apply the activation equalization (SmoothQuant) algorithm (choices: [%(choices)s], default: %(default)s)",
 )
@@ -58,9 +58,8 @@ tokenizer = AutoTokenizer.from_pretrained(args.model)
 qconfig = BrevitasQuantizationConfig(
     apply_gptq=args.apply_gptq,
     apply_weight_equalization=args.apply_weight_equalization,
-    activations_equalization=args.apply_act_equalization,
+    activations_equalization=args.activations_equalization,
     replace_mha_with_quantizable=args.replace_mha_with_quantizable,
-    seqlen=args.seqlen,
 )
 
 quantizer = BrevitasQuantizer.from_pretrained(args.model)

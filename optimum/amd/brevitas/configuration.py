@@ -13,10 +13,6 @@ class BrevitasQuantizationConfig:
     Args:
         replace_mha_with_quantizable (`bool`, defaults to `False`):
             TODO
-        seqlen (`int`, defaults to `2048`):
-            TODO: maybe move to a calibration config
-        nsamples (`int`, defaults to `128`):
-            TODO: maybe move to a calibration config
         weights_bitwidth (`int`, defaults to `8`):
             Bitwidth of the weights quantization. For example, with `weights_bitwidth=8`, each weight value is quantized on 8 bits.
         activations_bitwidth (`int`, defaults to `8`):
@@ -46,10 +42,10 @@ class BrevitasQuantizationConfig:
             The granularity of the quantization of the activations. This parameter can either be `"per_tensor"`, `"per_row"` or `"per_group"`. In case static quantization is used (`is_static=True`), only `"per_tensor"` may be used.
         activations_group_size (`int`, defaults to `None`):
             Group size to use for the activations in case `activations_quant_granularity="per_group"`. Defaults to `64` in this case, to `None` otherwise.
-        activations_equalization (`Optional[str]`, defaults to `"fx"`):
+        activations_equalization (`Optional[str]`, defaults to `"cross_layer"`):
             Whether to apply apply activation equalization (SmoothQuant). Possible options are:
             - `None`: No activation equalization.
-            - `"fx"`: TODO
+            - `"cross_layer"`: TODO
             - `"layerwise"`: TODO
         apply_weight_equalization (`bool`, defaults to `False`):
             TODO
@@ -60,8 +56,6 @@ class BrevitasQuantizationConfig:
     """
 
     replace_mha_with_quantizable: bool = False
-    seqlen: int = 2048
-    nsamples: int = 128
     weights_bitwidth: int = 8
     activations_bitwidth: int = 8
     weights_param_method: Literal["stats", "mse"] = "stats"
@@ -75,7 +69,7 @@ class BrevitasQuantizationConfig:
     activations_symmetric: bool = False
     activations_quant_granularity: Literal["per_tensor", "per_row", "per_group"] = "per_tensor"
     activations_group_size: Optional[int] = None
-    activations_equalization: Literal[None, "layerwise", "fx"] = "fx"
+    activations_equalization: Literal[None, "layerwise", "cross_layer"] = "cross_layer"
     apply_weight_equalization: bool = False
     apply_gptq: bool = False
     gptq_act_oder: Optional[bool] = None
@@ -99,4 +93,4 @@ class BrevitasQuantizationConfig:
             raise ValueError("Per-row activations quantization requires setting replace_mha_with_quantizable to True.")
 
     def requires_fx_graph(self):
-        return self.activations_equalization == "fx"
+        return self.activations_equalization == "cross_layer"

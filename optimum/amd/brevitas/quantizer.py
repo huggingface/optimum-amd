@@ -153,7 +153,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             input_quant_granularity=quantization_config.activations_quant_granularity,
             input_group_size=quantization_config.activations_group_size,
             quantize_input_zero_point=quantization_config.quantize_zero_point,
-            seqlen=quantization_config.seqlen,
+            seqlen=2048,  # TODO: It is unclear why this argument needs to be passed here.
         )
 
         # Perform a single inference pass to generate the correct state_dict
@@ -176,7 +176,7 @@ class BrevitasQuantizer(OptimumQuantizer):
 
 @torch.no_grad()
 def apply_act_equalization(
-    model: torch.nn.Module, act_equalization_type, dataset: List[Dict], alpha: float = 0.5
+    model: torch.nn.Module, act_equalization_type: str, dataset: List[Dict], alpha: float = 0.5
 ) -> None:
     model = offload_model(model)
 
@@ -186,7 +186,7 @@ def apply_act_equalization(
                 for inps in tqdm(dataset):
                     model(model, inps)
 
-    elif act_equalization_type == "fx":
+    elif act_equalization_type == "cross_layer":
         if not isinstance(model, torch.fx.GraphModule):
             raise RuntimeError(
                 "An fx.GraphModule model is required to perform cross-layer SmoothQuant activation equalization."
