@@ -269,6 +269,7 @@ def offload_call_function(
                 for k, v in kwargs.items():
                     original_kwargs_device[k] = find_device(v)
                     kwargs[k] = send_to_device(v, device)
+
                 out = old_callable(*args, **kwargs)
 
                 for i, arg in enumerate(args):
@@ -301,7 +302,7 @@ def offload_call_function(
     return device_map
 
 
-def remove_hooks(model):
+def remove_hooks(model: torch.nn.Module):
     for module in model.modules():
         if hasattr(module, "_hf_hook"):
             del module.allocate_params

@@ -97,3 +97,6 @@ class BrevitasQuantizationConfig:
 
         if self.activations_quant_granularity == "per_row" and not self.replace_mha_with_quantizable:
             raise ValueError("Per-row activations quantization requires setting replace_mha_with_quantizable to True.")
+
+    def requires_fx_graph(self):
+        return self.activations_equalization == "fx"

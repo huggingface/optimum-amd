@@ -6,19 +6,21 @@ import logging
 from typing import Dict, List, Optional, Union
 
 import torch
+from brevitas.graph.calibrate import calibration_mode
+from brevitas.graph.equalize import activation_equalization_mode
+from brevitas.graph.gptq import gptq_mode
 from brevitas_examples.common.generative.quantize import quantize_model
-from brevitas_examples.llm.llm_quant.calibrate import apply_calibration
 
 # TODO: rather use Optimum/GPTQ data handlers.
-from brevitas_examples.llm.llm_quant.data import get_c4, get_wikitext2
-from brevitas_examples.llm.llm_quant.equalize import apply_act_equalization, apply_weight_equalization
-from brevitas_examples.llm.llm_quant.gptq import apply_gptq
+from brevitas_examples.llm.llm_quant.equalize import apply_weight_equalization
 from brevitas_examples.llm.llm_quant.prepare_for_quantize import replace_mha_with_quantizable_layers
+from tqdm import tqdm
 
 from optimum.exporters import TasksManager
 from optimum.quantization_base import OptimumQuantizer
 from transformers.utils.fx import symbolic_trace
 
+from .accelerate_utils import offload_model, remove_hooks
 from .configuration import BrevitasQuantizationConfig
 
 
@@ -72,7 +74,7 @@ class BrevitasQuantizer(OptimumQuantizer):
         return cls(model)
 
     def quantize(
-        self, quantization_config: BrevitasQuantizationConfig, calibration_dataloader: Optional[List[Dict]] = None
+        self, quantization_config: BrevitasQuantizationConfig, calibration_dataset: Optional[List[Dict]] = None
     ) -> torch.nn.Module:
         """
         TODO: doc
@@ -84,12 +86,12 @@ class BrevitasQuantizer(OptimumQuantizer):
             or quantization_config.apply_gptq
             or quantization_config.is_static
         )
-        if calibration_dataloader is None and requires_data:
+        if calibration_dataset is None and requires_data:
             raise ValueError(
-                f"No calibration_dataloader was passed, but a calibration dataset is required with the quantization configuration activations_equalization={quantization_config.activations_equalization}, apply_gptq={quantization_config.apply_gptq}, is_static={quantization_config.is_static}."
+                f"No calibration_dataset was passed, but a calibration dataset is required with the quantization configuration activations_equalization={quantization_config.activations_equalization}, apply_gptq={quantization_config.apply_gptq}, is_static={quantization_config.is_static}."
             )
 
-        if quantization_config.activations_equalization == "fx":
+        if quantization_config.requires_fx_graph():
             forward_signature = inspect.signature(self.model.forward).parameters
             if all(
                 input_name in forward_signature for input_name in ["input_ids", "attention_mask", "past_key_values"]
@@ -127,9 +129,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             logger.info(
                 f"Applying Activation Equalization {quantization_config.activations_equalization} (SmoothQuant)..."
             )
-            apply_act_equalization(
-                model, quantization_config.activations_equalization, calibration_dataloader, forward_call
-            )
+            apply_act_equalization(model, quantization_config.activations_equalization, calibration_dataset)
             logger.info("Activation equalization applied.")
 
         # We do not quantize embedding and last fully connected layer
@@ -159,38 +159,83 @@ class BrevitasQuantizer(OptimumQuantizer):
         # Perform a single inference pass to generate the correct state_dict
         if quantization_config.apply_gptq or quantization_config.is_static:
             with torch.no_grad():
-                model(**calibration_dataloader[0])
+                model(**calibration_dataset[0])
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
-            apply_gptq(model, calibration_dataloader, forward_call)
+            apply_gptq(model, calibration_dataset, act_order=quantization_config.gptq_act_oder)
             logger.info("GPTQ applied.")
 
         if quantization_config.activations_bitwidth is not None and quantization_config.is_static:
             logger.info("Applying activation calibration...")
-            apply_calibration(model, calibration_dataloader, forward_call)
+            apply_calibration(model, calibration_dataset)
             logger.info("Activation calibration applied.")
 
         return model
 
-    # TODO: move out of here
-    def get_calibration_dataloader(
-        self,
-        tokenizer,
-        dataset_name="c4",
-        num_samples: int = 100,
-        seqlen: int = 2048,
-        seed: int = 0,
-    ):
-        if dataset_name == "c4":
-            calibration_dataloader = get_c4(nsamples=num_samples, seed=seed, tokenizer=tokenizer, seqlen=seqlen)
-        elif dataset_name == "wikitext2":
-            calibration_dataloader = get_wikitext2(
-                nsamples=num_samples, seqlen=seqlen, seed=seed, tokenizer=tokenizer, type=""
-            )
-        elif dataset_name == "wikitext2-raw":
-            calibration_dataloader = get_wikitext2(
-                nsamples=num_samples, seqlen=seqlen, seed=seed, tokenizer=tokenizer, type="raw"
+
+@torch.no_grad()
+def apply_act_equalization(
+    model: torch.nn.Module, act_equalization_type, dataset: List[Dict], alpha: float = 0.5
+) -> None:
+    model = offload_model(model)
+
+    if act_equalization_type == "layerwise":
+        with activation_equalization_mode(model, alpha, add_mul_node=True, layerwise=True):
+            with torch.no_grad():
+                for inps in tqdm(dataset):
+                    model(model, inps)
+
+    elif act_equalization_type == "fx":
+        if not isinstance(model, torch.fx.GraphModule):
+            raise RuntimeError(
+                "An fx.GraphModule model is required to perform cross-layer SmoothQuant activation equalization."
             )
 
-        return calibration_dataloader
+        with activation_equalization_mode(
+            model, alpha, add_mul_node=False, layerwise=False, co_optimize_act_weights=True
+        ):
+            with torch.no_grad():
+                for inps in tqdm(dataset):
+                    model(**inps)
+
+    else:
+        raise ValueError(f"The activation equalization type {act_equalization_type} not supported.")
+
+    # Remove all accelerate hooks.
+    remove_hooks(model)
+
+
+@torch.no_grad()
+def apply_gptq(
+    model: torch.nn.Module, dataset: List[Dict], act_order: bool = True, group_of_parallel_layers=None
+) -> None:
+    model = offload_model(model)
+
+    with gptq_mode(
+        model,
+        use_quant_activations=False,
+        group_of_parallel_layers=group_of_parallel_layers,
+        act_order=act_order,
+        create_weight_orig=False,
+    ) as gptq:
+        for _ in tqdm(range(gptq.num_layers)):
+            for inps in dataset:
+                gptq.model(**inps)
+            gptq.update()
+
+    # Remove all accelerate hooks.
+    remove_hooks(model)
+
+
+@torch.no_grad()
+def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
+    model = offload_model(model)
+
+    with calibration_mode(model):
+        with torch.no_grad():
+            for inps in tqdm(dataset):
+                model(**inps)
+
+    # Remove all accelerate hooks.
+    remove_hooks(model)
