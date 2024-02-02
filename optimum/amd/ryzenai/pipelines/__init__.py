@@ -11,15 +11,18 @@ from transformers.image_processing_utils import BaseImageProcessor
 from transformers.onnx.utils import get_preprocessor
 
 from ..modeling import RyzenAIModel, RyzenAIModelForImageClassification, RyzenAIModelForObjectDetection
-from ..models import YoloXImageProcessor
+from ..models import YoloV5ImageProcessor, YoloXImageProcessor
 from .image_classification import TimmImageClassificationPipeline
-from .object_detection import YoloXObjectDetectionPipeline
+from .object_detection import YoloV5ObjectDetectionPipeline, YoloXObjectDetectionPipeline
 
 
 if TYPE_CHECKING:
     from transformers.feature_extraction_utils import PreTrainedFeatureExtractor
 
-pipeline_map = {"yolox": {"preprocessor": YoloXImageProcessor, "impl": YoloXObjectDetectionPipeline}}
+pipeline_map = {
+    "yolox": {"preprocessor": YoloXImageProcessor, "impl": YoloXObjectDetectionPipeline},
+    "yolov5": {"preprocessor": YoloV5ImageProcessor, "impl": YoloV5ObjectDetectionPipeline},
+}
 
 RYZENAI_SUPPORTED_TASKS = {
     "image-classification": {
@@ -59,7 +62,10 @@ def load_model(
         ort_model_class = SUPPORTED_TASKS[task]["class"][0]
 
         model = ort_model_class.from_pretrained(
-            model_id, vaip_config=vaip_config, use_auth_token=token, revision=revision
+            model_id,
+            vaip_config=vaip_config,
+            use_auth_token=token,
+            revision=revision,
         )
     elif isinstance(model, RyzenAIModel):
         model_id = None

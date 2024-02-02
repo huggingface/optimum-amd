@@ -7,15 +7,12 @@ from transformers.utils import _LazyModule
 
 
 _import_structure = {
-    "yolox": ["YoloXImageProcessor"],
-    "yolov5": ["YoloV5ImageProcessor"],
+    "image_processing_yolov5": ["YoloV5ImageProcessor"],
 }
-
 
 # Direct imports for type-checking
 if TYPE_CHECKING:
-    from .yolov5 import YoloV5ImageProcessor
-    from .yolox import YoloXImageProcessor
+    from .image_processing_yolox import YoloXImageProcessor
 else:
     import sys
 

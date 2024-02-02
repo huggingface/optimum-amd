@@ -62,3 +62,53 @@ class YoloXObjectDetectionPipeline(Pipeline):
             results = results[:top_k]
 
         return results
+
+
+class YoloV5ObjectDetectionPipeline(Pipeline):
+    def _sanitize_parameters(self, **kwargs):
+        preprocess_params = {}
+        if "timeout" in kwargs:
+            preprocess_params["timeout"] = kwargs["timeout"]
+        postprocess_params = {}
+        if "nms_threshold" in kwargs:
+            postprocess_params["nms_threshold"] = kwargs["nms_threshold"]
+        if "score_threshold" in kwargs:
+            postprocess_params["score_threshold"] = kwargs["score_threshold"]
+        if "top_k" in kwargs:
+            postprocess_params["top_k"] = kwargs["top_k"]
+        if "data_format" in kwargs:
+            preprocess_params["data_format"] = kwargs["data_format"]
+            postprocess_params["data_format"] = kwargs["data_format"]
+
+        return preprocess_params, {}, postprocess_params
+
+    def preprocess(self, image, timeout=None):
+        image = load_image(image, timeout=timeout)
+
+        image_features = self.image_processor(image, return_tensors=self.framework)
+
+        return image_features
+
+    def _forward(self, model_inputs):
+        target_size = model_inputs.pop("target_size")
+        outputs = self.model(**model_inputs)
+        model_outputs = {"target_size": target_size, **outputs}
+
+        return model_outputs
+
+    def postprocess(self, model_outputs, nms_threshold=0.45, score_threshold=0.25, data_format=None, top_k=None):
+        results = []
+        target_size = model_outputs.pop("target_size")
+        outputs = self.image_processor.post_process_object_detection(
+            outputs=model_outputs,
+            target_size=target_size,
+            nms_threshold=nms_threshold,
+            score_threshold=score_threshold,
+            data_format=data_format,
+        )[0]
+
+        results = sorted(outputs, key=lambda x: x["score"], reverse=True)
+        if top_k:
+            results = results[:top_k]
+
+        return results
