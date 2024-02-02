@@ -3,8 +3,7 @@
 
 from typing import TYPE_CHECKING
 
-from transformers.pipelines import PIPELINE_REGISTRY
-from transformers.utils import OptionalDependencyNotAvailable, _LazyModule
+from transformers.utils import _LazyModule
 
 
 _import_structure = {
