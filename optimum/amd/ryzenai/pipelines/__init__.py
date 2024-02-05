@@ -11,9 +11,13 @@ from transformers.image_processing_utils import BaseImageProcessor
 from transformers.onnx.utils import get_preprocessor
 
 from ..modeling import RyzenAIModel, RyzenAIModelForImageClassification, RyzenAIModelForObjectDetection
-from ..models import YoloV5ImageProcessor, YoloXImageProcessor
+from ..models import YoloV3ImageProcessor, YoloV5ImageProcessor, YoloXImageProcessor
 from .image_classification import TimmImageClassificationPipeline
-from .object_detection import YoloV5ObjectDetectionPipeline, YoloXObjectDetectionPipeline
+from .object_detection import (
+    YoloV3ObjectDetectionPipeline,
+    YoloV5ObjectDetectionPipeline,
+    YoloXObjectDetectionPipeline,
+)
 
 
 if TYPE_CHECKING:
@@ -22,6 +26,7 @@ if TYPE_CHECKING:
 pipeline_map = {
     "yolox": {"preprocessor": YoloXImageProcessor, "impl": YoloXObjectDetectionPipeline},
     "yolov5": {"preprocessor": YoloV5ImageProcessor, "impl": YoloV5ObjectDetectionPipeline},
+    "yolov3": {"preprocessor": YoloV3ImageProcessor, "impl": YoloV3ObjectDetectionPipeline},
 }
 
 RYZENAI_SUPPORTED_TASKS = {
@@ -62,10 +67,7 @@ def load_model(
         ort_model_class = SUPPORTED_TASKS[task]["class"][0]
 
         model = ort_model_class.from_pretrained(
-            model_id,
-            vaip_config=vaip_config,
-            use_auth_token=token,
-            revision=revision,
+            model_id, vaip_config=vaip_config, use_auth_token=token, revision=revision, provider="CPUExecutionProvider"
         )
     elif isinstance(model, RyzenAIModel):
         model_id = None

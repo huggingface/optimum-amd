@@ -12,7 +12,7 @@ _import_structure = {
 
 # Direct imports for type-checking
 if TYPE_CHECKING:
-    from .image_processing_yolox import YoloXImageProcessor
+    from .image_processing_yolov5 import YoloV5ImageProcessor
 else:
     import sys
 

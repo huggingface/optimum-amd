@@ -112,3 +112,7 @@ class YoloV5ObjectDetectionPipeline(Pipeline):
             results = results[:top_k]
 
         return results
+
+
+class YoloV3ObjectDetectionPipeline(YoloV5ObjectDetectionPipeline):
+    pass
