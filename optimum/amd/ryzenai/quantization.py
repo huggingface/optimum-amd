@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Callable, List, Optional, Union
 
 import onnx
+import torch
 from datasets import Dataset, load_dataset
 from onnxruntime.quantization import CalibrationDataReader
 from vai_q_onnx import quantize_static
@@ -18,6 +19,7 @@ from optimum.quantization_base import OptimumQuantizer
 from transformers import PretrainedConfig
 
 from .configuration import QuantizationConfig, RyzenAIConfig
+from .modeling import RyzenAIModel
 
 
 LOGGER = logging.getLogger(__name__)
@@ -55,6 +57,8 @@ class RyzenAICalibrationDataReader(CalibrationDataReader):
             pass
 
         if featurized_samples is not None and len(featurized_samples) > 0:
+            for name in featurized_samples:
+                featurized_samples[name] = torch.stack(featurized_samples[name]).numpy()
             return featurized_samples
         return None
 
@@ -120,7 +124,10 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
                 )
             file_name = onnx_files[0].name
 
-        if os.path.isdir(model_or_path):
+        if isinstance(model_or_path, RyzenAIModel):
+            if path is None:
+                path = Path(model_or_path.model._model_path)
+        elif os.path.isdir(model_or_path):
             path = Path(model_or_path) / file_name
         else:
             raise ValueError(f"Unable to load model from {model_or_path}.")

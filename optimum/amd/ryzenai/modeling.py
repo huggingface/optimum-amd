@@ -18,6 +18,7 @@ from onnx import shape_inference
 from onnx.tools import update_model_dims
 
 from optimum.exporters import TasksManager
+from optimum.exporters.onnx import main_export
 from optimum.modeling_base import FROM_PRETRAINED_START_DOCSTRING, OptimizedModel
 from optimum.onnx.utils import _get_external_data_paths
 from optimum.utils.save_utils import maybe_load_preprocessors
@@ -621,6 +622,62 @@ class RyzenAIModelForImageClassification(RyzenAIModelForCustomTasks):
         outputs = self._prepare_onnx_outputs(onnx_outputs, use_torch=use_torch)
 
         return ImageClassifierOutput(logits=next(iter(outputs.values())))
+
+    @classmethod
+    def _export(
+        cls,
+        model_id: str,
+        config: "PretrainedConfig" = None,
+        use_auth_token: Optional[Union[bool, str]] = None,
+        revision: Optional[str] = None,
+        force_download: bool = False,
+        cache_dir: Optional[str] = None,
+        subfolder: str = "",
+        # use_auth_token=use_auth_token,
+        local_files_only: bool = False,
+        trust_remote_code: bool = False,
+        vaip_config: Optional[str] = None,
+        # vaip_config=vaip_config,
+        provider: str = "CPUExecutionProvider",
+        session_options: Optional[ort.SessionOptions] = None,
+        provider_options: Optional[Dict[str, Any]] = None,
+        use_io_binding: Optional[bool] = None,
+        task: Optional[str] = None,
+    ) -> "RyzenAIModel":
+
+        if model_id.startswith("timm"):
+            save_dir = TemporaryDirectory()
+            save_dir_path = Path(save_dir.name)
+            main_export(
+                model_name_or_path=model_id,
+                output=save_dir_path,
+                task="image-classification",
+                opset=17,
+            )
+            config = PretrainedConfig.from_pretrained(save_dir_path)
+            pretrained_cfg = config.pretrained_cfg if hasattr(config, "pretrained_cfg") else config
+            if pretrained_cfg.get("input_size") and pretrained_cfg.get("num_classes"):
+                input_size = [1] + pretrained_cfg["input_size"]
+                output_size = [1, pretrained_cfg["num_classes"]]
+                static_onnx_path = cls.reshape(
+                    Path(save_dir_path) / "model.onnx",
+                    input_shape_dict={"pixel_values": input_size},
+                    output_shape_dict={"logits": output_size},
+                )
+
+                return cls._from_pretrained(
+                    static_onnx_path.parent,
+                    pretrained_cfg,
+                    file_name=static_onnx_path.name,
+                    model_save_dir=save_dir,
+                    provider="CPUExecutionProvider",
+                    session_options=session_options,
+                    provider_options=provider_options,
+                )
+        raise NotImplementedError(
+            "Exporting the model not from timm is not supported. Please follow the documentation to export the model and run the model using the RyzenAIModel!"
+        )
+
 
 
 class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):
