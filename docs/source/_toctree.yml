@@ -7,9 +7,24 @@
     title: AMD GPUs quicktour
   - local: amdgpu/perf_hardware
     title: Multi-GPU usage
-  - local: ryzenai/overview
-    title: Ryzen AI quicktour
-  - local: ryzenai/package_reference
-    title: Ryzen AI package reference
+  - sections:
+    - local: ryzenai/overview
+      title: Ryzen AI quicktour
+    - sections:
+      - local: ryzenai/usage_guides/quantization
+        title: How to apply quantization
+      title: How-to guides
+      isExpanded: false
+    - sections:
+      - local: ryzenai/package_reference/modeling
+        title: RyzenAI Models
+      - local: ryzenai/package_reference/configuration
+        title: Configuration
+      - local: ryzenai/package_reference/quantization
+        title: Quantization
+      title: Ryzen AI package reference
+      isExpanded: false
+    title: Ryzen AI
+    isExpanded: false
   title: Optimum-AMD
   isExpanded: false
