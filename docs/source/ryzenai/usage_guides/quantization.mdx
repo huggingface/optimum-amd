@@ -2,26 +2,29 @@
 Licensed under the MIT License.
 -->
 
-🤗 Optimum AMD provides a RyzenAI Quantizer that enables you to apply quantization on many models hosted on the
-Hugging Face Hub using the [AMD Vitis AI Quantizer](https://ryzenai.docs.amd.com/en/latest/vai_quant/vai_q_onnx.html).
+# Quantization for Ryzen AI
 
-RyzenAI Quantizer provides an easy-to-use Post Training Quantization (PTQ) flow on the pre-trained model saved in the
-ONNX format. It generates a quantized ONNX model ready to be deployed with the Ryzen AI.
+Ryzen AI IPU best performances are achieved using [quantized models](https://huggingface.co/docs/optimum/concept_guides/quantization). There are two different ways to quantize models for Ryzen AI IPU:
+* through [Vitis AI Quantizer](https://docs.xilinx.com/r/en-US/ug1414-vitis-ai/Vitis-AI-Quantizer), used in Optimum's [`~ryzenai.RyzenAIOnnxQuantizer`].
+* through [Brevitas](https://github.com/Xilinx/brevitas) library, used in Optimum's [`~brevitas.BrevitasQuantizer`].
 
-The Quantizer supports various configuration and functions to quantize models targeting for deployment on IPU_CNN,
-IPU_Transformer and CPU.
+[`~ryzenai.RyzenAIOnnxQuantizer`] is recommended to quantize [timm](https://github.com/huggingface/pytorch-image-models) models, while [`~brevitas.BrevitasQuantizer`] is recommended to quantize other models.
 
-# Creating a RyzenAIOnnxQuantizer
+## Quantization using RyzenAIOnnxQuantizer
 
-Initialize the RyzenAIOnnxQuantizer using the from_pretrained() method:
+🤗 Optimum AMD provides a Ryzen AI Quantizer that enables you to apply quantization on many models hosted on the Hugging Face Hub using the [AMD Vitis AI Quantizer](https://ryzenai.docs.amd.com/en/latest/vai_quant/vai_q_onnx.html).
+
+RyzenAI Quantizer provides an easy-to-use Post Training Quantization (PTQ) flow on the pre-trained model saved in the ONNX format. It generates a quantized ONNX model ready to be deployed with the Ryzen AI.
+
+The Quantizer supports various configuration and functions to quantize models targeting for deployment on IPU_CNN, IPU_Transformer and CPU.
+
+The [`~ryzenai.RyzenAIOnnxQuantizer`] can be initialized using the `from_pretrained` method, either from a local model folder or a model hosted on Hugging Face Hub:
 
 ```python
     from optimum.amd.ryzenai import RyzenAIOnnxQuantizer
 
     quantizer = RyzenAIOnnxQuantizer.from_pretrained("path/to/model")
 ```
-
-## Quantization example
 
 Below you will find an easy end-to-end example on how to quantize a VGG model from [Timm](https://huggingface.co/docs/timm/index) library.
 
@@ -93,5 +96,8 @@ Below you will find an easy end-to-end example on how to quantize a VGG model fr
         dataset=train_calibration_dataset,
         save_dir=quantization_dir
     )
-
 ```
+
+## Quantization using BrevitasQuantizer
+
+Upcoming.
