@@ -116,3 +116,7 @@ class YoloV5ObjectDetectionPipeline(Pipeline):
 
 class YoloV3ObjectDetectionPipeline(YoloV5ObjectDetectionPipeline):
     pass
+
+
+class YoloV8ObjectDetectionPipeline(YoloV5ObjectDetectionPipeline):
+    pass

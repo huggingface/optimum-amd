@@ -360,7 +360,7 @@ class YoloV5ImageProcessor(BaseImageProcessor):
 
             target_size.append(image.shape)
 
-            image = letterbox(image, [self.size["height"], self.size["width"]], stride=self.stride, auto=False)[0]
+            image = letterbox(image, [self.size["height"], self.size["width"]], auto=False)[0]
             image = image.transpose((2, 0, 1))
             input_data_format = ChannelDimension.FIRST
 

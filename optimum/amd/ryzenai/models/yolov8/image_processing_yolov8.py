@@ -7,6 +7,8 @@ from typing import Dict, Optional, Union
 import cv2
 import numpy as np
 import torch
+import torch.nn as nn
+import torchvision
 
 from transformers.image_processing_utils import BaseImageProcessor, BatchFeature
 from transformers.image_transforms import (
@@ -21,30 +23,6 @@ from transformers.image_utils import (
     to_numpy_array,
 )
 from transformers.utils import TensorType
-
-
-def nms(boxes, scores, nms_thr):
-    x1 = boxes[:, 0]
-    y1 = boxes[:, 1]
-    x2 = boxes[:, 2]
-    y2 = boxes[:, 3]
-    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
-    order = scores.argsort()[::-1]
-    keep = []
-    while order.size > 0:
-        i = order[0]
-        keep.append(i)
-        xx1 = np.maximum(x1[i], x1[order[1:]])
-        yy1 = np.maximum(y1[i], y1[order[1:]])
-        xx2 = np.minimum(x2[i], x2[order[1:]])
-        yy2 = np.minimum(y2[i], y2[order[1:]])
-        w = np.maximum(0.0, xx2 - xx1 + 1)
-        h = np.maximum(0.0, yy2 - yy1 + 1)
-        inter = w * h
-        ovr = inter / (areas[i] + areas[order[1:]] - inter)
-        inds = np.where(ovr <= nms_thr)[0]
-        order = order[inds + 1]
-    return keep
 
 
 def letterbox(
@@ -102,40 +80,72 @@ def letterbox(
     return image, padding_ratios, (padding_width, padding_height)
 
 
-def make_grid(anchor, nx=20, ny=20):
-    d = anchor.device
-    t = anchor.dtype
+def nms(boxes, scores, nms_thr):
+    x1 = boxes[:, 0]
+    y1 = boxes[:, 1]
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    order = scores.argsort()[::-1]
+    keep = []
+    while order.size > 0:
+        i = order[0]
+        keep.append(i)
+        xx1 = np.maximum(x1[i], x1[order[1:]])
+        yy1 = np.maximum(y1[i], y1[order[1:]])
+        xx2 = np.minimum(x2[i], x2[order[1:]])
+        yy2 = np.minimum(y2[i], y2[order[1:]])
+        w = np.maximum(0.0, xx2 - xx1 + 1)
+        h = np.maximum(0.0, yy2 - yy1 + 1)
+        inter = w * h
+        ovr = inter / (areas[i] + areas[order[1:]] - inter)
+        inds = np.where(ovr <= nms_thr)[0]
+        order = order[inds + 1]
+    return keep
 
-    shape = 1, 1, ny, nx, 2
 
-    y, x = torch.arange(ny, device=d, dtype=t), torch.arange(nx, device=d, dtype=t)
-    yv, xv = torch.meshgrid(y, x, indexing="ij")
+def dist2bbox(distance, anchor_points, xywh=True, dim=-1):
+    """Transform distance(ltrb) to box(xywh or xyxy)."""
+    lt, rb = torch.split(distance, 2, dim)
+    x1y1 = anchor_points - lt
+    x2y2 = anchor_points + rb
+    if xywh:
+        c_xy = (x1y1 + x2y2) / 2
+        wh = x2y2 - x1y1
+        return torch.cat((c_xy, wh), dim)  # xywh bbox
+    return torch.cat((x1y1, x2y2), dim)  # xyxy bbox
 
-    grid = torch.stack((xv, yv), 2).expand(shape)
-    anchor_grid = (anchor).reshape(3, 2).view((1, len(anchor) // 2, 1, 1, 2))
 
-    return grid, anchor_grid
+def make_anchors(feats, strides, grid_cell_offset=0.5):
+    """Generate anchors from features."""
+    anchor_points, stride_tensor = [], []
+    dtype, device = feats[0].dtype, feats[0].device
+    for i, stride in enumerate(strides):
+        _, _, h, w = feats[i].shape
+        sx = torch.arange(end=w, device=device, dtype=dtype) + grid_cell_offset  # shift x
+        sy = torch.arange(end=h, device=device, dtype=dtype) + grid_cell_offset  # shift y
+        sy, sx = torch.meshgrid(sy, sx, indexing="ij")
+        anchor_points.append(torch.stack((sx, sy), -1).view(-1, 2))
+        stride_tensor.append(torch.full((h * w, 1), stride, dtype=dtype, device=device))
+
+    return torch.cat(anchor_points), torch.cat(stride_tensor)
 
 
-def postprocess(inputs, anchors, num_classes=80, stride=[8, 16, 32], shapes=[80, 40, 20]):
-    nl = len(anchors)
-    no = num_classes + 5
+def postprocess(inputs, reg_max=16, num_classes=80, stride=[8, 16, 32]):
+    dfl = DFL(reg_max)
 
-    outputs = []
-    for i in range(nl):
-        bs, _, ny, nx = inputs[i].shape
-        grid, anchor_grid = make_grid(anchors[2 - i], nx, ny)
+    no = num_classes + reg_max * 4
+    stride = torch.tensor(stride)
 
-        inputs[i] = inputs[i].view(bs, nl, no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+    box, cls = torch.cat([xi.view(inputs[0].shape[0], no, -1) for xi in inputs], 2).split(
+        (reg_max * 4, num_classes), 1
+    )
+    anchors, strides = (x.transpose(0, 1) for x in make_anchors(inputs, stride, 0.5))
 
-        xy = (torch.sigmoid(inputs[i][..., 0:2]) + grid) * stride[2 - i]
-        wh = (torch.exp(inputs[i][..., 2:4])) * anchor_grid
+    dbox = dist2bbox(dfl(box), anchors.unsqueeze(0), xywh=True, dim=1) * strides
+    y = torch.cat((dbox, cls.sigmoid()), 1)
 
-        conf = inputs[i][..., 4:]
-        y = torch.cat((xy, wh, conf), -1)
-        outputs.append(y.view(bs, -1, no))
-
-    return torch.cat(outputs, 1)
+    return y
 
 
 def box_iou(box1, box2):
@@ -175,6 +185,7 @@ def xywh2xyxy(x):
 
 def non_max_suppression(
     predictions,
+    has_confidence,
     confidence_threshold=0.25,
     iou_threshold=0.45,
     classes=None,
@@ -183,6 +194,7 @@ def non_max_suppression(
     labels=(),
     max_detections=300,
     merge_nms=False,  # True
+    conf_index=5,
 ):
     """Runs Non-Maximum Suppression (NMS) on inference results
     Args:
@@ -198,8 +210,9 @@ def non_max_suppression(
         List of detections, each with a tensor of shape (num_detections, 6) [xyxy, confidence, class]
     """
 
-    num_classes = predictions.shape[2] - 5  # Number of classes
-    has_confidence = predictions[..., 4] > confidence_threshold  # Candidates
+    num_classes = predictions.shape[2] - conf_index  # Number of classes
+    # has_confidence1 = predictions[..., 4] > confidence_threshold  # Candidates
+    # has_confidence = predictions.transpose(2,1)[:, 4:4+num_classes].amax(1) > confidence_threshold  # candidates
 
     # Checks
     assert (
@@ -208,7 +221,7 @@ def non_max_suppression(
     assert 0 <= iou_threshold <= 1, f"Invalid IoU {iou_threshold}, valid values are between 0.0 and 1.0"
 
     # Settings
-    min_box_size, max_box_size = 2, 4096  # Minimum and maximum box width and height
+    min_box_size, max_box_size = 2, 7680  # Minimum and maximum box width and height
     max_nms = 30000  # Maximum number of boxes into torchvision.ops.nms()
     time_limit = 10.0  # Seconds to quit after
     redundant = True  # Require redundant detections
@@ -219,6 +232,7 @@ def non_max_suppression(
 
     for image_idx, prediction in enumerate(predictions):
         prediction[((prediction[..., 2:4] < min_box_size) | (prediction[..., 2:4] > max_box_size)).any(1), 4] = 0
+
         prediction = prediction[has_confidence[image_idx]]
 
         # Concatenate apriori labels if autolabelling
@@ -235,19 +249,26 @@ def non_max_suppression(
             continue
 
         # Compute confidence
-        prediction[:, 5:] *= prediction[:, 4:5]  # Confidence = obj_conf * class_conf
+        if conf_index == 5:
+            prediction[:, 5:] *= prediction[:, 4:5]  # Confidence = obj_conf * class_conf
 
         # Box (center x, center y, width, height) to (x1, y1, x2, y2)
         boxes = xywh2xyxy(prediction[:, :4])
 
         # Detections matrix nx6 (xyxy, confidence, class)
         if multi_label:
-            indices, class_indices = (prediction[:, 5:] > confidence_threshold).nonzero(as_tuple=False).T
+            indices, class_indices = (prediction[:, conf_index:] > confidence_threshold).nonzero(as_tuple=False).T
             prediction = torch.cat(
-                (boxes[indices], prediction[indices, class_indices + 5, None], class_indices[:, None].float()), 1
+                (
+                    boxes[indices],
+                    prediction[indices, class_indices + conf_index, None],
+                    class_indices[:, None].float(),
+                ),
+                1,
             )
         else:  # Best class only
-            confidence_values, class_indices = prediction[:, 5:].max(1, keepdim=True)
+            confidence_values, class_indices = prediction[:, conf_index:].max(1, keepdim=True)
+
             prediction = torch.cat((boxes, confidence_values, class_indices.float()), 1)[
                 confidence_values.view(-1) > confidence_threshold
             ]
@@ -260,14 +281,14 @@ def non_max_suppression(
         num_boxes = prediction.shape[0]  # Number of boxes
         if not num_boxes:  # No boxes
             continue
-        elif num_boxes > max_nms:  # Excess boxes
-            prediction = prediction[prediction[:, 4].argsort(descending=True)[:max_nms]]  # Sort by confidence
+
+        prediction = prediction[prediction[:, 4].argsort(descending=True)[:max_nms]]  # Sort by confidence
 
         # Batched NMS
         class_offsets = prediction[:, 5:6] * (0 if agnostic else max_box_size)  # Class offsets
         nms_boxes, nms_scores = prediction[:, :4] + class_offsets, prediction[:, 4]  # Boxes (offset by class), Scores
-        nms_indices = nms(nms_boxes.cpu().detach().numpy(), nms_scores.cpu().detach().numpy(), iou_threshold)  # NMS
-        nms_indices = torch.tensor(nms_indices)
+        nms_indices = torchvision.ops.nms(nms_boxes, nms_scores, iou_threshold)  # NMS
+
         if nms_indices.shape[0] > max_detections:  # Limit detections
             nms_indices = nms_indices[:max_detections]
         if merge_nms and (1 < num_boxes < 3e3):  # Merge NMS (boxes merged using weighted mean)
@@ -315,7 +336,21 @@ def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
     return coords
 
 
-class YoloV3ImageProcessor(BaseImageProcessor):
+class DFL(nn.Module):
+    # Integral module of Distribution Focal Loss (DFL) proposed in Generalized Focal Loss https://ieeexplore.ieee.org/document/9792391
+    def __init__(self, c1=16):
+        super().__init__()
+        self.conv = nn.Conv2d(c1, 1, 1, bias=False).requires_grad_(False)
+        x = torch.arange(c1, dtype=torch.float)
+        self.conv.weight.data[:] = nn.Parameter(x.view(1, c1, 1, 1))
+        self.c1 = c1
+
+    def forward(self, x):
+        b, c, a = x.shape  # batch, channels, anchors
+        return self.conv(x.view(b, 4, self.c1, a).transpose(2, 1).softmax(1)).view(b, 4, a)
+
+
+class YoloV8ImageProcessor(BaseImageProcessor):
     model_input_names = ["pixel_values"]
 
     def __init__(
@@ -324,15 +359,15 @@ class YoloV3ImageProcessor(BaseImageProcessor):
         rescale_factor: Union[int, float] = 1 / 255.0,
         **kwargs,
     ):
-        size = size if size is not None else {"height": 416, "width": 416}
+        size = size if size is not None else {"height": 640, "width": 640}
 
         super().__init__(**kwargs)
         self.size = size
         self.data_format = ChannelDimension.LAST
-        self.stride = [8, 16, 32]
         self.rescale_factor = rescale_factor
-        self.anchors = [[10, 13, 16, 30, 33, 23], [30, 61, 62, 45, 59, 119], [116, 90, 156, 198, 373, 326]]
         self.num_classes = 80
+        self.stride = [8, 16, 32]
+        self.reg_max = 32
 
     def preprocess(
         self,
@@ -361,7 +396,7 @@ class YoloV3ImageProcessor(BaseImageProcessor):
 
             target_size.append(image.shape)
 
-            image = letterbox(image, [self.size["height"], self.size["width"]], stride=self.stride, auto=False)[0]
+            image = letterbox(image, [self.size["height"], self.size["width"]], auto=False)[0]
             image = image.transpose((2, 0, 1))
             input_data_format = ChannelDimension.FIRST
 
@@ -384,20 +419,21 @@ class YoloV3ImageProcessor(BaseImageProcessor):
         self,
         outputs,
         target_size,
-        nms_threshold: float = 0.45,
+        nms_threshold: float = 0.7,
         score_threshold: float = 0.25,
         data_format: Union[str, ChannelDimension] = None,
         anchors=None,
         classes=None,
         num_classes=80,
         agnostic_nms=False,
-        multi_label=True,
+        multi_label=False,
         max_detections=1000,
         stride=None,
-        merge_nms=True,
+        reg_max=16,
+        merge_nms=False,
     ):
         data_format = data_format if data_format is not None else self.data_format
-        anchors = anchors if anchors is not None else self.anchors
+        # anchors = anchors if anchors is not None else self.anchors
 
         if classes:
             num_classes = len(classes)
@@ -412,18 +448,21 @@ class YoloV3ImageProcessor(BaseImageProcessor):
         if data_format == ChannelDimension.LAST:
             outputs = [torch.permute(out, (0, 3, 1, 2)) for out in outputs]
 
-        anchors = torch.tensor(anchors)
-        predictions = postprocess(outputs, anchors, num_classes, stride)
+        predictions = postprocess(outputs, num_classes=num_classes, reg_max=reg_max, stride=stride)
+
+        has_confidence = predictions[:, 4 : 4 + num_classes].amax(1) > score_threshold
 
         dets = non_max_suppression(
-            predictions,
+            predictions.transpose(2, 1),
+            has_confidence,
             score_threshold,
-            nms_threshold,
+            0.7,
             classes,
             agnostic_nms,
-            multi_label=multi_label,
             merge_nms=merge_nms,
             max_detections=max_detections,
+            multi_label=multi_label,
+            conf_index=4,
         )
 
         results = []

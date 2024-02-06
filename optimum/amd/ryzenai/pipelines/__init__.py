@@ -11,11 +11,12 @@ from transformers.image_processing_utils import BaseImageProcessor
 from transformers.onnx.utils import get_preprocessor
 
 from ..modeling import RyzenAIModel, RyzenAIModelForImageClassification, RyzenAIModelForObjectDetection
-from ..models import YoloV3ImageProcessor, YoloV5ImageProcessor, YoloXImageProcessor
+from ..models import YoloV3ImageProcessor, YoloV5ImageProcessor, YoloV8ImageProcessor, YoloXImageProcessor
 from .image_classification import TimmImageClassificationPipeline
 from .object_detection import (
     YoloV3ObjectDetectionPipeline,
     YoloV5ObjectDetectionPipeline,
+    YoloV8ObjectDetectionPipeline,
     YoloXObjectDetectionPipeline,
 )
 
@@ -27,6 +28,7 @@ pipeline_map = {
     "yolox": {"preprocessor": YoloXImageProcessor, "impl": YoloXObjectDetectionPipeline},
     "yolov5": {"preprocessor": YoloV5ImageProcessor, "impl": YoloV5ObjectDetectionPipeline},
     "yolov3": {"preprocessor": YoloV3ImageProcessor, "impl": YoloV3ObjectDetectionPipeline},
+    "yolov8": {"preprocessor": YoloV8ImageProcessor, "impl": YoloV8ObjectDetectionPipeline},
 }
 
 RYZENAI_SUPPORTED_TASKS = {
