@@ -121,6 +121,15 @@ class BrevitasQuantizer(OptimumQuantizer):
                 f"No calibration_dataset was passed, but a calibration dataset is required with the quantization configuration activations_equalization={quantization_config.activations_equalization}, apply_gptq={quantization_config.apply_gptq}, is_static={quantization_config.is_static}."
             )
 
+        dtype = next(iter(self.model.parameters())).dtype
+
+        # Insert standard MHA layers when performing fx based weight/activation equalization to avoid dealing
+        # with all the variability in HF implementations.
+        if quantization_config.replace_mha_with_quantizable:
+            logger.info("Replace HF MHA with quantizable variants...")
+            self.model = replace_mha_with_quantizable_layers(self.model, dtype)
+            logger.info("Replacing done.")
+
         if quantization_config.requires_fx_graph():
             forward_signature = inspect.signature(self.model.forward).parameters
             if all(
@@ -136,15 +145,6 @@ class BrevitasQuantizer(OptimumQuantizer):
                 model = symbolic_trace(self.model, input_names)
         else:
             model = self.model
-
-        dtype = next(iter(model.parameters())).dtype
-
-        # Insert standard MHA layers when performing fx based weight/act equalization to avoid dealing
-        # with all the variability in HF implementations
-        if quantization_config.replace_mha_with_quantizable:
-            logger.info("Replace HF MHA with quantizable variants...")
-            model = replace_mha_with_quantizable_layers(model, dtype)
-            logger.info("Replacing done.")
 
         # Because accelerate is not compatible with FX, we keep two versions of the Model
         # one with FX-traced, the other one not.
