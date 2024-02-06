@@ -49,10 +49,10 @@ class BrevitasQuantizationConfig:
         activations_group_size (`int`, defaults to `None`):
             Group size to use for the activations in case `activations_quant_granularity="per_group"`. Defaults to `64` in this case, to `None` otherwise.
         activations_equalization (`Optional[str]`, defaults to `"cross_layer"`):
-            Whether to apply apply activation equalization (SmoothQuant). Possible options are:
+            Whether to apply activation equalization (SmoothQuant). Possible options are:
             - `None`: No activation equalization.
-            - `"cross_layer"`: Use Brevitas GraphActivationEqualization for activation and weight equalization.
-            - `"layerwise"`: Apply SmoothQuant as described in https://arxiv.org/abs/2211.10438.
+            - `"layerwise"`: Apply SmoothQuant as described in https://arxiv.org/abs/2211.10438. The activation rescaling will be added as multiplication node, that is not fused within a preceding layer.
+            - `"cross_layer"`: Apply SmoothQuant, and fuse the activation rescaling within a preceding layer when possible (example: nn.LayerNorm followed by nn.Linear). This is achieved through a graph capture of the model using [torch.fx](https://pytorch.org/docs/stable/fx.html#module-torch.fx).
         apply_weight_equalization (`bool`, defaults to `False`):
             Applies weight equalization accross layers, following https://arxiv.org/abs/1906.04721. This parameter is useful for models whose activation function is linear or piecewise-linear (like ReLU, used in OPT model), and allows to reduce the quantization error of the weights by balancing scales accross layers.
         apply_gptq (`bool`, defaults to `False`):
