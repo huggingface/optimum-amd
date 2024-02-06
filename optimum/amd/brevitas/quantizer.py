@@ -34,6 +34,7 @@ class BrevitasQuantizer(OptimumQuantizer):
         super().__init__()
         self.model = model
         self.config = self.model.config
+        self.group_of_parallel_layers = None
 
     def validate_quant_config(self, quantization_config: BrevitasQuantizationConfig):
         dtype = next(iter(self.model.parameters()))
@@ -183,7 +184,6 @@ class BrevitasQuantizer(OptimumQuantizer):
             input_quant_granularity=quantization_config.activations_quant_granularity,
             input_group_size=quantization_config.activations_group_size,
             quantize_input_zero_point=quantization_config.quantize_zero_point,
-            seqlen=2048,  # TODO: It is unclear why this argument needs to be passed here.
         )
 
         # Perform a single inference pass to generate the correct state_dict
@@ -193,7 +193,12 @@ class BrevitasQuantizer(OptimumQuantizer):
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
-            apply_gptq(model, calibration_dataset, act_order=quantization_config.gptq_act_oder)
+            apply_gptq(
+                model,
+                calibration_dataset,
+                act_order=quantization_config.gptq_act_oder,
+                group_of_parallel_layers=self.group_of_parallel_layers,
+            )
             logger.info("GPTQ applied.")
 
         if quantization_config.activations_bitwidth is not None and quantization_config.is_static:
@@ -202,6 +207,28 @@ class BrevitasQuantizer(OptimumQuantizer):
             logger.info("Activation calibration applied.")
 
         return model
+
+    """
+    TODO: test this, and maybe use it by default?
+    def find_groups_of_parallel_layers(self, names_of_groups_of_parallel_layers):
+        names = [name for name, _ in self.model.named_modules()]
+        group_of_parallel_layers = []
+        set_found_layers = set()
+        for group in names_of_groups_of_parallel_layers:
+            first_name = group[0]
+            for name in names:
+                if name.endswith(first_name) and name not in set_found_layers:
+                    all_names_present = True
+                    prefix = name.removesuffix(first_name)
+                    for name_in_group in group:
+                        if not prefix + name_in_group in names:
+                            all_names_present = False
+                    if all_names_present:
+                        found_names = [prefix + name_in_group for name_in_group in group]
+                        group_of_parallel_layers.append(found_names)
+                        set_found_layers.update(found_names)
+        self.group_of_parallel_layers = group_of_parallel_layers
+    """
 
 
 @torch.no_grad()
@@ -238,8 +265,14 @@ def apply_act_equalization(
 
 @torch.no_grad()
 def apply_gptq(
-    model: torch.nn.Module, dataset: List[Dict], act_order: bool = True, group_of_parallel_layers=None
+    model: torch.nn.Module,
+    dataset: List[Dict],
+    act_order: bool = True,
+    group_of_parallel_layers: Optional[List[List]] = None,
 ) -> None:
+    """
+    To speed up GPTQ computation, we can look through the model to find layers that can be optimized in parallel because they do not depend on each other. A typical case is the input matrices of the attention layer. We just need to specify the suffix of the layer, and they will be matched across the entire structure.
+    """
     model = offload_model(model)
 
     with gptq_mode(

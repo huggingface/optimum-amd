@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 import logging
-from typing import Dict, Optional, Union
+from typing import Dict, Mapping, Optional, Union
 
 import brevitas.config as config
 import torch
@@ -11,12 +11,12 @@ from accelerate.hooks import AlignDevicesHook, add_hook_to_module, remove_hook_f
 from accelerate.utils import (
     check_tied_parameters_in_config,
     compute_module_sizes,
-    find_device,
     find_tied_parameters,
     get_max_layer_size,
     get_max_memory,
     send_to_device,
 )
+from accelerate.utils.modeling import named_module_tensors
 from brevitas.graph.utils import get_module
 from brevitas.utils.python_utils import recurse_getattr
 from psutil import virtual_memory
@@ -81,17 +81,30 @@ def infer_fx_auto_device_map(
     current_device = 0
     current_memory_used = 0
 
-    call_module_list = []
+    call_list = []
+    buffers_attributes = [n for n, _ in list(named_module_tensors(model, recurse=True))]
+    all_modules = [n.target for n in list(model.graph.nodes) if n.op == "call_module"]
     for node in model.graph.nodes:
+        # If it's a module, we simply offload it or move it to the desired device
         if node.op == "call_module":
             name = node.target
             module = get_module(model, node.target)
-            call_module_list.append((name, module))
+            call_list.append((name, module))
+        # If it's get_attr, we check what module it is attached to
+        # In case the module is not part of call_module, we specifically allocate the buffer/parameter on some device
+        # NB: This does NOT guarantee that it will be aligned with whatever input tensor it will be combined with
+        # For that, there is a separate function
+        if node.op == "get_attr":
+            target = node.target
+            if target in buffers_attributes:
+                module_name = ".".join(target.split(".")[:-1])
+                if module_name not in all_modules:
+                    module = get_module(model, target)
+                    call_list.append((target, module))
 
     # Direct submodules and parameters
-    modules_to_treat = (
-        list(model.named_parameters(recurse=False)) + call_module_list + list(model.named_buffers(recurse=False))
-    )
+    modules_to_treat = call_list
+
     # Initialize maximum largest layer, to know which space to keep in memory
     max_layer_size, max_layer_names = get_max_layer_size(modules_to_treat, module_sizes, [])
 
@@ -236,6 +249,7 @@ def infer_fx_auto_device_map(
             current_memory_used += module_size
             device_map[name] = devices[current_device]
 
+    # If we have only one device, we simplify the device_map
     if len(set(device_map.values())) == 1:
         device_map = {"": list(device_map.values())[0]}
     return device_map
@@ -248,30 +262,48 @@ def offload_call_function(
     Attaches AlignDevicesHook to fx.GraphModule call_function nodes. Although accelerate's `offload_model` attaches hooks
     to submodules, it is unable to detect call_function.
     """
-    max_memory = get_max_memory(max_memory)
-    devices = list(max_memory.keys())
+    # If we only have one device, offloading is not needed
+    if len(set(device_map.values())) == 1:
+        return
 
     for node in model.graph.nodes:
         if node.op == "call_function":
 
             def new_func(*args, old_callable=node.target, **kwargs):
-                device = find_device([args, kwargs])
                 args = list(args)
-                original_args_device = []
-                original_kwargs_device = {}
-                for i, arg in enumerate(args):
-                    original_args_device.append(find_device(arg))
-                    args[i] = send_to_device(arg, device)
+                device_mapping = {}
+
+                # Identify the device for each tensor in args and kwargs
+                for _, arg in enumerate(args):
+                    all_devices = find_all_devices(arg)
+                    if all_devices is not None:
+                        device_mapping.update(dict(all_devices))
+
                 for k, v in kwargs.items():
-                    original_kwargs_device[k] = find_device(v)
-                    kwargs[k] = send_to_device(v, device)
+                    all_devices = find_all_devices(arg)
+                    if all_devices is not None:
+                        device_mapping.update(dict(all_devices))
+
+                total_devices = [d for d in list(device_mapping.values()) if d is not None]
+
+                # If there is only one device, no re-alignement is necessary
+                if len(set(total_devices)) > 1:
+                    # Pick the main device, i.e. the first device that is not 'cpu' or 'disk'
+                    if set(device_mapping.values()) == {"cpu"} or set(device_mapping.values()) == {"cpu", "disk"}:
+                        device = "cpu"
+                    else:
+                        device = [d for d in device_mapping.values() if d not in ["cpu", "disk"]][0]
+                    # Align args and kwargs to the same device
+                    args = send_to_device(args, device)
+                    kwargs = send_to_device(kwargs, device)
 
                 out = old_callable(*args, **kwargs)
 
-                for i, arg in enumerate(args):
-                    args[i] = send_to_device(arg, original_args_device[i])
-                for k, v in kwargs.items():
-                    kwargs[k] = send_to_device(v, original_kwargs_device[k])
+                if len(set(total_devices)) > 1:
+                    # Restore the original device to avoid memory leaks
+                    for k, v in device_mapping.items():
+                        k = k.to(v)
+
                 return out
 
             node.meta["orig_target"] = node.target
@@ -279,23 +311,6 @@ def offload_call_function(
 
     model.recompile()
     model.graph.lint()
-
-    ## All keys that have been deal through `call_function` are on CPU by default, and moved when needed
-    all_model_tensors = [name for name, _ in model.state_dict().items()]
-    for module_name in device_map.keys():
-        if module_name == "":
-            all_model_tensors.clear()
-            break
-        else:
-            all_model_tensors = [
-                name
-                for name in all_model_tensors
-                if not name == module_name and not name.startswith(module_name + ".")
-            ]
-    for tensor in all_model_tensors:
-        cpu_index = devices.index("cpu")
-        device_map[tensor] = devices[cpu_index]
-    return device_map
 
 
 def remove_hooks(model: torch.nn.Module):
@@ -321,6 +336,30 @@ def update_internal_dict(module):
         module._hf_hook.weights_map.dataset.state_dict[prefix + key] = recurse_getattr(module, key + ".data")
 
 
+def find_all_devices(data):
+    """
+    Finds the device on which a nested dict/list/tuple of tensors lies (assuming they are all on the same device).
+    Args:
+        (nested list/tuple/dictionary of `torch.Tensor`): The data we want to know the device of.
+    """
+    if isinstance(data, Mapping):
+        devices = []
+        for obj in data.values():
+            device = find_all_devices(obj)
+            if device is not None:
+                devices.extend(device)
+        return devices
+    elif isinstance(data, (tuple, list)):
+        devices = []
+        for obj in data:
+            device = find_all_devices(obj)
+            if device is not None:
+                devices.extend(device)
+        return devices
+    elif isinstance(data, torch.Tensor):
+        return [(data, str(data.device))]
+
+
 def offload_model(model: torch.nn.Module) -> torch.nn.Module:
     """
     Wraps accelerate's infer_auto_device_map and dispatch_model.
@@ -336,7 +375,7 @@ def offload_model(model: torch.nn.Module) -> torch.nn.Module:
 
     if isinstance(model, torch.fx.GraphModule):
         device_map = infer_fx_auto_device_map(model, memory_map)
-        device_map = offload_call_function(model, memory_map, device_map)
+        offload_call_function(model, device_map)
     else:
         device_map = infer_auto_device_map(model, memory_map, no_split_module_classes=model._no_split_modules)
 

@@ -22,23 +22,29 @@ parser.add_argument(
     "--apply-gptq",
     action="store_true",
     default=False,
-    help="Apply the GPTQ algorithm during quantization (Note, currently slow!)",
+    help="Apply the GPTQ algorithm during quantization (Note, currently slow!). This option requires a calibration dataset.",
 )
 parser.add_argument(
-    "--apply-weight-equalization", action="store_true", default=False, help="Apply the weight equalization algorithm"
+    "--apply-weight-equalization", action="store_true", default=False, help="Apply the weight equalization algorithm."
 )
 parser.add_argument(
     "--activations-equalization",
     type=str,
     choices=[None, "cross_layer", "layerwise"],
     default=None,
-    help="Apply the activation equalization (SmoothQuant) algorithm (choices: [%(choices)s], default: %(default)s)",
+    help="Apply the activation equalization (SmoothQuant) algorithm (choices: [%(choices)s], default: %(default)s). This option requires a calibration dataset.",
 )
 parser.add_argument(
     "--replace-mha-with-quantizable",
     action="store_true",
     default=False,
     help="Replace attention with standard PyTorch implementation (default: %(default)s)",
+)
+parser.add_argument(
+    "--is-static",
+    action="store_true",
+    default=False,
+    help="Whether to do static quantization of the activations (default: %(default)s), with pre-computed quantizaton parameters ahead of inference. This option requires a calibration dataset.",
 )
 parser.add_argument(
     "--seqlen",
@@ -57,6 +63,9 @@ qconfig = BrevitasQuantizationConfig(
     apply_weight_equalization=args.apply_weight_equalization,
     activations_equalization=args.activations_equalization,
     replace_mha_with_quantizable=args.replace_mha_with_quantizable,
+    is_static=args.is_static,
+    weights_symmetric=True,
+    activations_symmetric=True,
 )
 
 quantizer = BrevitasQuantizer.from_pretrained(args.model)
@@ -100,6 +109,15 @@ print("Exporting the model to ONNX...")
 # When exporting to ONNX, Accelerate's hooks need to be removed otherwise we have unwanted Cast nodes in the ONNX graph.
 remove_hooks(model)
 
+# TODO: This should be moved elsewhere.
+export_class = StdQCDQONNXManager
+
+# When exporting large model, it is better to explicitly export the floating point weight
+# followed by quantize-dequantize, instead of integer weights + dequantize.
+# PyTorch ONNX export seems to run in some form of weight duplication with integer weights,
+# causing the export to fail because the total model is over 2GB.
+export_class.change_weight_handler(export_quantize_node_weight=True)
+
 # Export to ONNX through optimum.exporters.
-with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
+with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=export_class):
     onnx_export(model, "opt_quantized_onnx", task="text-generation-with-past", do_validation=False)
