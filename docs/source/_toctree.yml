@@ -9,6 +9,8 @@
     title: Multi-GPU usage
   - local: ryzenai/overview
     title: Ryzen AI quicktour
+  - local: ryzenai/quantization
+    title: Quantization for Ryzen AI
   - local: ryzenai/package_reference
     title: Ryzen AI package reference
   title: Optimum-AMD
