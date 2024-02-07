@@ -22,17 +22,19 @@ jobs:
     - uses: actions/checkout@v2
     - name: Create and start a virtual environment
       run: |
-        conda init
         conda create --prefix venv --clone C:\tools\Anaconda3\envs\ryzenai-1.0.1-ci
+        conda init
         conda activate .\venv
     - name: Install dependencies
       run: |
+        conda init
         conda activate .\venv
         python -m pip install --upgrade pip
         pip install .[tests]
         pip install git+https://github.com/huggingface/optimum.git
     - name: Test with Pytest
       run: |
+        conda init
         conda activate .\venv
         pytest -s -v tests/ryzenai/test_modeling.py 
     - name: Cleanup
