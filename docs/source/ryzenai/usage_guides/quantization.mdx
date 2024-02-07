@@ -70,6 +70,7 @@ Below you will find an easy end-to-end example on how to quantize a VGG model fr
             image = image.convert("RGB")
         pixel_values = transforms(image)
         return {"pixel_values": pixel_values}
+        return {"pixel_values": pixel_}
 
     # Step 3: Initialize the RyzenAIOnnxQuantizer with the exported model
     quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir)
