@@ -65,7 +65,7 @@ qconfig = BrevitasQuantizationConfig(
     replace_mha_with_quantizable=args.replace_mha_with_quantizable,
     is_static=args.is_static,
     weights_symmetric=True,
-    activations_symmetric=True,
+    activations_symmetric=args.is_static, # ONNX export only supports unsigned for dynamic quantization
 )
 
 quantizer = BrevitasQuantizer.from_pretrained(args.model)
