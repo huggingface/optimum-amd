@@ -1,6 +1,6 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-name: Ryzen Modeling - Test
+name: Ryzen Quantization Timm- Test
 
 on:
   push:
@@ -38,7 +38,7 @@ jobs:
     - name: Test with Pytest
       run: |
         conda activate .\venv
-        pytest -s -v tests/ryzenai/test_modeling.py 
+        pytest -s -v tests/ryzenai/test_quantization.py 
     - name: Cleanup
       run: |
         rm -r .\venv
