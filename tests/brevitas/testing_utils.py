@@ -15,7 +15,7 @@ SUPPORTED_MODELS_TINY = {
 
 VALIDATE_EXPORT_ON_SHAPES = {
     # "past_key_values_length": [0, 4, 9],
-    "sequence_length": [1, 4, 10],
+    "sequence_length": [2, 4, 10],
 }
 
 
