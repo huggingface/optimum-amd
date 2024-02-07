@@ -36,6 +36,7 @@ jobs:
       run: |
         conda init
         conda activate .\venv
+        $env:XLNX_VART_FIRMWARE="C:\RyzenAiSw\ryzen-ai-sw-1.0.1\voe-4.0-win_amd64\1x4.xclbin"
         pytest -s -v tests/ryzenai/test_modeling.py 
     - name: Cleanup
       run: |
