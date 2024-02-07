@@ -13,6 +13,7 @@ SUPPORTED_MODELS_TINY = {
     "opt": {"hf-internal-testing/tiny-random-OPTForCausalLM": ["text-generation", "text-generation-with-past"]}
 }
 
+# TODO: test sequence_length=1 and past_key_value_length once available in optimum.
 VALIDATE_EXPORT_ON_SHAPES = {
     # "past_key_values_length": [0, 4, 9],
     "sequence_length": [2, 4, 10],
