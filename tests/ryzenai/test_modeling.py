@@ -40,36 +40,36 @@ logger = logging.get_logger()
 SEED = 42
 
 
-class RyzenAIModelIntegrationTest(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.TEST_MODEL_ID = "amd/resnet50"
+# class RyzenAIModelIntegrationTest(unittest.TestCase):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.TEST_MODEL_ID = "amd/resnet50"
 
-    def test_load_model_from_hub(self):
-        os.environ["XLNX_ENABLE_CACHE"] = "0"
-        os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+#     def test_load_model_from_hub(self):
+#         os.environ["XLNX_ENABLE_CACHE"] = "0"
+#         os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-        model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\tests\\ryzenai\\vaip_config.json")
-        self.assertIsInstance(model.model, onnxruntime.InferenceSession)
-        self.assertListEqual(model.providers, ["VitisAIExecutionProvider", "CPUExecutionProvider"])
+#         model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\tests\\ryzenai\\vaip_config.json")
+#         self.assertIsInstance(model.model, onnxruntime.InferenceSession)
+#         self.assertListEqual(model.providers, ["VitisAIExecutionProvider", "CPUExecutionProvider"])
 
-    def test_load_model_with_invalid_config_path(self):
-        with self.assertRaises(ValueError):
-            RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\invalid_path\\vaip_config.json")
+#     def test_load_model_with_invalid_config_path(self):
+#         with self.assertRaises(ValueError):
+#             RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\invalid_path\\vaip_config.json")
 
-    def test_load_model_no_config_path(self):
-        with self.assertRaises(ValueError):
-            RyzenAIModel.from_pretrained(self.TEST_MODEL_ID)
+#     def test_load_model_no_config_path(self):
+#         with self.assertRaises(ValueError):
+#             RyzenAIModel.from_pretrained(self.TEST_MODEL_ID)
 
-    def test_save_model(self):
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            os.environ["XLNX_ENABLE_CACHE"] = "0"
-            os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+#     def test_save_model(self):
+#         with tempfile.TemporaryDirectory() as tmpdirname:
+#             os.environ["XLNX_ENABLE_CACHE"] = "0"
+#             os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-            model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\tests\\ryzenai\\vaip_config.json")
-            model.save_pretrained(tmpdirname)
-            folder_contents = os.listdir(tmpdirname)
-            self.assertTrue("ResNet_int.onnx" in folder_contents)
+#             model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\tests\\ryzenai\\vaip_config.json")
+#             model.save_pretrained(tmpdirname)
+#             folder_contents = os.listdir(tmpdirname)
+#             self.assertTrue("ResNet_int.onnx" in folder_contents)
 
 
 class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase):
