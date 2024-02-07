@@ -4,12 +4,12 @@
 
 RYZEN_PRETRAINED_MODEL_IMAGE_CLASSIFICATION = [
     "amd/efficientnet-es",
-    # "amd/ese_vovnet39b",
-    # "amd/inception_v4",
-    # "amd/mnasnet_b1",
-    # "amd/mobilenet_v2_1.0_224",
-    # "amd/resnet50",
-    # "amd/squeezenet",
+    "amd/ese_vovnet39b",
+    "amd/inception_v4",
+    "amd/mnasnet_b1",
+    "amd/mobilenet_v2_1.0_224",
+    "amd/resnet50",
+    "amd/squeezenet",
 ]
 
 
