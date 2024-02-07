@@ -109,15 +109,6 @@ print("Exporting the model to ONNX...")
 # When exporting to ONNX, Accelerate's hooks need to be removed otherwise we have unwanted Cast nodes in the ONNX graph.
 remove_hooks(model)
 
-# TODO: This should be moved elsewhere.
-export_class = StdQCDQONNXManager
-
-# When exporting large model, it is better to explicitly export the floating point weight
-# followed by quantize-dequantize, instead of integer weights + dequantize.
-# PyTorch ONNX export seems to run in some form of weight duplication with integer weights,
-# causing the export to fail because the total model is over 2GB.
-export_class.change_weight_handler(export_quantize_node_weight=True)
-
 # Export to ONNX through optimum.exporters.
-with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=export_class):
+with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
     onnx_export(model, "opt_quantized_onnx", task="text-generation-with-past", do_validation=False)
