@@ -255,9 +255,7 @@ def infer_fx_auto_device_map(
     return device_map
 
 
-def offload_call_function(
-    model: torch.fx.GraphModule, max_memory: Optional[Dict[Union[int, str], Union[int, str]]], device_map: Dict
-):
+def offload_call_function(model: torch.fx.GraphModule, device_map: Dict):
     """
     Attaches AlignDevicesHook to fx.GraphModule call_function nodes. Although accelerate's `offload_model` attaches hooks
     to submodules, it is unable to detect call_function.
