@@ -78,6 +78,7 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase):
         set_seed(SEED)
 
         all_files = huggingface_hub.list_repo_files(model_id, repo_type="model")
+
         file_name = [name for name in all_files if name.endswith(".onnx")][0]
 
         onnx_model_path = huggingface_hub.hf_hub_download(model_id, file_name)
