@@ -54,7 +54,9 @@ class BrevitasQuantizationConfig:
             - `"layerwise"`: Apply SmoothQuant as described in https://arxiv.org/abs/2211.10438. The activation rescaling will be added as multiplication node, that is not fused within a preceding layer.
             - `"cross_layer"`: Apply SmoothQuant, and fuse the activation rescaling within a preceding layer when possible (example: nn.LayerNorm followed by nn.Linear). This is achieved through a graph capture of the model using [torch.fx](https://pytorch.org/docs/stable/fx.html#module-torch.fx).
         apply_weight_equalization (`bool`, defaults to `False`):
-            Applies weight equalization accross layers, following https://arxiv.org/abs/1906.04721. This parameter is useful for models whose activation function is linear or piecewise-linear (like ReLU, used in OPT model), and allows to reduce the quantization error of the weights by balancing scales accross layers.
+            Applies weight equalization across layers, following https://arxiv.org/abs/1906.04721. This parameter is useful for models whose activation function is linear or piecewise-linear (like ReLU, used in OPT model), and allows to reduce the quantization error of the weights by balancing scales across layers.
+        apply_bias_correction (`bool`, defaults to `False`):
+            Applies bias correction to compensate for changes in activation bias caused by quantization
         apply_gptq (`bool`, defaults to `False`):
             Whether to apply GPTQ algorithm for quantizing the weights.
         gptq_act_oder (`Optional[bool]`, defaults to `None`):
@@ -77,6 +79,7 @@ class BrevitasQuantizationConfig:
     activations_group_size: Optional[int] = None
     activations_equalization: Literal[None, "layerwise", "cross_layer"] = "cross_layer"
     apply_weight_equalization: bool = False
+    apply_bias_correction: bool = False
     apply_gptq: bool = False
     gptq_act_oder: Optional[bool] = None
 
