@@ -201,6 +201,11 @@ class BrevitasQuantizer(OptimumQuantizer):
             )
             logger.info("GPTQ applied.")
 
+        if quantization_config.activations_bitwidth is not None and quantization_config.is_static:
+            logger.info("Applying activation calibration...")
+            apply_calibration(model, calibration_dataset)
+            logger.info("Activation calibration applied.")
+
         if quantization_config.apply_gptq:
             logger.info("Applying Bias Correction...")
             apply_bias_correction(
@@ -208,11 +213,6 @@ class BrevitasQuantizer(OptimumQuantizer):
                 calibration_dataset,
             )
             logger.info("Bias Correction applied.")
-
-        if quantization_config.activations_bitwidth is not None and quantization_config.is_static:
-            logger.info("Applying activation calibration...")
-            apply_calibration(model, calibration_dataset)
-            logger.info("Activation calibration applied.")
 
         return model
 
