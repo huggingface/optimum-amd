@@ -49,8 +49,7 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
             # Add BOS token.
             subsample["input_ids"][:, 0] = tokenizer.bos_token_id
 
-            with torch.no_grad():
-                lm_logits = model(**subsample)["logits"]
+            lm_logits = model(**subsample)["logits"]
 
             reference_labels = subsample["input_ids"][:, context_length:]
 
