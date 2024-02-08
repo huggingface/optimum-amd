@@ -74,10 +74,8 @@ class TestTimmQuantization(unittest.TestCase):
         )
         config = PretrainedConfig.from_pretrained(export_dir.name)
 
-        pretrained_cfg = config.pretrained_cfg if hasattr(config, "pretrained_cfg") else config
-
         # preprocess config
-        data_config = timm.data.resolve_data_config(pretrained_cfg=pretrained_cfg)
+        data_config = timm.data.resolve_data_config(pretrained_cfg=config.to_dict())
         transforms = timm.data.create_transform(**data_config, is_training=False)
 
         def preprocess_fn(ex, transforms):
