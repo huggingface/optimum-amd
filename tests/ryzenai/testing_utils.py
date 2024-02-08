@@ -54,7 +54,7 @@ PYTORCH_TIMM_MODEL = {
     }
 }
 
-PYTORCH_TIMM_MODEL_LARGE = {
+PYTORCH_TIMM_MODEL_SLOW = {
     "default-timm-config": {
         "timm/botnet26t_256.c1_in1k": ["image-classification"],
         "timm/cs3darknet_focus_l.c2ns_in1k": ["image-classification"],
