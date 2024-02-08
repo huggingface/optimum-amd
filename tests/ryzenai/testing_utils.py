@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 
-RYZEN_PRETRAINED_MODEL_IMAGE_CLASSIFICATION = [
+RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION = [
     "amd/efficientnet-es",
     "amd/ese_vovnet39b",
     "amd/inception_v4",
@@ -13,7 +13,7 @@ RYZEN_PRETRAINED_MODEL_IMAGE_CLASSIFICATION = [
 ]
 
 
-RYZEN_PRETRAINED_MODEL_OBJECT_DETECTION = [
+RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION = [
     "amd/retinaface",
     "amd/yolov3",
     "amd/yolov5s",
@@ -21,14 +21,14 @@ RYZEN_PRETRAINED_MODEL_OBJECT_DETECTION = [
     "amd/yolox-s",
 ]
 
-RYZEN_PRETRAINED_MODEL_IMAGE_SEGMENTATION = [
+RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION = [
     "amd/HRNet",
     "amd/SemanticFPN",
 ]
 
-RYZEN_PRETRAINED_MODEL_IMAGE_TO_IMAGE = ["amd/PAN", "amd/rcan", "amd/sesr"]
+RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE = ["amd/PAN", "amd/rcan", "amd/sesr"]
 
-RYZEN_PRETRAINED_MODEL_CUSTOM_TASKS = ["amd/movenet"]
+RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS = ["amd/movenet"]
 
 PYTORCH_TIMM_MODEL = {
     "default-timm-config": {
