@@ -313,11 +313,11 @@ def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
 
 
 @torch.no_grad()
-def apply_bias_correction(model, dataloader):
+def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict]):
     model = offload_model(model)
 
     with bias_correction_mode(model):
-        for inps in tqdm(dataloader):
+        for inps in tqdm(dataset):
             model(**inps)
 
     # Remove all accelerate hooks.
