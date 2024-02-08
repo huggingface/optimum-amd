@@ -36,7 +36,7 @@ jobs:
     - name: Test with Pytest
       run: |
         conda activate .\venv
-        huggingface_cli login --token ${{ secrets.HF_READ_TOKEN }}
+        huggingface-cli login --token ${{ secrets.HF_READ_TOKEN }}
         pytest -s -v -m "not run_slow" tests/ryzenai/test_quantization.py 
     - name: Cleanup
       run: |

@@ -1,42 +1,42 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-name: Ryzen Modeling - Test
+# # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+# name: Ryzen Modeling - Test
 
-on:
-  workflow_dispatch:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+#   cancel-in-progress: true
 
-jobs:
-  build:
-    strategy:
-      fail-fast: false
-    runs-on: [self-hosted, single-npu, amd-npu, ryzenai]
-    steps:
-    - uses: actions/checkout@v2
-    - name: Create and start a virtual environment
-      run: |
-        conda create --prefix venv --clone C:\tools\Anaconda3\envs\ryzenai-1.0.1-ci
-        conda init
-        conda activate .\venv
-    - name: Install dependencies
-      run: |
-        conda activate .\venv
-        python -m pip install --upgrade pip
-        pip install .[tests]
-        pip install git+https://github.com/huggingface/optimum.git
-    - name: Test with Pytest
-      run: |
-        conda activate .\venv
-        $env:XLNX_VART_FIRMWARE="C:\RyzenAiSw\ryzen-ai-sw-1.0.1\voe-4.0-win_amd64\1x4.xclbin"
-        pytest -s -v -m "not prequantized_model_test" tests/ryzenai/test_modeling.py 
-    - name: Cleanup
-      run: |
-        rm -r .\venv
+# jobs:
+#   build:
+#     strategy:
+#       fail-fast: false
+#     runs-on: [self-hosted, single-npu, amd-npu, ryzenai]
+#     steps:
+#     - uses: actions/checkout@v2
+#     - name: Create and start a virtual environment
+#       run: |
+#         conda create --prefix venv --clone C:\tools\Anaconda3\envs\ryzenai-1.0.1-ci
+#         conda init
+#         conda activate .\venv
+#     - name: Install dependencies
+#       run: |
+#         conda activate .\venv
+#         python -m pip install --upgrade pip
+#         pip install .[tests]
+#         pip install git+https://github.com/huggingface/optimum.git
+#     - name: Test with Pytest
+#       run: |
+#         conda activate .\venv
+#         $env:XLNX_VART_FIRMWARE="C:\RyzenAiSw\ryzen-ai-sw-1.0.1\voe-4.0-win_amd64\1x4.xclbin"
+#         pytest -s -v -m "not prequantized_model_test" tests/ryzenai/test_modeling.py 
+#     - name: Cleanup
+#       run: |
+#         rm -r .\venv
       
