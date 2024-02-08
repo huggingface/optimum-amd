@@ -44,18 +44,6 @@ PYTORCH_TIMM_MODEL_SUBSET = {
 
 PYTORCH_TIMM_MODEL = {
     "default-timm-config": {
-        "timm/densenet121.ra_in1k": ["image-classification"],
-        "timm/ese_vovnet19b_dw.ra_in1k": ["image-classification"],
-        "timm/ghostnet_100.in1k": ["image-classification"],
-        "timm/inception_v4.tf_in1k": ["image-classification"],
-        "timm/repvgg_b0.rvgg_in1k": ["image-classification"],
-        "timm/resnet10t.c3_in1k": ["image-classification"],
-        "timm/vgg19.tv_in1k": ["image-classification"],
-    }
-}
-
-PYTORCH_TIMM_MODEL_SLOW = {
-    "default-timm-config": {
         "timm/botnet26t_256.c1_in1k": ["image-classification"],
         "timm/cs3darknet_focus_l.c2ns_in1k": ["image-classification"],
         "timm/cs3darknet_focus_m.c2ns_in1k": ["image-classification"],
