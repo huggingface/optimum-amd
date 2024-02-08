@@ -313,7 +313,7 @@ def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
 
 
 @torch.no_grad()
-def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict]):
+def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict]) -> None:
     model = offload_model(model)
 
     with bias_correction_mode(model):
