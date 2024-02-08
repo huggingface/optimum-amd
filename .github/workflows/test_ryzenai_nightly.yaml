@@ -1,4 +1,4 @@
-name: Ryzen Quantization Slow - Test
+name: Ryzen Nightly - Test
 
 on:
   workflow_dispatch:
