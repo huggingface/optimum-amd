@@ -32,7 +32,7 @@ jobs:
         conda activate .\venv
         huggingface-cli login --token ${{ secrets.HF_READ_TOKEN }}
         $env:XLNX_VART_FIRMWARE="C:\RyzenAiSw\ryzen-ai-sw-1.0.1\voe-4.0-win_amd64\1x4.xclbin"
-        $env:RUN_SLOW=1; pytest -s -v -m "quant_test or prequantized_model_test" tests/ryzenai/
+        $env:RUN_SLOW=1; pytest -s -vvvvv -m "quant_test or prequantized_model_test" tests/ryzenai/
     - name: Cleanup
       run: |
         rm -r .\venv
