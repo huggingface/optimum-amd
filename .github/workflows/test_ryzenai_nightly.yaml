@@ -3,7 +3,7 @@ name: Ryzen Quantization Slow - Test
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 15 * * * # every day at 3pm
+    - cron: 0 17  * * * # every day at 6pm
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
