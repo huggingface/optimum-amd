@@ -17,8 +17,6 @@ jobs:
   build:
     strategy:
       fail-fast: false
-      matrix:
-        python-version: [3.9]
     runs-on: [self-hosted, single-npu, amd-npu, ryzenai]
     steps:
     - uses: actions/checkout@v2
