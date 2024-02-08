@@ -30,7 +30,7 @@ RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE = ["amd/PAN", "amd/rcan", "amd/sesr"]
 
 RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS = ["amd/movenet"]
 
-PYTORCH_TIMM_MODEL = {
+PYTORCH_TIMM_MODEL_SUBSET = {
     "default-timm-config": {
         "timm/densenet121.ra_in1k": ["image-classification"],
         "timm/ese_vovnet19b_dw.ra_in1k": ["image-classification"],
@@ -42,7 +42,7 @@ PYTORCH_TIMM_MODEL = {
     }
 }
 
-PYTORCH_TIMM_MODEL_SLOW = {
+PYTORCH_TIMM_MODEL = {
     "default-timm-config": {
         "timm/botnet26t_256.c1_in1k": ["image-classification"],
         "timm/cs3darknet_focus_l.c2ns_in1k": ["image-classification"],

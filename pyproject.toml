@@ -18,6 +18,6 @@ known-first-party = ["transformers"]
 
 [tool.pytest.ini_options]
 markers = [
-    "run_slow",
     "prequantized_model_test",
+    "quant_test",
 ]
