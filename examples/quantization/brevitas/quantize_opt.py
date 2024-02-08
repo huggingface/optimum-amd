@@ -38,12 +38,6 @@ parser.add_argument(
     help="Apply the activation equalization (SmoothQuant) algorithm (choices: [%(choices)s], default: %(default)s). This option requires a calibration dataset.",
 )
 parser.add_argument(
-    "--replace-mha-with-quantizable",
-    action="store_true",
-    default=False,
-    help="Replace attention with standard PyTorch implementation (default: %(default)s)",
-)
-parser.add_argument(
     "--is-static",
     action="store_true",
     default=False,
@@ -65,7 +59,6 @@ qconfig = BrevitasQuantizationConfig(
     apply_gptq=args.apply_gptq,
     apply_weight_equalization=args.apply_weight_equalization,
     activations_equalization=args.activations_equalization,
-    replace_mha_with_quantizable=args.replace_mha_with_quantizable,
     is_static=args.is_static,
     weights_symmetric=True,
     activations_symmetric=args.is_static,  # ONNX export only supports unsigned for dynamic quantization
