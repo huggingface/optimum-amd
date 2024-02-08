@@ -39,4 +39,3 @@ jobs:
     - name: Cleanup
       run: |
         rm -r .\venv
-      
