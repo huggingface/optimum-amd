@@ -1,9 +1,9 @@
-# Example of quantizing OPT model with Brevitas from Transformers checkpoints
+# Example of quantizing decoder class LLMs with Brevitas from Transformers checkpoints
 
-The example shows an example on how to quantize an OPT model through Brevitas:
+The example shows an example on how to quantize a decoder-class LLM model through Brevitas:
 
 - Definition and instantiation of a parametrizable `BrevitasQuantizer`.
-- Optional conversion of the OPT model to an FX representation, leveraging Hugging Face transformers' tracer.
+- Optional conversion of the LLM model to an FX representation, leveraging Hugging Face transformers' tracer.
 - Support of executing post-training quantization (PTQ) algorithms and validation (SmoothQuant, GPTQ), while leveraging CPU offload from Hugging Face accelerate.
 - Validation of the quantized model.
 - Export of the quantized model as ONNX, QDQ-style.
@@ -19,14 +19,16 @@ The examples were tested using:
 ## Running the Example
 
 ```bash
-python quantize_opt.py --model facebook/opt-125m --activations-equalization layerwise
+python quantize_llm.py --model facebook/opt-125m --activations-equalization layerwise
 ```
-To quantize OPT with SmoothQuant post-training quantization algorithm.
+To quantize OPT-125M with SmoothQuant post-training quantization algorithm.
 
 For all the options, please check:
 
 ```bash
-python quantize_opt.py --help
+python quantize_llm.py --help
 ```
 
 Most options can be applied independently.
+For optimal results, we suggest using the `--activations-equalization layerwise --apply-gtpq`,
+but GPTQ may take a long time, depending on your available hardware.
