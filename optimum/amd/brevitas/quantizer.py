@@ -206,7 +206,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             apply_calibration(model, calibration_dataset)
             logger.info("Activation calibration applied.")
 
-        if quantization_config.apply_gptq:
+        if quantization_config.apply_bias_correction:
             logger.info("Applying Bias Correction...")
             apply_bias_correction(
                 model,
