@@ -10,13 +10,14 @@ import huggingface_hub
 import numpy as np
 import onnx
 import onnxruntime
+import pytest
 from parameterized import parameterized
 from testing_utils import (
-    RYZEN_PRETRAINED_MODEL_CUSTOM_TASKS,
-    RYZEN_PRETRAINED_MODEL_IMAGE_CLASSIFICATION,
-    RYZEN_PRETRAINED_MODEL_IMAGE_SEGMENTATION,
-    RYZEN_PRETRAINED_MODEL_IMAGE_TO_IMAGE,
-    RYZEN_PRETRAINED_MODEL_OBJECT_DETECTION,
+    RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS,
+    RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION,
+    RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION,
+    RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE,
+    RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION,
 )
 
 from optimum.amd.ryzenai import (
@@ -73,11 +74,13 @@ class RyzenAIModelIntegrationTest(unittest.TestCase):
 
 
 class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase):
-    @parameterized.expand(RYZEN_PRETRAINED_MODEL_IMAGE_CLASSIFICATION)
-    def test_model(self, model_id):
+    @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION)
+    @pytest.mark.prequantized_model_test
+    def runTest(self, model_id):
         set_seed(SEED)
 
         all_files = huggingface_hub.list_repo_files(model_id, repo_type="model")
+
         file_name = [name for name in all_files if name.endswith(".onnx")][0]
 
         onnx_model_path = huggingface_hub.hf_hub_download(model_id, file_name)
@@ -116,7 +119,8 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase):
 
 
 class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase):
-    @parameterized.expand(RYZEN_PRETRAINED_MODEL_OBJECT_DETECTION)
+    @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION)
+    @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
         set_seed(SEED)
 
@@ -157,7 +161,8 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase):
 
 
 class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase):
-    @parameterized.expand(RYZEN_PRETRAINED_MODEL_IMAGE_SEGMENTATION)
+    @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION)
+    @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
         set_seed(SEED)
 
@@ -198,7 +203,8 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase):
 
 
 class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase):
-    @parameterized.expand(RYZEN_PRETRAINED_MODEL_IMAGE_TO_IMAGE)
+    @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE)
+    @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
         set_seed(SEED)
 
@@ -239,7 +245,8 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase):
 
 
 class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase):
-    @parameterized.expand(RYZEN_PRETRAINED_MODEL_CUSTOM_TASKS)
+    @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS)
+    @pytest.mark.prequantized_model_test
     def test_model_vision(self, model_id):
         set_seed(SEED)
 
