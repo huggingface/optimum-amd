@@ -56,7 +56,7 @@ class BrevitasQuantizationConfig:
         apply_weight_equalization (`bool`, defaults to `False`):
             Applies weight equalization across layers, following https://arxiv.org/abs/1906.04721. This parameter is useful for models whose activation function is linear or piecewise-linear (like ReLU, used in OPT model), and allows to reduce the quantization error of the weights by balancing scales across layers.
         apply_bias_correction (`bool`, defaults to `False`):
-            Applies bias correction to compensate for changes in activation bias caused by quantization
+            Applies bias correction to compensate for changes in activation bias caused by quantization.
         apply_gptq (`bool`, defaults to `False`):
             Whether to apply GPTQ algorithm for quantizing the weights.
         gptq_act_oder (`Optional[bool]`, defaults to `None`):
