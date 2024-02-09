@@ -3,7 +3,7 @@ name: Ryzen Nightly - Test
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 17 * * * # every day at 6pm
+    - cron: 0 17 * * * # every day at 5pm UTC
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
