@@ -80,7 +80,10 @@ class BrevitasQuantizer(OptimumQuantizer):
                 The token to use as HTTP bearer authorization for remote files. If `True`, will use the token generated
                 when running `transformers-cli login` (stored in `~/.huggingface`).
         """
-        task = TasksManager.infer_task_from_model(model_name_or_path)
+
+        # TODO: fix
+        # task = TasksManager.infer_task_from_model(model_name_or_path)
+        task = "text-generation"
 
         model = TasksManager.get_model_from_task(
             task,

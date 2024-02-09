@@ -7,7 +7,7 @@ from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
 from optimum.amd.brevitas.accelerate_utils import offload_model, remove_hooks
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
-from optimum.exporters.onnx.__main__ import onnx_export  # TODO: move this method elsewhere (not __main__.py)
+from optimum.exporters.onnx import onnx_export_from_model
 from transformers import AutoTokenizer
 
 
@@ -65,7 +65,7 @@ qconfig = BrevitasQuantizationConfig(
     replace_mha_with_quantizable=args.replace_mha_with_quantizable,
     is_static=args.is_static,
     weights_symmetric=True,
-    activations_symmetric=args.is_static, # ONNX export only supports unsigned for dynamic quantization
+    activations_symmetric=args.is_static,  # ONNX export only supports unsigned for dynamic quantization
 )
 
 quantizer = BrevitasQuantizer.from_pretrained(args.model)
@@ -111,4 +111,4 @@ remove_hooks(model)
 
 # Export to ONNX through optimum.exporters.
 with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
-    onnx_export(model, "opt_quantized_onnx", task="text-generation-with-past", do_validation=False)
+    onnx_export_from_model(model, "opt_quantized_onnx", task="text-generation-with-past", do_validation=False)

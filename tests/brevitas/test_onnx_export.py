@@ -19,7 +19,7 @@ from optimum.exporters.onnx import (
     export_models,
     validate_models_outputs,
 )
-from optimum.exporters.onnx.__main__ import _get_submodels_and_onnx_configs
+from optimum.exporters.onnx.utils import _get_submodels_and_onnx_configs
 from optimum.utils import DEFAULT_DUMMY_SHAPES
 from optimum.utils.testing_utils import grid_parameters
 from transformers.modeling_utils import get_parameter_dtype
