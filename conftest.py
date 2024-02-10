@@ -1,5 +1,5 @@
-import pytest
-
+# Copyright 2023 The HuggingFace Team. All rights reserved.
+# Licensed under the MIT License.
 
 def pytest_addoption(parser):
     from transformers.testing_utils import pytest_addoption_shared

@@ -43,7 +43,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: run_tests_prequantized_models
-        path: .\reports\tests_prequantized\
+        path: .\reports\tests_prequantized_models\
     - name: Cleanup
       run: |
         rm -r .\venv
