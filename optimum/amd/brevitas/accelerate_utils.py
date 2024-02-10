@@ -331,7 +331,11 @@ def remove_hooks(model: torch.nn.Module):
 def update_internal_dict(module):
     prefix = module._hf_hook.weights_map.prefix
     for key in module.state_dict().keys():
-        module._hf_hook.weights_map.dataset.state_dict[prefix + key] = recurse_getattr(module, key + ".data")
+        # It might happen that we call an quantization's inner modules, and this cause some parameters to be
+        # already on meta device. This is not a problem for their value but we need to check here
+        curr_device = (recurse_getattr(module, key + ".data")).device
+        if str(curr_device) != 'meta':
+            module._hf_hook.weights_map.dataset.state_dict[prefix + key] = (recurse_getattr(module, key + ".data")).cpu()
 
 
 def find_all_devices(data):
@@ -392,14 +396,13 @@ def offload_model(model: torch.nn.Module) -> torch.nn.Module:
     # Attaching these functions allows use to fix a bug in accelerate with offloading to RAM/disk where even though a submodule parameter is updated, it is actually not updated in the AlignDevicesHook `weights_map` and thus
     # the update is ignored elsewhere.
     # TODO: Fix this bug directly in accelerate. https://github.com/huggingface/accelerate/pull/2214 would fix the bug for RAM offliading.
-    def allocate_params(module, device="cpu"):
+    def allocate_params(module):
         """
         This function calls the pre_forward function of the _hf_hook, making sure parameters are on
         the selected device, rather than on the meta device.
         """
         if module._hf_hook.offload is False:
             return
-        module._hf_hook.pre_forward(module)
         # When quantizing and retrieving parameters (e.g., during GPTQ), we want to recurse through
         # all the submodules
         for m in module.modules():
@@ -414,10 +417,14 @@ def offload_model(model: torch.nn.Module) -> torch.nn.Module:
         if module._hf_hook.offload is False:
             return
         update_internal_dict(module)
-        module._hf_hook.post_forward(module, torch.tensor([]))
         for m in module.modules():
             if hasattr(m, "_hf_hook"):
-                m._hf_hook.post_forward(m, torch.tensor([]))
+                # If a module has already been offloaded (because its forward pass was called),
+                # this will raise TypeError because of tied_pointers_to_remove is None
+                try:
+                    m._hf_hook.post_forward(m, torch.tensor([]))
+                except TypeError as e:
+                    pass
 
     for module in model.modules():
         if hasattr(module, "_hf_hook"):
