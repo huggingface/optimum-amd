@@ -12,7 +12,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  run_tests_prequantized_models:
+    strategy:
+      fail-fast: false
+    runs-on: [self-hosted, single-npu, amd-npu, ryzenai]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Create and start a virtual environment
+      run: |
+        conda create --prefix venv --clone C:\tools\Anaconda3\envs\ryzenai-1.0.1-ci
+        conda init
+        conda activate .\venv
+    - name: Install dependencies
+      run: |
+        conda activate .\venv
+        python -m pip install --upgrade pip
+        pip install .[tests]
+        pip install git+https://github.com/huggingface/optimum.git
+    - name: Test with Pytest
+      run: |
+        conda activate .\venv
+        $env:XLNX_VART_FIRMWARE="C:\RyzenAiSw\ryzen-ai-sw-1.0.1\voe-4.0-win_amd64\1x4.xclbin"
+        pytest -s -vvvvv -m "prequantized_model_test" --make-reports=tests_prequantized_models tests/ryzenai/test_modeling.py
+    - name: Failure short reports
+      if: ${{ failure() }}
+      continue-on-error: true
+      run: cat reports\tests_prequantized_models\failures_short.txt
+    - name: "Test suite reports artifacts"
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: run_tests_prequantized_models
+        path: .\reports\tests_prequantized\
+    - name: Cleanup
+      run: |
+        rm -r .\venv
+  run_tests_quantization:
     timeout-minutes: 1200 # 20 Hrs
     strategy:
       fail-fast: false
@@ -30,17 +65,22 @@ jobs:
         python -m pip install --upgrade pip
         pip install .[tests]
         pip install git+https://github.com/huggingface/optimum.git
-    - name: Pre-quantized models test
-      run: |
-        conda activate .\venv
-        $env:XLNX_VART_FIRMWARE="C:\RyzenAiSw\ryzen-ai-sw-1.0.1\voe-4.0-win_amd64\1x4.xclbin"
-        pytest -s -vvvvv -m "prequantized_model_test" tests/ryzenai/test_modeling.py
-    - name: Quantization test
+    - name: Test with Pytest
       run: |
         conda activate .\venv
         huggingface-cli login --token ${{ secrets.HF_READ_TOKEN }}
         $env:XLNX_VART_FIRMWARE="C:\RyzenAiSw\ryzen-ai-sw-1.0.1\voe-4.0-win_amd64\1x4.xclbin"
-        $env:RUN_SLOW=1; pytest -s -vvvvv -m "quant_test" tests/ryzenai/test_quantization.py
+        $env:RUN_SLOW=1; pytest -s -vvvvv -m "quant_test" --make-reports=tests_quantization  tests/ryzenai/test_quantization.py
+    - name: Failure short reports
+      if: ${{ failure() }}
+      continue-on-error: true
+      run: cat reports\tests_quantization\failures_short.txt
+    - name: "Test suite reports artifacts"
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: run_tests_quantization
+        path: .\reports\tests_quantization\
     - name: Cleanup
       run: |
         rm -r .\venv

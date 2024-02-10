@@ -76,7 +76,7 @@ class RyzenAIModelIntegrationTest(unittest.TestCase):
 class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION)
     @pytest.mark.prequantized_model_test
-    def runTest(self, model_id):
+    def test_model(self, model_id):
         set_seed(SEED)
 
         all_files = huggingface_hub.list_repo_files(model_id, repo_type="model")
