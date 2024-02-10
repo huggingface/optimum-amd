@@ -2,6 +2,8 @@ name: Ryzen Nightly - Test
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [ main ]
   schedule:
     - cron: 0 17 * * * # every day at 5pm UTC
 
@@ -11,6 +13,7 @@ concurrency:
 
 jobs:
   build:
+    timeout-minutes: 1200 # 20 Hrs
     strategy:
       fail-fast: false
     runs-on: [self-hosted, single-npu, amd-npu, ryzenai]
@@ -27,12 +30,17 @@ jobs:
         python -m pip install --upgrade pip
         pip install .[tests]
         pip install git+https://github.com/huggingface/optimum.git
-    - name: Test with Pytest
+    - name: Pre-quantized models test
+      run: |
+        conda activate .\venv
+        $env:XLNX_VART_FIRMWARE="C:\RyzenAiSw\ryzen-ai-sw-1.0.1\voe-4.0-win_amd64\1x4.xclbin"
+        pytest -s -vvvvv -m "prequantized_model_test" tests/ryzenai/test_modeling.py
+    - name: Quantization test
       run: |
         conda activate .\venv
         huggingface-cli login --token ${{ secrets.HF_READ_TOKEN }}
         $env:XLNX_VART_FIRMWARE="C:\RyzenAiSw\ryzen-ai-sw-1.0.1\voe-4.0-win_amd64\1x4.xclbin"
-        $env:RUN_SLOW=1; pytest -s -vvvvv -m "quant_test or prequantized_model_test" tests/ryzenai/
+        $env:RUN_SLOW=1; pytest -s -vvvvv -m "quant_test" tests/ryzenai/test_quantization.py
     - name: Cleanup
       run: |
         rm -r .\venv
