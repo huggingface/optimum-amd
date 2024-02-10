@@ -371,6 +371,7 @@ def offload_model(model: torch.nn.Module) -> torch.nn.Module:
 
     # FX vs non-FX model need different offloading
     config._FULL_STATE_DICT = True
+    torch.cuda.empty_cache()
     cuda_device_map = {i: torch.cuda.mem_get_info(i)[0] * 0.7 for i in range(torch.cuda.device_count())}
     cpu_device_map = {"cpu": virtual_memory().available * 0.7}
     memory_map = {**cpu_device_map, **cuda_device_map}
