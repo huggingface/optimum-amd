@@ -27,5 +27,5 @@ jobs:
     with:
       #pytest_marker: "not prequantized_model_test"
       #pytest_marker: 'test; ls '
-      pytest_marker: "test; ls '"
+      pytest_marker: "test; ls "
       test_file: "tests/ryzenai/test_modeling.py"
