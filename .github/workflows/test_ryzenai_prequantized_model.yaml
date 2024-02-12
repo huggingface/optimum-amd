@@ -13,8 +13,8 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-      - "optimum/amd/ryzenai/**.py"
-      - "tests/ryzenai/**.py"
+      - "optimum/amd/ryzenai/**/*.py"
+      - "tests/ryzenai/**/*.py"
       - ".github/workflows/test_ryzenai_prequantized_model.yaml"
 
 concurrency:
