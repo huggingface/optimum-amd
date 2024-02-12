@@ -635,6 +635,7 @@ class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):
         # run inference
         onnx_outputs = self.model.run(None, onnx_inputs)
         outputs = self._prepare_onnx_outputs(onnx_outputs, use_torch=use_torch)
+        print(outputs)
 
         return ModelOutput(outputs)
 
