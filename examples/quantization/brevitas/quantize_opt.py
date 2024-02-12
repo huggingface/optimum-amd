@@ -28,6 +28,9 @@ parser.add_argument(
     "--apply-weight-equalization", action="store_true", default=False, help="Apply the weight equalization algorithm."
 )
 parser.add_argument(
+    "--apply-bias-correction", action="store_true", default=False, help="Apply the bias correction algorithm."
+)
+parser.add_argument(
     "--activations-equalization",
     type=str,
     choices=[None, "cross_layer", "layerwise"],

@@ -6,7 +6,7 @@ import logging
 from typing import Dict, List, Optional, Union
 
 import torch
-from brevitas.graph.calibrate import calibration_mode
+from brevitas.graph.calibrate import calibration_mode, bias_correction_mode
 from brevitas.graph.equalize import activation_equalization_mode
 from brevitas.graph.gptq import gptq_mode
 from brevitas_examples.common.generative.quantize import quantize_model
@@ -209,6 +209,14 @@ class BrevitasQuantizer(OptimumQuantizer):
             apply_calibration(model, calibration_dataset)
             logger.info("Activation calibration applied.")
 
+        if quantization_config.apply_bias_correction:
+            logger.info("Applying Bias Correction...")
+            apply_bias_correction(
+                model,
+                calibration_dataset,
+            )
+            logger.info("Bias Correction applied.")
+
         return model
 
     """
@@ -302,6 +310,18 @@ def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
         with torch.no_grad():
             for inps in tqdm(dataset):
                 model(**inps)
+
+    # Remove all accelerate hooks.
+    remove_hooks(model)
+
+
+@torch.no_grad()
+def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict]) -> None:
+    model = offload_model(model)
+
+    with bias_correction_mode(model):
+        for inps in tqdm(dataset):
+            model(**inps)
 
     # Remove all accelerate hooks.
     remove_hooks(model)
