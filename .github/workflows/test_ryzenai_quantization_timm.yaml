@@ -6,8 +6,16 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+    paths:
+      - "optimum/amd/ryzenai/**/*.py"
+      - "tests/ryzenai/**/*.py"
+      - ".github/workflows/test_ryzenai_quantization_timm.yaml"
   pull_request:
     branches: [ main ]
+    paths:
+      - "optimum/amd/ryzenai/**/*.py"
+      - "tests/ryzenai/**/*.py"
+      - ".github/workflows/test_ryzenai_quantization_timm.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
