@@ -189,10 +189,15 @@ class BrevitasQuantizer(OptimumQuantizer):
             quantize_input_zero_point=quantization_config.quantize_zero_point,
         )
 
-        # Perform a single inference pass to generate the correct state_dict
-        if quantization_config.apply_gptq or quantization_config.is_static:
-            with torch.no_grad():
+        # Perform a single inference pass to generate the correct state_dict. This is necessary as Brevitas has some magic where
+        # a first forward pass need to be called before quantizing a model:
+        # https://github.com/Xilinx/brevitas/blob/84f42259ec869eb151af4cb8a8b23ad925f493db/src/brevitas/core/scaling/standalone.py#L205-L217
+        with torch.no_grad():
+            if calibration_dataset is not None:
                 model(**calibration_dataset[0])
+            else:
+                # TODO: clean that with a proper dummy input.
+                model(input_ids=torch.tensor([[1]], dtype=torch.int64))
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
