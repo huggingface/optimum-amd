@@ -11,7 +11,6 @@ from brevitas.graph.equalize import activation_equalization_mode
 from brevitas.graph.gptq import gptq_mode
 from brevitas_examples.common.generative.quantize import quantize_model
 from brevitas_examples.llm.llm_quant.equalize import apply_weight_equalization
-from brevitas_examples.llm.llm_quant.prepare_for_quantize import replace_mha_with_quantizable_layers
 from tqdm import tqdm
 
 from optimum.exporters import TasksManager
@@ -35,11 +34,6 @@ class BrevitasQuantizer(OptimumQuantizer):
         self.model = model
         self.config = self.model.config
         self.group_of_parallel_layers = None
-
-    def validate_quant_config(self, quantization_config: BrevitasQuantizationConfig):
-        dtype = next(iter(self.model.parameters()))
-        if dtype == torch.bfloat16 and quantization_config.replace_mha_with_quantizable:
-            raise RuntimeError("Scaled_dot_product does not support bfloat16 and cuda")
 
     @classmethod
     def from_pretrained(
@@ -125,13 +119,6 @@ class BrevitasQuantizer(OptimumQuantizer):
             )
 
         dtype = next(iter(self.model.parameters())).dtype
-
-        # Insert standard MHA layers when performing fx based weight/activation equalization to avoid dealing
-        # with all the variability in HF implementations.
-        if quantization_config.replace_mha_with_quantizable:
-            logger.info("Replace HF MHA with quantizable variants...")
-            self.model = replace_mha_with_quantizable_layers(self.model, dtype)
-            logger.info("Replacing done.")
 
         if quantization_config.requires_fx_graph():
             forward_signature = inspect.signature(self.model.forward).parameters

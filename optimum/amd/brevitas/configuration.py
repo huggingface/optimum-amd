@@ -11,10 +11,6 @@ class BrevitasQuantizationConfig:
     QuantizationConfig is the configuration class handling all the ONNX Runtime quantization parameters.
 
     Args:
-        replace_mha_with_quantizable (`bool`, defaults to `False`):
-            Overrides Transformers attention modules by Brevitas quantizable attention modules, which make use of `nn.MultiheadAttention` that
-            can be overriden in a standard fashion, in order to enable the quantization of
-            the query @ key matrix multiplication, and softmax(state) @ value matrix multiplication.
         weights_bitwidth (`int`, defaults to `8`):
             Bitwidth of the weights quantization. For example, with `weights_bitwidth=8`, each weight value is quantized on 8 bits.
         activations_bitwidth (`int`, defaults to `8`):
@@ -45,7 +41,7 @@ class BrevitasQuantizationConfig:
         activations_symmetric (`bool`, defaults to `False`):
             Whether to use symmetric quantization on the activations.
         activations_quant_granularity (`str`, defaults to `"per_tensor"`):
-            The granularity of the quantization of the activations. This parameter can either be `"per_tensor"`, `"per_row"` or `"per_group"`. In case static quantization is used (`is_static=True`), only `"per_tensor"` and `"per_group"` may be used.
+            The granularity of the quantization of the activations. This parameter can either be `"per_tensor"`, `"per_row"` or `"per_group"`. In case static quantization is used (`is_static=True`), only `"per_tensor"` may be used.
         activations_group_size (`int`, defaults to `None`):
             Group size to use for the activations in case `activations_quant_granularity="per_group"`. Defaults to `64` in this case, to `None` otherwise.
         activations_equalization (`Optional[str]`, defaults to `"cross_layer"`):
@@ -63,7 +59,6 @@ class BrevitasQuantizationConfig:
             Whether to use activations reordering (act-order, also known as desc-act) when `apply_gptq=True`. If `apply_gptq=True`, defaults to `False`.
     """
 
-    replace_mha_with_quantizable: bool = False
     weights_bitwidth: int = 8
     activations_bitwidth: int = 8
     weights_param_method: Literal["stats", "mse"] = "stats"
@@ -89,9 +84,6 @@ class BrevitasQuantizationConfig:
 
         if self.weights_quant_granularity == "per_group" and self.weights_group_size is None:
             self.weights_group_size = 128
-
-        if self.is_static and self.activations_quant_granularity == "per_row":
-            raise ValueError('Static quantization and activations_quant_granularity="per_row" are incompatible.')
 
         if self.apply_gptq and self.gptq_act_oder is None:
             self.gptq_act_oder = False
