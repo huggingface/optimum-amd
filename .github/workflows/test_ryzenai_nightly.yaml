@@ -25,4 +25,4 @@ jobs:
       report_name: "tests_quantization"
       slow_test: true
     secrets:
-      hf_hub_read_token: ${{ secrets.HF_HUB_READ_TOKEN }}
+      hf_hub_read_token: ${{ secrets.HF_READ_TOKEN }}
