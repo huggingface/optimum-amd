@@ -14,8 +14,8 @@ class YoloXObjectDetectionPipeline(Pipeline):
         postprocess_params = {}
         if "nms_threshold" in kwargs:
             postprocess_params["nms_threshold"] = kwargs["nms_threshold"]
-        if "score_threshold" in kwargs:
-            postprocess_params["score_threshold"] = kwargs["score_threshold"]
+        if "threshold" in kwargs:
+            postprocess_params["threshold"] = kwargs["threshold"]
         if "p6" in kwargs:
             postprocess_params["p6"] = kwargs["p6"]
         if "top_k" in kwargs:
@@ -42,16 +42,14 @@ class YoloXObjectDetectionPipeline(Pipeline):
 
         return model_outputs
 
-    def postprocess(
-        self, model_outputs, nms_threshold=0.45, score_threshold=0.1, data_format=None, p6=None, top_k=None
-    ):
+    def postprocess(self, model_outputs, nms_threshold=0.45, threshold=0.1, data_format=None, p6=None, top_k=None):
         ratios = model_outputs.pop("ratios")
 
         results = []
         outputs = self.image_processor.post_process_object_detection(
             outputs=model_outputs,
             nms_threshold=nms_threshold,
-            score_threshold=score_threshold,
+            threshold=threshold,
             ratios=ratios,
             p6=p6,
             data_format=data_format,
@@ -70,10 +68,10 @@ class YoloV5ObjectDetectionPipeline(Pipeline):
         if "timeout" in kwargs:
             preprocess_params["timeout"] = kwargs["timeout"]
         postprocess_params = {}
+        if "threshold" in kwargs:
+            postprocess_params["threshold"] = kwargs["threshold"]
         if "nms_threshold" in kwargs:
             postprocess_params["nms_threshold"] = kwargs["nms_threshold"]
-        if "score_threshold" in kwargs:
-            postprocess_params["score_threshold"] = kwargs["score_threshold"]
         if "top_k" in kwargs:
             postprocess_params["top_k"] = kwargs["top_k"]
         if "data_format" in kwargs:
@@ -90,20 +88,20 @@ class YoloV5ObjectDetectionPipeline(Pipeline):
         return image_features
 
     def _forward(self, model_inputs):
-        target_size = model_inputs.pop("target_size")
+        target_sizes = model_inputs.pop("target_sizes")
         outputs = self.model(**model_inputs)
-        model_outputs = {"target_size": target_size, **outputs}
+        model_outputs = {"target_sizes": target_sizes, **outputs}
 
         return model_outputs
 
-    def postprocess(self, model_outputs, nms_threshold=0.45, score_threshold=0.25, data_format=None, top_k=None):
+    def postprocess(self, model_outputs, nms_threshold=0.45, threshold=0.25, data_format=None, top_k=None):
         results = []
-        target_size = model_outputs.pop("target_size")
+        target_sizes = model_outputs.pop("target_sizes")
         outputs = self.image_processor.post_process_object_detection(
             outputs=model_outputs,
-            target_size=target_size,
+            target_sizes=target_sizes,
+            threshold=threshold,
             nms_threshold=nms_threshold,
-            score_threshold=score_threshold,
             data_format=data_format,
         )[0]
 
