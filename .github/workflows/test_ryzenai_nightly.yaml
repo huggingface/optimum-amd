@@ -24,5 +24,6 @@ jobs:
       test_file: "tests/ryzenai/test_quantization.py"
       report_name: "tests_quantization"
       slow_test: true
+      timeout_minutes: 1200
     secrets:
       hf_hub_read_token: ${{ secrets.HF_READ_TOKEN }}
