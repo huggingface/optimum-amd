@@ -68,34 +68,53 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
     return ppl
 
 
-def get_wikitext2(tokenizer: Any, seqlen: int, nsamples: int, split: str = "train"):
+def get_wikitext2(
+    tokenizer: Any, seqlen: int, nsamples: int, split: str = "train", fuse_sequences: bool = True, seed: int = 42
+):
+    random.seed(seed)
+
     if split == "train":
         data = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
     elif split == "validation":
         data = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
 
-    dataset = []
-    with tqdm(total=nsamples) as pbar:
-        while len(dataset) < nsamples:
-            data_index = random.randint(0, len(data) - 1)
+    if fuse_sequences:
+        tokenized_data = tokenizer("\n\n".join(data["text"]), return_tensors="pt")
 
-            enc = tokenizer(data[data_index]["text"], return_tensors="pt")
-
-            if enc["input_ids"].shape[1] < seqlen:
-                continue
-
-            start_idx = random.randint(0, enc["input_ids"].shape[1] - seqlen)
-            end_idx = start_idx + seqlen - 1
+        dataset = []
+        for _ in range(nsamples):
+            i = random.randint(0, tokenized_data.input_ids.shape[1] - seqlen - 1)
+            j = i + seqlen
+            inp = tokenized_data.input_ids[:, i:j]
             attention_mask = torch.ones((1, seqlen), dtype=torch.int64)
-            dataset.append(
-                {"input_ids": enc["input_ids"][:, start_idx : end_idx + 1], "attention_mask": attention_mask}
-            )
-            pbar.update(1)
+            dataset.append({"input_ids": inp, "attention_mask": attention_mask})
+    else:
+        dataset = []
+        with tqdm(total=nsamples) as pbar:
+            while len(dataset) < nsamples:
+                data_index = random.randint(0, len(data) - 1)
+
+                enc = tokenizer(data[data_index]["text"], return_tensors="pt")
+
+                if enc["input_ids"].shape[1] < seqlen:
+                    continue
+
+                start_idx = random.randint(0, enc["input_ids"].shape[1] - seqlen)
+                end_idx = start_idx + seqlen - 1
+                attention_mask = torch.ones((1, seqlen), dtype=torch.int64)
+                dataset.append(
+                    {"input_ids": enc["input_ids"][:, start_idx : end_idx + 1], "attention_mask": attention_mask}
+                )
+                pbar.update(1)
 
     return dataset
 
 
-def get_c4(tokenizer: Any, seqlen: int, nsamples: int, split: str = "train"):
+def get_c4(
+    tokenizer: Any, seqlen: int, nsamples: int, split: str = "train", fuse_sequences: bool = True, seed: int = 42
+):
+    random.seed(seed)
+
     if split == "train":
         data = load_dataset("allenai/c4", split="train", data_files={"train": "en/c4-train.00000-of-01024.json.gz"})
     elif split == "validation":
@@ -105,23 +124,36 @@ def get_c4(tokenizer: Any, seqlen: int, nsamples: int, split: str = "train"):
             data_files={"validation": "en/c4-validation.00000-of-00008.json.gz"},
         )
 
-    dataset = []
-    with tqdm(total=nsamples) as pbar:
-        while len(dataset) < nsamples:
-            data_index = random.randint(0, len(data) - 1)
+    if fuse_sequences:
+        data = data.shuffle(seed=seed)[:10000]  # c4 is too big.
+        full_text = "\n\n".join(data["text"])
+        tokenized_data = tokenizer(full_text, return_tensors="pt")
 
-            enc = tokenizer(data[data_index]["text"], return_tensors="pt")
-
-            if enc["input_ids"].shape[1] < seqlen:
-                continue
-
-            start_idx = random.randint(0, enc["input_ids"].shape[1] - seqlen)
-            end_idx = start_idx + seqlen - 1
+        dataset = []
+        for _ in range(nsamples):
+            i = random.randint(0, tokenized_data.input_ids.shape[1] - seqlen - 1)
+            j = i + seqlen
+            inp = tokenized_data.input_ids[:, i:j]
             attention_mask = torch.ones((1, seqlen), dtype=torch.int64)
-            dataset.append(
-                {"input_ids": enc["input_ids"][:, start_idx : end_idx + 1], "attention_mask": attention_mask}
-            )
-            pbar.update(1)
+            dataset.append({"input_ids": inp, "attention_mask": attention_mask})
+    else:
+        dataset = []
+        with tqdm(total=nsamples) as pbar:
+            while len(dataset) < nsamples:
+                data_index = random.randint(0, len(data) - 1)
+
+                enc = tokenizer(data[data_index]["text"], return_tensors="pt")
+
+                if enc["input_ids"].shape[1] < seqlen:
+                    continue
+
+                start_idx = random.randint(0, enc["input_ids"].shape[1] - seqlen)
+                end_idx = start_idx + seqlen - 1
+                attention_mask = torch.ones((1, seqlen), dtype=torch.int64)
+                dataset.append(
+                    {"input_ids": enc["input_ids"][:, start_idx : end_idx + 1], "attention_mask": attention_mask}
+                )
+                pbar.update(1)
 
     return dataset
 
@@ -135,6 +167,7 @@ def get_dataset_for_model(
     seqlen: int = 2048,
     seed: int = 0,
     split: str = "train",
+    fuse_sequences: bool = True,
 ):
     """
     Get a dataset.
@@ -170,7 +203,9 @@ def get_dataset_for_model(
         raise ValueError(f"Expected a value in {list(get_dataset_map.keys())} but found {dataset_name}")
     get_dataset_fn = get_dataset_map[dataset_name]
 
-    data = get_dataset_fn(tokenizer=tokenizer, nsamples=nsamples, seqlen=seqlen, split=split)
+    data = get_dataset_fn(
+        tokenizer=tokenizer, nsamples=nsamples, seqlen=seqlen, split=split, fuse_sequences=fuse_sequences, seed=seed
+    )
 
     # In case the dataset is loaded to be used with an fx.GraphModule, we need to add empty past_key_values inputs in the dataset.
     if qconfig.requires_fx_graph():

@@ -6,7 +6,7 @@ import logging
 from typing import Dict, List, Optional, Union
 
 import torch
-from brevitas.graph.calibrate import calibration_mode, bias_correction_mode
+from brevitas.graph.calibrate import bias_correction_mode, calibration_mode
 from brevitas.graph.equalize import activation_equalization_mode
 from brevitas.graph.gptq import gptq_mode
 from brevitas_examples.common.generative.quantize import quantize_model
