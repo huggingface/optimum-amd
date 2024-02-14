@@ -23,27 +23,7 @@ concurrency:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-    runs-on: [self-hosted, single-npu, amd-npu, ryzenai]
-    steps:
-    - uses: actions/checkout@v2
-    - name: Create and start a virtual environment
-      run: |
-        conda create --prefix venv --clone C:\tools\Anaconda3\envs\ryzenai-1.0.1-ci
-        conda init
-        conda activate .\venv
-    - name: Install dependencies
-      run: |
-        conda activate .\venv
-        python -m pip install --upgrade pip
-        pip install .[tests]
-        pip install git+https://github.com/huggingface/optimum.git
-    - name: Test with Pytest
-      run: |
-        conda activate .\venv
-        $env:XLNX_VART_FIRMWARE="C:\RyzenAiSw\ryzen-ai-sw-1.0.1\voe-4.0-win_amd64\1x4.xclbin"
-        pytest -s -vvvvv -m "not prequantized_model_test" tests/ryzenai/test_modeling.py 
-    - name: Cleanup
-      run: |
-        rm -r .\venv
+    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
+    with:
+      pytest_marker: "not prequantized_model_test"
+      test_file: "tests/ryzenai/test_modeling.py"
