@@ -72,8 +72,6 @@ def non_max_suppression(
     """
 
     num_classes = predictions.shape[2] - conf_index  # Number of classes
-    # has_confidence1 = predictions[..., 4] > confidence_threshold  # Candidates
-    # has_confidence = predictions.transpose(2,1)[:, 4:4+num_classes].amax(1) > confidence_threshold  # candidates
 
     # Checks
     assert (
