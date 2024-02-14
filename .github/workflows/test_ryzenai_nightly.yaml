@@ -1,0 +1,29 @@
+name: Ryzen Nightly - Test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 17 * * * # every day at 5pm UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  run_tests_prequantized_models:
+    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
+    with:
+      pytest_marker: "prequantized_model_test"
+      test_file: "tests/ryzenai/test_modeling.py"
+      report_name: "tests_prequantized_models"
+      
+  run_tests_quantization:
+    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
+    with:
+      pytest_marker: "quant_test"
+      test_file: "tests/ryzenai/test_quantization.py"
+      report_name: "tests_quantization"
+      slow_test: true
+      timeout_minutes: 1200
+    secrets:
+      hf_hub_read_token: ${{ secrets.HF_READ_TOKEN }}

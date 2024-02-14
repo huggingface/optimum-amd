@@ -1,0 +1,30 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+name: Ryzen Timm Quantization - Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - "optimum/amd/ryzenai/**/*.py"
+      - "tests/ryzenai/**/*.py"
+      - ".github/workflows/test_ryzenai_quantization_timm.yaml"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "optimum/amd/ryzenai/**/*.py"
+      - "tests/ryzenai/**/*.py"
+      - ".github/workflows/test_ryzenai_quantization_timm.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
+    with:
+      test_file: "tests/ryzenai/test_quantization.py"
+    secrets:
+      hf_hub_read_token: ${{ secrets.HF_READ_TOKEN }}
