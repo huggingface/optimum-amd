@@ -420,8 +420,6 @@ def offload_model(model: torch.nn.Module) -> torch.nn.Module:
         update_internal_dict(module)
         for m in module.modules():
             if hasattr(m, "_hf_hook"):
-                # If a module has already been offloaded (because its forward pass was called),
-                # this will raise TypeError because of tied_pointers_to_remove is None
                 m._hf_hook.post_forward(m, torch.tensor([]))
 
     for module in model.modules():
