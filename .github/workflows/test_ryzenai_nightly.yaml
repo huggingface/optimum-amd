@@ -11,14 +11,14 @@ concurrency:
 
 jobs:
   run_tests_prequantized_models:
-    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@ryzenai_ci
+    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
     with:
       pytest_marker: "prequantized_model_test"
       test_file: "tests/ryzenai/test_modeling.py"
       report_name: "tests_prequantized_models"
       
   run_tests_quantization:
-    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@ryzenai_ci
+    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
     with:
       pytest_marker: "quant_test"
       test_file: "tests/ryzenai/test_quantization.py"
