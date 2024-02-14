@@ -97,7 +97,7 @@ class BrevitasQuantizationConfig:
             raise ValueError('The quantization configuration `weights_quant_granularity="per_group"` is not supported along `weights_param_method="mse"`. Per group MSE weight quantization is not supported.')
 
         if self.scale_precision == 'power_of_two_scale' and (not self.weights_symmetric or not self.activations_symmetric):
-            raise ValueError("Asymmetric quantization with Po2 scale not supported")
+            raise ValueError('The quantization configuration `scale_precision="power_of_two_scale"` is not supported along `weights_symmetric=True` or along `activations_symmetric=True`. Asymmetric quantization with power-of-two scale is not supported.')
 
         if self.scale_precision == 'power_of_two_scale' and self.weights_quant_granularity=='per_group':
             raise ValueError("Per group quantization with Po2 scale factors not supported")
