@@ -93,5 +93,20 @@ class BrevitasQuantizationConfig:
                 f'Static quantization with activations_quant_granularity="{self.activations_quant_granularity}" is not supported. The quantization granularity must be activations_quant_granularity="per_tensor" when using static quantization.'
             )
 
+        if self.weights_quant_granularity == 'per_group' and self.weights_param_method == 'mse':
+            raise ValueError("Per group MSE weight quantization not supported")
+
+        if self.scale_precision == 'power_of_two_scale' and (not self.weights_symmetric or not self.activations_symmetric):
+            raise ValueError("Asymmetric quantization with Po2 scale not supported")
+
+        if self.scale_precision == 'power_of_two_scale' and self.weights_quant_granularity=='per_group':
+            raise ValueError("Per group quantization with Po2 scale factors not supported")
+
+        if not self.is_static and self.activations_quant_granularity == 'per_group' and not self.activations_symmetric:
+            raise ValueError("Asymmetric dynamic per group quantization not supported")
+
+        if self.scale_precision == 'power_of_two_scale' and not self.is_static:
+            raise ValueError("Dynamic Activation quantization with Po2 scale factor not supported")
+
     def requires_fx_graph(self):
         return self.activations_equalization == "cross_layer" or self.apply_weight_equalization
