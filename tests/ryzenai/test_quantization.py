@@ -88,7 +88,7 @@ class TestTimmQuantization(unittest.TestCase):
 
             return {"pixel_values": pixel_values}
 
-        # quantize
+        # quantize model
         quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name)
         quantization_config = AutoQuantizationConfig.ipu_cnn_config()
 
