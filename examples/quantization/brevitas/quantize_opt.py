@@ -88,9 +88,11 @@ validation_dataset = get_dataset_for_model(
 )
 
 # Evaluation of the non-quantized model.
+model = offload_model(quantizer.model)
 perplexity = compute_perplexity(
-    quantizer.model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer
+    model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer
 )
+remove_hooks(model)
 print(f"Perplexity (original model): {perplexity}")
 
 model = quantizer.quantize(qconfig, calibration_dataset)
