@@ -100,7 +100,7 @@ class BrevitasQuantizationConfig:
             raise ValueError('The quantization configuration `scale_precision="power_of_two_scale"` is not supported along `weights_symmetric=True` or along `activations_symmetric=True`. Asymmetric quantization with power-of-two scale is not supported.')
 
         if self.scale_precision == 'power_of_two_scale' and self.weights_quant_granularity=='per_group':
-            raise ValueError("Per group quantization with Po2 scale factors not supported")
+            raise ValueError('The quantization configuration `scale_precision="power_of_two_scale"` is not supported along `weights_quant_granularity="per_group"`. Per group quantization with power-of-two scale factors is not supported.')
 
         if not self.is_static and self.activations_quant_granularity == 'per_group' and not self.activations_symmetric:
             raise ValueError("Asymmetric dynamic per group quantization not supported")
