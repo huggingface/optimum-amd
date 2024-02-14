@@ -1,0 +1,39 @@
+name: Brevitas / Python - Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8]
+        os: [ubuntu-20.04, windows-2019, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        pip install git+https://github.com/huggingface/transformers.git
+        pip install git+https://github.com/huggingface/accelerate.git
+        pip install git+https://github.com/Xilinx/brevitas.git@dev
+
+        pip install .[brevitas,tests]
+
+    - name: Test with pytest
+      working-directory: tests
+      run: |
+        pytest tests/brevitas -s -vvvvv --durations=0
