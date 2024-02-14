@@ -422,10 +422,7 @@ def offload_model(model: torch.nn.Module) -> torch.nn.Module:
             if hasattr(m, "_hf_hook"):
                 # If a module has already been offloaded (because its forward pass was called),
                 # this will raise TypeError because of tied_pointers_to_remove is None
-                try:
-                    m._hf_hook.post_forward(m, torch.tensor([]))
-                except TypeError as e:
-                    pass
+                m._hf_hook.post_forward(m, torch.tensor([]))
 
     for module in model.modules():
         if hasattr(module, "_hf_hook"):
