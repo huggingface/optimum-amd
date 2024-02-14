@@ -11,7 +11,7 @@ from optimum.exporters.onnx import onnx_export_from_model
 from transformers import AutoTokenizer
 
 
-parser = ArgumentParser(description="Quantize OPT from 🤗 Transformers with AMD Brevitas")
+parser = ArgumentParser(description="Quantize LLMs from 🤗 Transformers with AMD Brevitas")
 parser.add_argument(
     "--model",
     type=str,
