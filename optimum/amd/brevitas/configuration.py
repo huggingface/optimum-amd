@@ -93,5 +93,20 @@ class BrevitasQuantizationConfig:
                 f'Static quantization with activations_quant_granularity="{self.activations_quant_granularity}" is not supported. The quantization granularity must be activations_quant_granularity="per_tensor" when using static quantization.'
             )
 
+        if self.weights_quant_granularity == 'per_group' and self.weights_param_method == 'mse':
+            raise ValueError('The quantization configuration `weights_quant_granularity="per_group"` is not supported along `weights_param_method="mse"`. Per group MSE weight quantization is not supported.')
+
+        if self.scale_precision == 'power_of_two_scale' and (not self.weights_symmetric or not self.activations_symmetric):
+            raise ValueError('The quantization configuration `scale_precision="power_of_two_scale"` is not supported along `weights_symmetric=True` or along `activations_symmetric=True`. Asymmetric quantization with power-of-two scale is not supported.')
+
+        if self.scale_precision == 'power_of_two_scale' and self.weights_quant_granularity=='per_group':
+            raise ValueError('The quantization configuration `scale_precision="power_of_two_scale"` is not supported along `weights_quant_granularity="per_group"`. Per group quantization with power-of-two scale factors is not supported.')
+
+        if not self.is_static and self.activations_quant_granularity == 'per_group' and not self.activations_symmetric:
+            raise ValueError('The quantization configuration `activations_quant_granularity="per_group"` is not supported along `activations_symmetric=False`. Asymmetric dynamic per group quantization is not supported.')
+
+        if self.scale_precision == 'power_of_two_scale' and not self.is_static:
+            raise ValueError('The quantization configuration `scale_precision="power_of_two_scale"` is not supported along `is_static=False`. Dynamic activation quantization with power-of-two scale factor is not supported.')
+
     def requires_fx_graph(self):
         return self.activations_equalization == "cross_layer" or self.apply_weight_equalization
