@@ -27,3 +27,4 @@ jobs:
     with:
       pytest_marker: "not prequantized_model_test"
       test_file: "tests/ryzenai/test_modeling.py"
+      
