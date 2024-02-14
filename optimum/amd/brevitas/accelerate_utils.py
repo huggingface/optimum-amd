@@ -334,8 +334,10 @@ def update_internal_dict(module):
         # It might happen that we call an quantization's inner modules, and this cause some parameters to be
         # already on meta device. This is not a problem for their value but we need to check here
         curr_device = (recurse_getattr(module, key + ".data")).device
-        if str(curr_device) != 'meta':
-            module._hf_hook.weights_map.dataset.state_dict[prefix + key] = (recurse_getattr(module, key + ".data")).cpu()
+        if str(curr_device) != "meta":
+            module._hf_hook.weights_map.dataset.state_dict[prefix + key] = (
+                recurse_getattr(module, key + ".data")
+            ).cpu()
 
 
 def find_all_devices(data):

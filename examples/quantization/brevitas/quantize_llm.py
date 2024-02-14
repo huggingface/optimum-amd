@@ -89,9 +89,7 @@ validation_dataset = get_dataset_for_model(
 
 # Evaluation of the non-quantized model.
 model = offload_model(quantizer.model)
-perplexity = compute_perplexity(
-    model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer
-)
+perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
 remove_hooks(model)
 print(f"Perplexity (original model): {perplexity}")
 
@@ -109,4 +107,6 @@ remove_hooks(model)
 
 # Export to ONNX through optimum.exporters.
 with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
-    onnx_export_from_model(model, "opt_quantized_onnx", task="text-generation-with-past", do_validation=False, no_post_process=True)
+    onnx_export_from_model(
+        model, "opt_quantized_onnx", task="text-generation-with-past", do_validation=False, no_post_process=True
+    )
