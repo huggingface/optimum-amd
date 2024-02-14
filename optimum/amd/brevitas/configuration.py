@@ -106,7 +106,7 @@ class BrevitasQuantizationConfig:
             raise ValueError('The quantization configuration `activations_quant_granularity="per_group"` is not supported along `activations_symmetric=False`. Asymmetric dynamic per group quantization is not supported.')
 
         if self.scale_precision == 'power_of_two_scale' and not self.is_static:
-            raise ValueError("Dynamic Activation quantization with Po2 scale factor not supported")
+            raise ValueError('The quantization configuration `scale_precision="power_of_two_scale"` is not supported along `is_static=False`. Dynamic activation quantization with power-of-two scale factor is not supported.')
 
     def requires_fx_graph(self):
         return self.activations_equalization == "cross_layer" or self.apply_weight_equalization
