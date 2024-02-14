@@ -34,6 +34,5 @@ jobs:
         pip install .[brevitas,tests]
 
     - name: Test with pytest
-      working-directory: tests
       run: |
         pytest tests/brevitas -s -vvvvv --durations=0
