@@ -15,6 +15,8 @@ from tqdm import tqdm
 
 from optimum.exporters import TasksManager
 from optimum.quantization_base import OptimumQuantizer
+from optimum.utils.normalized_config import NormalizedConfigManager
+from transformers import AutoConfig
 from transformers.utils.fx import symbolic_trace
 
 from .accelerate_utils import offload_model, remove_hooks
@@ -29,9 +31,10 @@ class BrevitasQuantizer(OptimumQuantizer):
     Handles the Runtime quantization process for models shared on huggingface.co/models.
     """
 
-    def __init__(self, model: torch.nn.Module):
+    def __init__(self, model: torch.nn.Module, model_name_or_path: str):
         super().__init__()
         self.model = model
+        self.model_name_or_path = model_name_or_path
         self.config = self.model.config
         self.group_of_parallel_layers = None
 
@@ -91,7 +94,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             trust_remote_code=trust_remote_code,
         )
 
-        return cls(model)
+        return cls(model, model_name_or_path)
 
     def quantize(
         self, quantization_config: BrevitasQuantizationConfig, calibration_dataset: Optional[List[Dict]] = None
@@ -181,9 +184,30 @@ class BrevitasQuantizer(OptimumQuantizer):
         with torch.no_grad():
             if calibration_dataset is not None:
                 model(**calibration_dataset[0])
-            else:
-                # TODO: clean that with a proper dummy input.
+            elif not isinstance(model, torch.fx.GraphModule):
                 model(input_ids=torch.tensor([[1]], dtype=torch.int64))
+            else:
+                # TODO: clean that later.
+                config = AutoConfig.from_pretrained(self.model_name_or_path)
+
+                normalized_config_class = NormalizedConfigManager.get_normalized_config_class(config.model_type)
+                normalized_config = normalized_config_class(config)
+
+                num_heads = normalized_config.num_attention_heads
+                head_dim = normalized_config.hidden_size // num_heads
+                num_layers = normalized_config.num_layers
+
+                sample = {
+                    "input_ids": torch.tensor([[1]], dtype=torch.int64),
+                    "attention_mask": torch.tensor([[1]], dtype=torch.int64),
+                }
+                sample["past_key_values"] = tuple(
+                    (
+                        torch.zeros(1, num_heads, 0, head_dim, device=sample["input_ids"].device),
+                        torch.zeros(1, num_heads, 0, head_dim, device=sample["input_ids"].device),
+                    )
+                    for _ in range(num_layers)
+                )
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
