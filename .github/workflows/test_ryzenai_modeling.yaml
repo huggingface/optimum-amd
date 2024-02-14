@@ -25,5 +25,5 @@ jobs:
   build:
     uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@fix-ryzenai
     with:
-      #pytest_marker: "not prequantized_model_test"
+      pytest_marker: "not prequantized_model_test"
       test_file: "tests/ryzenai/test_modeling.py"
