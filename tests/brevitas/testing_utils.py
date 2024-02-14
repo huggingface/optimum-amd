@@ -26,14 +26,12 @@ def get_quantized_model(
     apply_gptq: bool,
     apply_weight_equalization: bool,
     activations_equalization: Optional[str],
-    replace_mha_with_quantizable: bool = False,
 ):
     qconfig = BrevitasQuantizationConfig(
         is_static=is_static,
         apply_gptq=apply_gptq,
         apply_weight_equalization=apply_weight_equalization,
         activations_equalization=activations_equalization,
-        replace_mha_with_quantizable=replace_mha_with_quantizable,
     )
     quantizer = BrevitasQuantizer.from_pretrained(model_name)
 
