@@ -63,6 +63,7 @@ class YoloXImageProcessor(BaseImageProcessor):
     def __init__(
         self,
         size=None,
+        stride: List[int] = [8, 16, 32],
         **kwargs,
     ):
         size = size if size is not None else {"height": 640, "width": 640}
@@ -71,10 +72,7 @@ class YoloXImageProcessor(BaseImageProcessor):
         self.size = size
         self.resample = cv2.INTER_LINEAR
         self.data_format = ChannelDimension.LAST
-        self.p6 = False
-        self.strides_wout_p6 = [8, 16, 32]
-        self.strides_with_p6 = [8, 16, 32, 64]
-        self.strides = self.strides_with_p6 if self.p6 else self.strides_wout_p6
+        self.stride = stride
 
     def resize(
         self,
@@ -184,7 +182,7 @@ class YoloXImageProcessor(BaseImageProcessor):
         if data_format == ChannelDimension.LAST:
             outputs = [torch.permute(out, (0, 3, 1, 2)) for out in outputs]
 
-        predictions = postprocess(outputs, (self.size["height"], self.size["width"]), torch.Tensor(self.strides))
+        predictions = postprocess(outputs, (self.size["height"], self.size["width"]), torch.Tensor(self.stride))
 
         has_confidence = predictions[..., 4] > threshold  # Candidates
 
