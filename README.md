@@ -144,7 +144,7 @@ RUN_SLOW=1 pytest -s -v ./tests/ryzenai/
 
 **Windows Powershell**
 
-For Windows Powershell, use the following command to run tests with slow tests enabled:
+For Windows Powershell, use the following command to run the slow tests:
 
 ```bash
 $env:RUN_SLOW=1; pytest -s -v ./tests/ryzenai/
