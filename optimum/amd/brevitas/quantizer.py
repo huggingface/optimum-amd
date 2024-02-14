@@ -106,7 +106,6 @@ class BrevitasQuantizer(OptimumQuantizer):
                 In case the quantization involves a calibration phase, this argument needs to be specified as a list of inputs to the model.
                 Example: `calibration_dataset = [{"input_ids": torch.tensor([[1, 2, 3, 4]])}, {"input_ids": torch.tensor([[6, 7, 3, 4]])}]` which is a dataset for a model taking `input_ids` as an argument, and which has two samples.
         """
-        self.validate_quant_config(quantization_config)
 
         requires_data = (
             quantization_config.activations_equalization
