@@ -108,5 +108,5 @@ remove_hooks(model)
 # Export to ONNX through optimum.exporters.
 with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
     onnx_export_from_model(
-        model, "opt_quantized_onnx", task="text-generation-with-past", do_validation=False, no_post_process=True
+        model, "llm_quantized_onnx", task="text-generation-with-past", do_validation=False, no_post_process=True
     )
