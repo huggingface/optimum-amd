@@ -54,9 +54,14 @@ args = parser.parse_args()
 
 tokenizer = AutoTokenizer.from_pretrained(args.model)
 
-# Prepare the quantizer, specifying its configuration and loading the model.
+# Specify how much of each device should set aside for accelerate's offload functions
+# The absolute margin is in bytes & the relative margin is a ratio
+# The margins are the portions of the device which should be reserved for other functions
+# (not accelerate)
 gpu_device_map = calc_gpu_device_map(absolute_mem_margin=2.0*1e9, relative_mem_margin=0.3)
 cpu_device_map = calc_cpu_device_map(absolute_mem_margin=2.0*1e9, relative_mem_margin=0.3)
+
+# Prepare the quantizer, specifying its configuration and loading the model.
 qconfig = BrevitasQuantizationConfig(
     apply_gptq=args.apply_gptq,
     apply_weight_equalization=args.apply_weight_equalization,
