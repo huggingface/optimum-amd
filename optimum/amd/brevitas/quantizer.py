@@ -167,32 +167,35 @@ class BrevitasQuantizer(OptimumQuantizer):
 
         if use_accelerate:
             device = None
+            quantize_context = contextlib.nullcontext()
         else:
             device = next(model.parameters()).device
+            quantize_context = torch.device(device)
 
         # We do not quantize embedding and last fully connected layer
-        model = quantize_model(
-            model,
-            dtype=dtype,
-            device=device,
-            weight_quant_format="int",
-            weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
-            weight_bit_width=quantization_config.weights_bitwidth,
-            weight_param_method=quantization_config.weights_param_method,
-            weight_scale_precision=quantization_config.scale_precision,
-            weight_quant_granularity=quantization_config.weights_quant_granularity,
-            weight_group_size=quantization_config.weights_group_size,
-            quantize_weight_zero_point=quantization_config.quantize_zero_point,
-            input_bit_width=quantization_config.activations_bitwidth,
-            input_quant_type="sym" if quantization_config.activations_symmetric else "asym",
-            input_quant_format="int",
-            input_param_method=quantization_config.activations_param_method,
-            input_scale_precision=quantization_config.scale_precision,
-            input_scale_type="static" if quantization_config.is_static else "dynamic",
-            input_quant_granularity=quantization_config.activations_quant_granularity,
-            input_group_size=quantization_config.activations_group_size,
-            quantize_input_zero_point=quantization_config.quantize_zero_point,
-        )
+        with quantize_context:
+            model = quantize_model(
+                model,
+                dtype=dtype,
+                device=device,
+                weight_quant_format="int",
+                weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
+                weight_bit_width=quantization_config.weights_bitwidth,
+                weight_param_method=quantization_config.weights_param_method,
+                weight_scale_precision=quantization_config.scale_precision,
+                weight_quant_granularity=quantization_config.weights_quant_granularity,
+                weight_group_size=quantization_config.weights_group_size,
+                quantize_weight_zero_point=quantization_config.quantize_zero_point,
+                input_bit_width=quantization_config.activations_bitwidth,
+                input_quant_type="sym" if quantization_config.activations_symmetric else "asym",
+                input_quant_format="int",
+                input_param_method=quantization_config.activations_param_method,
+                input_scale_precision=quantization_config.scale_precision,
+                input_scale_type="static" if quantization_config.is_static else "dynamic",
+                input_quant_granularity=quantization_config.activations_quant_granularity,
+                input_group_size=quantization_config.activations_group_size,
+                quantize_input_zero_point=quantization_config.quantize_zero_point,
+            )
 
         # Perform a single inference pass to generate the correct state_dict. This is necessary as Brevitas has some magic where
         # a first forward pass need to be called before quantizing a model:
