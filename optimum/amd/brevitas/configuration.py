@@ -8,7 +8,7 @@ from typing import Literal, Optional
 @dataclass
 class BrevitasQuantizationConfig:
     """
-    QuantizationConfig is the configuration class handling all the ONNX Runtime quantization parameters.
+    QuantizationConfig is the configuration class handling all the Brevitas quantization parameters.
 
     Args:
         weights_bitwidth (`int`, defaults to `8`):
