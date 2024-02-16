@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 import random
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Union, Optional
 
 import numpy as np
 import torch
@@ -49,6 +49,17 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
             # Add BOS token.
             subsample["input_ids"][:, 0] = tokenizer.bos_token_id
 
+            if not hasattr(model, "_hf_hook"):
+                device = next(model.parameters()).device
+                print("device", device)
+                for name, val in subsample.items():
+                    subsample[name] = val.to(device)
+            else:
+                # In accelerate by default `io_same_device=True`, and here we want the of the model output on device.
+                device = model._hf_hook.execution_device
+                for name, val in subsample.items():
+                    subsample[name] = val.to(device)
+            
             lm_logits = model(**subsample)["logits"]
 
             reference_labels = subsample["input_ids"][:, context_length:]
@@ -59,6 +70,8 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
             reference_labels = reference_labels.view(reference_labels.shape[-1])
             shift_logits = shift_logits.view(-1, shift_logits.shape[-1])
 
+            print("shift_logits", shift_logits.device)
+            print("reference_labels", reference_labels.device)
             loss = cross_entropy_loss(shift_logits, reference_labels)
 
             nlls.append(loss)
@@ -158,6 +171,22 @@ def get_c4(
     return dataset
 
 
+class DatasetToDevice(torch.utils.data.Dataset):
+    def __init__(self, data: List, device: Optional[Union[str, torch.device]]):
+        super().__init__()
+        self.data = data
+        self.device = device
+    
+    def __getitem__(self, idx):
+        if self.device is not None:
+            return {name: val.to(self.device) for name, val in self.data[idx].items()}
+        else:
+            return self.data[idx]
+
+    def __len__(self):
+        return len(self.data)
+    
+
 def get_dataset_for_model(
     model_name_or_path: str,
     qconfig: "BrevitasQuantizationConfig",
@@ -168,6 +197,7 @@ def get_dataset_for_model(
     seed: int = 0,
     split: str = "train",
     fuse_sequences: bool = True,
+    device: Optional[Union[str, torch.device]] = None,
 ):
     """
     Get a dataset.
@@ -226,5 +256,7 @@ def get_dataset_for_model(
                 )
                 for _ in range(num_layers)
             )
+    
+    data = DatasetToDevice(data, device=device)
 
     return data

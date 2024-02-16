@@ -5,6 +5,7 @@ import inspect
 import logging
 from typing import Dict, List, Optional, Union
 
+import contextlib
 import torch
 from brevitas.graph.calibrate import bias_correction_mode, calibration_mode
 from brevitas.graph.equalize import activation_equalization_mode
@@ -49,6 +50,8 @@ class BrevitasQuantizer(OptimumQuantizer):
         force_download: bool = False,
         local_files_only: bool = False,
         use_auth_token: Optional[Union[bool, str]] = None,
+        device: Optional[torch.device] = None,
+        **model_kwargs,
     ):
         """
         Loads the BrevitasQuantizer and model.
@@ -81,7 +84,7 @@ class BrevitasQuantizer(OptimumQuantizer):
         # TODO: fix
         # task = TasksManager.infer_task_from_model(model_name_or_path)
         task = "text-generation"
-
+        
         model = TasksManager.get_model_from_task(
             task,
             model_name_or_path,
@@ -92,6 +95,8 @@ class BrevitasQuantizer(OptimumQuantizer):
             local_files_only=local_files_only,
             force_download=force_download,
             trust_remote_code=trust_remote_code,
+            device=device,
+            **model_kwargs,
         )
 
         return cls(model, model_name_or_path)
@@ -155,34 +160,41 @@ class BrevitasQuantizer(OptimumQuantizer):
             apply_act_equalization(model, quantization_config.activations_equalization, calibration_dataset)
             logger.info("Activation equalization applied.")
 
+        if not hasattr(model, "_hf_hook"):
+            context = torch.device(next(model.parameters()).device)
+        else:
+            context = contextlib.nullcontext()
+        
         # We do not quantize embedding and last fully connected layer
-        model = quantize_model(
-            model,
-            dtype=dtype,
-            weight_quant_format="int",
-            weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
-            weight_bit_width=quantization_config.weights_bitwidth,
-            weight_param_method=quantization_config.weights_param_method,
-            weight_scale_precision=quantization_config.scale_precision,
-            weight_quant_granularity=quantization_config.weights_quant_granularity,
-            weight_group_size=quantization_config.weights_group_size,
-            quantize_weight_zero_point=quantization_config.quantize_zero_point,
-            input_bit_width=quantization_config.activations_bitwidth,
-            input_quant_type="sym" if quantization_config.activations_symmetric else "asym",
-            input_quant_format="int",
-            input_param_method=quantization_config.activations_param_method,
-            input_scale_precision=quantization_config.scale_precision,
-            input_scale_type="static" if quantization_config.is_static else "dynamic",
-            input_quant_granularity=quantization_config.activations_quant_granularity,
-            input_group_size=quantization_config.activations_group_size,
-            quantize_input_zero_point=quantization_config.quantize_zero_point,
-        )
+        with context:
+            model = quantize_model(
+                model,
+                dtype=dtype,
+                weight_quant_format="int",
+                weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
+                weight_bit_width=quantization_config.weights_bitwidth,
+                weight_param_method=quantization_config.weights_param_method,
+                weight_scale_precision=quantization_config.scale_precision,
+                weight_quant_granularity=quantization_config.weights_quant_granularity,
+                weight_group_size=quantization_config.weights_group_size,
+                quantize_weight_zero_point=quantization_config.quantize_zero_point,
+                input_bit_width=quantization_config.activations_bitwidth,
+                input_quant_type="sym" if quantization_config.activations_symmetric else "asym",
+                input_quant_format="int",
+                input_param_method=quantization_config.activations_param_method,
+                input_scale_precision=quantization_config.scale_precision,
+                input_scale_type="static" if quantization_config.is_static else "dynamic",
+                input_quant_granularity=quantization_config.activations_quant_granularity,
+                input_group_size=quantization_config.activations_group_size,
+                quantize_input_zero_point=quantization_config.quantize_zero_point,
+            )
 
         # Perform a single inference pass to generate the correct state_dict. This is necessary as Brevitas has some magic where
         # a first forward pass need to be called before quantizing a model:
         # https://github.com/Xilinx/brevitas/blob/84f42259ec869eb151af4cb8a8b23ad925f493db/src/brevitas/core/scaling/standalone.py#L205-L217
         with torch.no_grad():
             if calibration_dataset is not None:
+                print("calibration_dataset[0]", calibration_dataset[0])
                 model(**calibration_dataset[0])
             elif not isinstance(model, torch.fx.GraphModule):
                 model(input_ids=torch.tensor([[1]], dtype=torch.int64))
