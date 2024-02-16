@@ -158,6 +158,7 @@ class BrevitasQuantizer(OptimumQuantizer):
         model = quantize_model(
             model,
             dtype=dtype,
+            device=None,
             weight_quant_format="int",
             weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
             weight_bit_width=quantization_config.weights_bitwidth,
