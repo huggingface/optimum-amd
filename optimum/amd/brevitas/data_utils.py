@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Union, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 import torch
@@ -51,7 +51,6 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
 
             if not hasattr(model, "_hf_hook"):
                 device = next(model.parameters()).device
-                print("device", device)
                 for name, val in subsample.items():
                     subsample[name] = val.to(device)
             else:
@@ -59,7 +58,7 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
                 device = model._hf_hook.execution_device
                 for name, val in subsample.items():
                     subsample[name] = val.to(device)
-            
+
             lm_logits = model(**subsample)["logits"]
 
             reference_labels = subsample["input_ids"][:, context_length:]
@@ -70,8 +69,6 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
             reference_labels = reference_labels.view(reference_labels.shape[-1])
             shift_logits = shift_logits.view(-1, shift_logits.shape[-1])
 
-            print("shift_logits", shift_logits.device)
-            print("reference_labels", reference_labels.device)
             loss = cross_entropy_loss(shift_logits, reference_labels)
 
             nlls.append(loss)
@@ -176,7 +173,7 @@ class DatasetToDevice(torch.utils.data.Dataset):
         super().__init__()
         self.data = data
         self.device = device
-    
+
     def __getitem__(self, idx):
         if self.device is not None:
             return {name: val.to(self.device) for name, val in self.data[idx].items()}
@@ -185,7 +182,7 @@ class DatasetToDevice(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.data)
-    
+
 
 def get_dataset_for_model(
     model_name_or_path: str,
@@ -256,7 +253,7 @@ def get_dataset_for_model(
                 )
                 for _ in range(num_layers)
             )
-    
+
     data = DatasetToDevice(data, device=device)
 
     return data

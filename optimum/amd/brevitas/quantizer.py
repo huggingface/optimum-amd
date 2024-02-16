@@ -1,11 +1,11 @@
 # Copyright 2023 The HuggingFace Team. All rights reserved.
 # Licensed under the MIT License.
 
+import contextlib
 import inspect
 import logging
 from typing import Dict, List, Optional, Union
 
-import contextlib
 import torch
 from brevitas.graph.calibrate import bias_correction_mode, calibration_mode
 from brevitas.graph.equalize import activation_equalization_mode
@@ -50,7 +50,7 @@ class BrevitasQuantizer(OptimumQuantizer):
         force_download: bool = False,
         local_files_only: bool = False,
         use_auth_token: Optional[Union[bool, str]] = None,
-        device: Optional[torch.device] = None,
+        device_map: Optional[Union[Dict, str, torch.device]] = None,
         **model_kwargs,
     ):
         """
@@ -84,7 +84,7 @@ class BrevitasQuantizer(OptimumQuantizer):
         # TODO: fix
         # task = TasksManager.infer_task_from_model(model_name_or_path)
         task = "text-generation"
-        
+
         model = TasksManager.get_model_from_task(
             task,
             model_name_or_path,
@@ -95,7 +95,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             local_files_only=local_files_only,
             force_download=force_download,
             trust_remote_code=trust_remote_code,
-            device=device,
+            device_map=device_map,
             **model_kwargs,
         )
 
@@ -125,6 +125,7 @@ class BrevitasQuantizer(OptimumQuantizer):
                 f"No calibration_dataset was passed, but a calibration dataset is required with the quantization configuration activations_equalization={quantization_config.activations_equalization}, apply_gptq={quantization_config.apply_gptq}, is_static={quantization_config.is_static}."
             )
 
+        use_accelerate = hasattr(self.model, "_hf_hook")
         dtype = next(iter(self.model.parameters())).dtype
 
         if quantization_config.requires_fx_graph():
@@ -142,6 +143,9 @@ class BrevitasQuantizer(OptimumQuantizer):
                 model = symbolic_trace(self.model, input_names)
         else:
             model = self.model
+
+        if use_accelerate:
+            remove_hooks(model)
 
         # Because accelerate is not compatible with FX, we keep two versions of the Model
         # one with FX-traced, the other one not.
@@ -164,7 +168,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             context = torch.device(next(model.parameters()).device)
         else:
             context = contextlib.nullcontext()
-        
+
         # We do not quantize embedding and last fully connected layer
         with context:
             model = quantize_model(
@@ -188,6 +192,9 @@ class BrevitasQuantizer(OptimumQuantizer):
                 input_group_size=quantization_config.activations_group_size,
                 quantize_input_zero_point=quantization_config.quantize_zero_point,
             )
+
+        if use_accelerate:
+            offload_model(model)
 
         # Perform a single inference pass to generate the correct state_dict. This is necessary as Brevitas has some magic where
         # a first forward pass need to be called before quantizing a model:
@@ -273,8 +280,6 @@ class BrevitasQuantizer(OptimumQuantizer):
 def apply_act_equalization(
     model: torch.nn.Module, act_equalization_type: str, dataset: List[Dict], alpha: float = 0.5
 ) -> None:
-    model = offload_model(model)
-
     if act_equalization_type == "layerwise":
         with activation_equalization_mode(model, alpha, add_mul_node=True, layerwise=True):
             with torch.no_grad():
@@ -311,8 +316,6 @@ def apply_gptq(
     """
     To speed up GPTQ computation, we can look through the model to find layers that can be optimized in parallel because they do not depend on each other. A typical case is the input matrices of the attention layer. We just need to specify the suffix of the layer, and they will be matched across the entire structure.
     """
-    model = offload_model(model)
-
     with gptq_mode(
         model,
         use_quant_activations=False,
@@ -331,8 +334,6 @@ def apply_gptq(
 
 @torch.no_grad()
 def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
-    model = offload_model(model)
-
     with calibration_mode(model):
         with torch.no_grad():
             for inps in tqdm(dataset):
@@ -344,8 +345,6 @@ def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
 
 @torch.no_grad()
 def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict]) -> None:
-    model = offload_model(model)
-
     with bias_correction_mode(model):
         for inps in tqdm(dataset):
             model(**inps)
