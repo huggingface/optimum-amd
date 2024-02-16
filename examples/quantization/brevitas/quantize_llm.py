@@ -5,7 +5,7 @@ from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 
 from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
-from optimum.amd.brevitas.accelerate_utils import offload_model, remove_hooks
+from optimum.amd.brevitas.accelerate_utils import remove_hooks
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
 from optimum.exporters.onnx import onnx_export_from_model
 from transformers import AutoTokenizer
@@ -49,6 +49,12 @@ parser.add_argument(
     default=128,
     help="Sequence length to use during calibration (default: %(default)s).",
 )
+parser.add_argument(
+    "--cpu-offload",
+    action="store_true",
+    default=False,
+    help="Use Accelerate library to offload part of the model to RAM. This is useful when handling large models on a limited amount of GPU memory.",
+)
 
 args = parser.parse_args()
 
@@ -64,7 +70,9 @@ qconfig = BrevitasQuantizationConfig(
     activations_symmetric=args.is_static,  # ONNX export only supports unsigned for dynamic quantization
 )
 
-quantizer = BrevitasQuantizer.from_pretrained(args.model)
+quantizer = BrevitasQuantizer.from_pretrained(
+    args.model, device_map="cuda:0" if not args.cpu_offload else "auto", torch_dtype="auto"
+)
 
 # Load the data for calibration and evaluation.
 calibration_dataset = get_dataset_for_model(
@@ -75,6 +83,7 @@ calibration_dataset = get_dataset_for_model(
     nsamples=128,
     seqlen=args.seqlen,
     split="train",
+    device="cuda:0" if not args.cpu_offload else None,
 )
 
 validation_dataset = get_dataset_for_model(
@@ -85,28 +94,34 @@ validation_dataset = get_dataset_for_model(
     nsamples=128,
     seqlen=args.seqlen,
     split="validation",
+    device="cuda:0" if not args.cpu_offload else None,
 )
 
-# Evaluation of the non-quantized model.
-model = offload_model(quantizer.model)
-perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
-remove_hooks(model)
+perplexity = compute_perplexity(
+    quantizer.model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer
+)
+
 print(f"Perplexity (original model): {perplexity}")
 
-model = quantizer.quantize(qconfig, calibration_dataset)
-
-model = offload_model(model)
+quantized_model = quantizer.quantize(qconfig, calibration_dataset)
 
 # Evaluation of the quantized model.
-perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
+perplexity = compute_perplexity(
+    quantized_model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer
+)
 print(f"Perplexity (quantized model): {perplexity}")
 
 print("Exporting the model to ONNX...")
-# When exporting to ONNX, Accelerate's hooks need to be removed otherwise we have unwanted Cast nodes in the ONNX graph.
-remove_hooks(model)
+if args.cpu_offload:
+    # When exporting to ONNX, Accelerate's hooks need to be removed otherwise we have unwanted Cast nodes in the ONNX graph.
+    remove_hooks(quantized_model)
 
 # Export to ONNX through optimum.exporters.
-with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
+with torch.no_grad(), brevitas_proxy_export_mode(quantized_model, export_manager=StdQCDQONNXManager):
     onnx_export_from_model(
-        model, "llm_quantized_onnx", task="text-generation-with-past", do_validation=False, no_post_process=True
+        quantized_model,
+        "llm_quantized_onnx",
+        task="text-generation-with-past",
+        do_validation=False,
+        no_post_process=True,
     )

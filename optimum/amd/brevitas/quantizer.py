@@ -1,6 +1,7 @@
 # Copyright 2023 The HuggingFace Team. All rights reserved.
 # Licensed under the MIT License.
 
+import contextlib
 import inspect
 import logging
 from typing import Dict, List, Optional, Union
@@ -49,6 +50,8 @@ class BrevitasQuantizer(OptimumQuantizer):
         force_download: bool = False,
         local_files_only: bool = False,
         use_auth_token: Optional[Union[bool, str]] = None,
+        device_map: Optional[Union[Dict, str, torch.device]] = None,
+        **model_kwargs,
     ):
         """
         Loads the BrevitasQuantizer and model.
@@ -92,6 +95,8 @@ class BrevitasQuantizer(OptimumQuantizer):
             local_files_only=local_files_only,
             force_download=force_download,
             trust_remote_code=trust_remote_code,
+            device_map=device_map,
+            **model_kwargs,
         )
 
         return cls(model, model_name_or_path)
@@ -120,6 +125,7 @@ class BrevitasQuantizer(OptimumQuantizer):
                 f"No calibration_dataset was passed, but a calibration dataset is required with the quantization configuration activations_equalization={quantization_config.activations_equalization}, apply_gptq={quantization_config.apply_gptq}, is_static={quantization_config.is_static}."
             )
 
+        use_accelerate = hasattr(self.model, "_hf_hook")
         dtype = next(iter(self.model.parameters())).dtype
 
         if quantization_config.requires_fx_graph():
@@ -138,6 +144,9 @@ class BrevitasQuantizer(OptimumQuantizer):
         else:
             model = self.model
 
+        if use_accelerate:
+            remove_hooks(model)
+
         # Because accelerate is not compatible with FX, we keep two versions of the Model
         # one with FX-traced, the other one not.
         # Since weights are shared across the two, we can apply weight/activation equalization
@@ -155,34 +164,44 @@ class BrevitasQuantizer(OptimumQuantizer):
             apply_act_equalization(model, quantization_config.activations_equalization, calibration_dataset)
             logger.info("Activation equalization applied.")
 
+        if not hasattr(model, "_hf_hook"):
+            context = torch.device(next(model.parameters()).device)
+        else:
+            context = contextlib.nullcontext()
+
         # We do not quantize embedding and last fully connected layer
-        model = quantize_model(
-            model,
-            dtype=dtype,
-            weight_quant_format="int",
-            weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
-            weight_bit_width=quantization_config.weights_bitwidth,
-            weight_param_method=quantization_config.weights_param_method,
-            weight_scale_precision=quantization_config.scale_precision,
-            weight_quant_granularity=quantization_config.weights_quant_granularity,
-            weight_group_size=quantization_config.weights_group_size,
-            quantize_weight_zero_point=quantization_config.quantize_zero_point,
-            input_bit_width=quantization_config.activations_bitwidth,
-            input_quant_type="sym" if quantization_config.activations_symmetric else "asym",
-            input_quant_format="int",
-            input_param_method=quantization_config.activations_param_method,
-            input_scale_precision=quantization_config.scale_precision,
-            input_scale_type="static" if quantization_config.is_static else "dynamic",
-            input_quant_granularity=quantization_config.activations_quant_granularity,
-            input_group_size=quantization_config.activations_group_size,
-            quantize_input_zero_point=quantization_config.quantize_zero_point,
-        )
+        with context:
+            model = quantize_model(
+                model,
+                dtype=dtype,
+                weight_quant_format="int",
+                weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
+                weight_bit_width=quantization_config.weights_bitwidth,
+                weight_param_method=quantization_config.weights_param_method,
+                weight_scale_precision=quantization_config.scale_precision,
+                weight_quant_granularity=quantization_config.weights_quant_granularity,
+                weight_group_size=quantization_config.weights_group_size,
+                quantize_weight_zero_point=quantization_config.quantize_zero_point,
+                input_bit_width=quantization_config.activations_bitwidth,
+                input_quant_type="sym" if quantization_config.activations_symmetric else "asym",
+                input_quant_format="int",
+                input_param_method=quantization_config.activations_param_method,
+                input_scale_precision=quantization_config.scale_precision,
+                input_scale_type="static" if quantization_config.is_static else "dynamic",
+                input_quant_granularity=quantization_config.activations_quant_granularity,
+                input_group_size=quantization_config.activations_group_size,
+                quantize_input_zero_point=quantization_config.quantize_zero_point,
+            )
+
+        if use_accelerate:
+            offload_model(model)
 
         # Perform a single inference pass to generate the correct state_dict. This is necessary as Brevitas has some magic where
         # a first forward pass need to be called before quantizing a model:
         # https://github.com/Xilinx/brevitas/blob/84f42259ec869eb151af4cb8a8b23ad925f493db/src/brevitas/core/scaling/standalone.py#L205-L217
         with torch.no_grad():
             if calibration_dataset is not None:
+                print("calibration_dataset[0]", calibration_dataset[0])
                 model(**calibration_dataset[0])
             elif not isinstance(model, torch.fx.GraphModule):
                 model(input_ids=torch.tensor([[1]], dtype=torch.int64))
@@ -261,8 +280,6 @@ class BrevitasQuantizer(OptimumQuantizer):
 def apply_act_equalization(
     model: torch.nn.Module, act_equalization_type: str, dataset: List[Dict], alpha: float = 0.5
 ) -> None:
-    model = offload_model(model)
-
     if act_equalization_type == "layerwise":
         with activation_equalization_mode(model, alpha, add_mul_node=True, layerwise=True):
             with torch.no_grad():
@@ -299,8 +316,6 @@ def apply_gptq(
     """
     To speed up GPTQ computation, we can look through the model to find layers that can be optimized in parallel because they do not depend on each other. A typical case is the input matrices of the attention layer. We just need to specify the suffix of the layer, and they will be matched across the entire structure.
     """
-    model = offload_model(model)
-
     with gptq_mode(
         model,
         use_quant_activations=False,
@@ -319,8 +334,6 @@ def apply_gptq(
 
 @torch.no_grad()
 def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
-    model = offload_model(model)
-
     with calibration_mode(model):
         with torch.no_grad():
             for inps in tqdm(dataset):
@@ -332,8 +345,6 @@ def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
 
 @torch.no_grad()
 def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict]) -> None:
-    model = offload_model(model)
-
     with bias_correction_mode(model):
         for inps in tqdm(dataset):
             model(**inps)
