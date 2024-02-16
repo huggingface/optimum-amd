@@ -364,7 +364,18 @@ def find_all_devices(data):
         return [(data, str(data.device))]
 
 
-def offload_model(model: torch.nn.Module) -> torch.nn.Module:
+def calc_gpu_device_map(absolute_mem_margin: float = 2*1e9, relative_mem_margin: float = 0.3) -> Dict[int, float]:
+    torch.cuda.empty_cache()
+    gpu_device_map = {i: (torch.cuda.mem_get_info(i)[0] - absolute_mem_margin) * (1.0 - relative_mem_margin) for i in range(torch.cuda.device_count())}
+    return gpu_device_map
+
+
+def calc_cpu_device_map(absolute_mem_margin: float = 0.0, relative_mem_margin: float = 0.3) -> Dict[str, float]:
+    cpu_device_map = {"cpu": (virtual_memory().available - absolute_mem_margin) * (1.0 - relative_mem_margin)}
+    return cpu_device_map
+
+
+def offload_model(model: torch.nn.Module, gpu_device_map: Optional[Dict[int, float]] = None, cpu_device_map: Optional[Dict[str, float]] = None) -> torch.nn.Module:
     """
     Wraps accelerate's infer_auto_device_map and dispatch_model.
 
@@ -373,10 +384,11 @@ def offload_model(model: torch.nn.Module) -> torch.nn.Module:
 
     # FX vs non-FX model need different offloading
     config._FULL_STATE_DICT = True
-    torch.cuda.empty_cache()
-    cuda_device_map = {i: torch.cuda.mem_get_info(i)[0] * 0.7 for i in range(torch.cuda.device_count())}
-    cpu_device_map = {"cpu": virtual_memory().available * 0.7}
-    memory_map = {**cpu_device_map, **cuda_device_map}
+    if gpu_device_map is None:
+        gpu_device_map = calc_gpu_device_map()
+    if cpu_device_map is None:
+        cpu_device_map = calc_cpu_device_map()
+    memory_map = {**cpu_device_map, **gpu_device_map}
 
     if isinstance(model, torch.fx.GraphModule):
         device_map = infer_fx_auto_device_map(model, memory_map)
