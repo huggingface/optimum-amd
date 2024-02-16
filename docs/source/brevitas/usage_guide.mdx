@@ -1,0 +1,89 @@
+[Brevitas](https://github.com/Xilinx/brevitas) is an AMD library for neural network quantization. 🤗 Optimum-AMD integrates with Brevitas so as to make it easier to quantize [Transformers](https://huggingface.co/docs/transformers/index) models through Brevitas.
+
+This integration also allows to export models quantized through Brevitas to ONNX.
+
+For a refresher on quantization, please have a look at [this documentation](https://huggingface.co/docs/optimum/concept_guides/quantization).
+
+Please refer to [`~brevitas.BrevitasQuantizer`] and [`~brevitas.BrevitasQuantizationConfig`] for all available options.
+
+## Supported models
+
+Currently, only the following architectures are tested and supported:
+
+- Llama
+- OPT
+
+## Dynamic quantization
+
+```python
+from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
+from transformers import AutoTokenizer
+
+# Prepare the quantizer, specifying its configuration and loading the model.
+qconfig = BrevitasQuantizationConfig(
+    is_static=False,
+    apply_gptq=False,
+    apply_weight_equalization=False,
+    activations_equalization=False,
+    weights_symmetric=True,
+    activations_symmetric=False,
+)
+
+quantizer = BrevitasQuantizer.from_pretrained("facebook/opt-125m")
+
+model = quantizer.quantize(qconfig)
+```
+
+## Static quantization
+
+```python
+from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
+from transformers import AutoTokenizer
+
+# Prepare the quantizer, specifying its configuration and loading the model.
+qconfig = BrevitasQuantizationConfig(
+    is_static=True,
+    apply_gptq=False,
+    apply_weight_equalization=True,
+    activations_equalization=False,
+    weights_symmetric=True,
+    activations_symmetric=False,
+)
+
+quantizer = BrevitasQuantizer.from_pretrained("facebook/opt-125m")
+
+tokenizer = AutoTokenizer.from_pretrained("facebook/opt-125m")
+
+# Load the data for calibration and evaluation.
+calibration_dataset = get_dataset_for_model(
+    "facebook/opt-125m",
+    qconfig=qconfig,
+    dataset_name="wikitext2",
+    tokenizer=tokenizer,
+    nsamples=128,
+    seqlen=512,
+    split="train",
+)
+
+model = quantizer.quantize(qconfig, calibration_dataset)
+```
+
+## Export Brevitas models to ONNX
+
+Brevitas models can be exported to ONNX using Optimum:
+
+```python
+import torch
+from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
+from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
+
+# Export to ONNX through optimum.exporters.
+with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
+    onnx_export_from_model(
+        model, "llm_quantized_onnx", task="text-generation-with-past", do_validation=False, no_post_process=True
+    )
+```
+
+## Complete example
+
+A complete example is available at https://github.com/huggingface/optimum-amd/tree/main/examples/quantization/brevitas.
