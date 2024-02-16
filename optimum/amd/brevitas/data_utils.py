@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 import random
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 import torch
@@ -48,6 +48,17 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
 
             # Add BOS token.
             subsample["input_ids"][:, 0] = tokenizer.bos_token_id
+
+            use_accelerate = hasattr(model, "hf_device_map")
+            if not use_accelerate or (use_accelerate and not hasattr(model, "_hf_hook")):
+                device = next(model.parameters()).device
+                for name, val in subsample.items():
+                    subsample[name] = val.to(device)
+            else:
+                # In accelerate by default `io_same_device=True`, and here we want the of the model output on device.
+                device = model._hf_hook.execution_device
+                for name, val in subsample.items():
+                    subsample[name] = val.to(device)
 
             lm_logits = model(**subsample)["logits"]
 
@@ -158,6 +169,22 @@ def get_c4(
     return dataset
 
 
+class DatasetToDevice(torch.utils.data.Dataset):
+    def __init__(self, data: List, device: Optional[Union[str, torch.device]]):
+        super().__init__()
+        self.data = data
+        self.device = device
+
+    def __getitem__(self, idx):
+        if self.device is not None:
+            return {name: val.to(self.device) for name, val in self.data[idx].items()}
+        else:
+            return self.data[idx]
+
+    def __len__(self):
+        return len(self.data)
+
+
 def get_dataset_for_model(
     model_name_or_path: str,
     qconfig: "BrevitasQuantizationConfig",
@@ -168,6 +195,7 @@ def get_dataset_for_model(
     seed: int = 0,
     split: str = "train",
     fuse_sequences: bool = True,
+    device: Optional[Union[str, torch.device]] = None,
 ):
     """
     Get a dataset.
@@ -226,5 +254,7 @@ def get_dataset_for_model(
                 )
                 for _ in range(num_layers)
             )
+
+    data = DatasetToDevice(data, device=device)
 
     return data

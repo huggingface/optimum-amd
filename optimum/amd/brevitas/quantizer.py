@@ -1,6 +1,7 @@
 # Copyright 2023 The HuggingFace Team. All rights reserved.
 # Licensed under the MIT License.
 
+import contextlib
 import inspect
 import logging
 from typing import Dict, List, Optional, Union
@@ -48,6 +49,8 @@ class BrevitasQuantizer(OptimumQuantizer):
         force_download: bool = False,
         local_files_only: bool = False,
         use_auth_token: Optional[Union[bool, str]] = None,
+        device_map: Optional[Union[Dict, str, torch.device]] = None,
+        **model_kwargs,
     ):
         """
         Loads the BrevitasQuantizer and model.
@@ -81,6 +84,11 @@ class BrevitasQuantizer(OptimumQuantizer):
         # task = TasksManager.infer_task_from_model(model_name_or_path)
         task = "text-generation"
 
+        device = None
+        if not isinstance(device_map, dict) and device_map not in ["auto", "balanced"]:
+            device = device_map
+            device_map = None
+
         model = TasksManager.get_model_from_task(
             task,
             model_name_or_path,
@@ -91,6 +99,9 @@ class BrevitasQuantizer(OptimumQuantizer):
             local_files_only=local_files_only,
             force_download=force_download,
             trust_remote_code=trust_remote_code,
+            device_map=device_map,
+            device=device,
+            **model_kwargs,
         )
 
         return cls(model, model_name_or_path)
@@ -119,6 +130,7 @@ class BrevitasQuantizer(OptimumQuantizer):
                 f"No calibration_dataset was passed, but a calibration dataset is required with the quantization configuration activations_equalization={quantization_config.activations_equalization}, apply_gptq={quantization_config.apply_gptq}, is_static={quantization_config.is_static}."
             )
 
+        use_accelerate = quantization_config.device == "auto"
         dtype = next(iter(self.model.parameters())).dtype
 
         if quantization_config.requires_fx_graph():
@@ -141,7 +153,6 @@ class BrevitasQuantizer(OptimumQuantizer):
         # one with FX-traced, the other one not.
         # Since weights are shared across the two, we can apply weight/activation equalization
         # by using one representation or the other based on needs.
-
         if quantization_config.apply_weight_equalization:
             logger.info("Applying weight equalization...")
             apply_weight_equalization(model)
@@ -154,11 +165,16 @@ class BrevitasQuantizer(OptimumQuantizer):
             apply_act_equalization(model, quantization_config.activations_equalization, calibration_dataset)
             logger.info("Activation equalization applied.")
 
+        if use_accelerate:
+            device = None
+        else:
+            device = next(model.parameters()).device
+
         # We do not quantize embedding and last fully connected layer
         model = quantize_model(
             model,
             dtype=dtype,
-            device=None,
+            device=device,
             weight_quant_format="int",
             weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
             weight_bit_width=quantization_config.weights_bitwidth,
@@ -209,7 +225,10 @@ class BrevitasQuantizer(OptimumQuantizer):
                     for _ in range(num_layers)
                 )
 
-        offload_context = accelerate_offload(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
+        if use_accelerate:
+            offload_context = accelerate_offload(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
+        else:
+            offload_context = contextlib.nullcontext()
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")

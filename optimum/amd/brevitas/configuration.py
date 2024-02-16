@@ -78,6 +78,7 @@ class BrevitasQuantizationConfig:
     apply_bias_correction: bool = False
     apply_gptq: bool = False
     gptq_act_oder: Optional[bool] = None
+    device: str = "auto"
     gpu_device_map: Optional[Dict[int, float]] = None
     cpu_device_map: Optional[Dict[str, float]] = None
 

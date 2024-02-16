@@ -11,10 +11,11 @@ The example shows an example on how to quantize a decoder-class LLM model throug
 ## Prerequisites
 
 The examples were tested using:
- - PyTorch v2.1.2
- - transformers installed from main
- - accelerate install from main
- - optimum installed from main
+- `brevitas>=0.10.1`
+- `torch>=2.1.2`
+- `transformers` installed from main (`pip install git+https://github.com/huggingface/transformers.git@4b236aed7618d90546cd2e8797dab5b4a24c5dce`)
+- `optimum>=1.17.0`
+- Optionally, `accelerate` installed from main (`pip install git+https://github.com/huggingface/accelerate.git`)
 
 ## Running the Example
 
@@ -29,6 +30,8 @@ For all the options, please check:
 python quantize_llm.py --help
 ```
 
-Most options can be applied independently.
-For optimal results, we suggest using the `--activations-equalization layerwise --apply-gtpq`,
-but GPTQ may take a long time, depending on your available hardware.
+Most options can be applied independently. For optimal results, we suggest using the `--activations-equalization layerwise --apply-gtpq`, but GPTQ may take a long time, depending on your available hardware.
+
+## RAM offloading
+
+If quantizing large models, we recommend using the option `--cpu-offload` to offload the model to RAM using [Accelerate](https://huggingface.co/docs/accelerate/index), which loads the model's submodules dynamically to GPU.

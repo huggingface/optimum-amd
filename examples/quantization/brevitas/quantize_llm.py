@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import contextlib
 
 import torch
 from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
@@ -8,6 +9,7 @@ from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
 from optimum.amd.brevitas.accelerate_utils import accelerate_offload, calc_gpu_device_map, calc_cpu_device_map
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
 from optimum.exporters.onnx import onnx_export_from_model
+from optimum.utils import recurse_setattr
 from transformers import AutoTokenizer
 
 
@@ -52,8 +54,9 @@ parser.add_argument(
 parser.add_argument(
     "--device",
     type=str,
+    choices=["cpu", "cuda:0", "auto"],
     default="auto",
-    help="Device to run the example on (e.q., \"cpu\", \"cuda:0\", \"auto\"). \"auto\" will automatically select the device using HuggingFace Accelerate (default: %(default)s).",
+    help="Device to run the example on (e.q., \"cpu\", \"cuda:0\", \"auto\"). \"auto\" will automatically select the device using HuggingFace Accelerate (choices: [%(choices)s], default: %(default)s).",
 )
 
 args = parser.parse_args()
@@ -79,7 +82,9 @@ qconfig = BrevitasQuantizationConfig(
     cpu_device_map=cpu_device_map,
 )
 
-quantizer = BrevitasQuantizer.from_pretrained(args.model)
+quantizer = BrevitasQuantizer.from_pretrained(
+    args.model, device_map=args.device, # torch_dtype="auto" # fails for some reason with quantization enabled
+)
 
 # Load the data for calibration and evaluation.
 calibration_dataset = get_dataset_for_model(
@@ -90,6 +95,7 @@ calibration_dataset = get_dataset_for_model(
     nsamples=128,
     seqlen=args.seqlen,
     split="train",
+    device=args.device if args.device != "auto" else None,
 )
 
 validation_dataset = get_dataset_for_model(
@@ -100,24 +106,44 @@ validation_dataset = get_dataset_for_model(
     nsamples=128,
     seqlen=args.seqlen,
     split="validation",
+    device=args.device if args.device != "auto" else None,
 )
 
+model = quantizer.model
+if args.device != "auto":
+    offload_context = contextlib.nullcontext()
+else:
+    offload_context = accelerate_offload(model, qconfig.gpu_device_map, qconfig.cpu_device_map)
+
 # Evaluation of the non-quantized model.
-with accelerate_offload(quantizer.model, qconfig.gpu_device_map, qconfig.cpu_device_map) as model:
+with offload_context:
     perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
 print(f"Perplexity (original model): {perplexity}")
 
 model = quantizer.quantize(qconfig, calibration_dataset)
+if args.device == "auto":
+    offload_context = accelerate_offload(model, qconfig.gpu_device_map, qconfig.cpu_device_map)
 
 # Evaluation of the quantized model.
-with accelerate_offload(model, qconfig.gpu_device_map, qconfig.cpu_device_map):
+with offload_context:
     perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
 print(f"Perplexity (quantized model): {perplexity}")
 
 print("Exporting the model to ONNX...")
+model = model.to("cpu")
+for name, param in model.named_parameters():
+    if param.dtype in [torch.float16, torch.bfloat16]:
+        recurse_setattr(model, name, torch.nn.Parameter(param.to(torch.float32)))
+for name, param in model.named_buffers():
+    if param.dtype in [torch.float16, torch.bfloat16]:
+        recurse_setattr(model, name, torch.nn.Parameter(param.to(torch.float32)))
 
 # Export to ONNX through optimum.exporters.
 with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
     onnx_export_from_model(
-        model, "llm_quantized_onnx", task="text-generation-with-past", do_validation=False, no_post_process=True
+        model,
+        "llm_quantized_onnx",
+        task="text-generation-with-past",
+        do_validation=False,
+        no_post_process=True,
     )
