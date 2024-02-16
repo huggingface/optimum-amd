@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal, Optional, Dict
 
 
 @dataclass

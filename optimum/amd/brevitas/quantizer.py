@@ -19,12 +19,11 @@ from optimum.utils.normalized_config import NormalizedConfigManager
 from transformers import AutoConfig
 from transformers.utils.fx import symbolic_trace
 
-from .accelerate_utils import offload_model, remove_hooks
+from .accelerate_utils import accelerate_offload
 from .configuration import BrevitasQuantizationConfig
 
 
 logger = logging.getLogger(__name__)
-
 
 class BrevitasQuantizer(OptimumQuantizer):
     """
@@ -209,27 +208,32 @@ class BrevitasQuantizer(OptimumQuantizer):
                     for _ in range(num_layers)
                 )
 
+        offload_context = accelerate_offload(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
+
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
-            apply_gptq(
-                model,
-                calibration_dataset,
-                act_order=quantization_config.gptq_act_oder,
-                group_of_parallel_layers=self.group_of_parallel_layers,
-            )
+            with offload_context:
+                apply_gptq(
+                    model,
+                    calibration_dataset,
+                    act_order=quantization_config.gptq_act_oder,
+                    group_of_parallel_layers=self.group_of_parallel_layers,
+                )
             logger.info("GPTQ applied.")
 
         if quantization_config.activations_bitwidth is not None and quantization_config.is_static:
             logger.info("Applying activation calibration...")
-            apply_calibration(model, calibration_dataset)
+            with offload_context:
+                apply_calibration(model, calibration_dataset)
             logger.info("Activation calibration applied.")
 
         if quantization_config.apply_bias_correction:
             logger.info("Applying Bias Correction...")
-            apply_bias_correction(
-                model,
-                calibration_dataset,
-            )
+            with offload_context:
+                apply_bias_correction(
+                    model,
+                    calibration_dataset,
+                )
             logger.info("Bias Correction applied.")
 
         return model
@@ -261,8 +265,6 @@ class BrevitasQuantizer(OptimumQuantizer):
 def apply_act_equalization(
     model: torch.nn.Module, act_equalization_type: str, dataset: List[Dict], alpha: float = 0.5
 ) -> None:
-    model = offload_model(model)
-
     if act_equalization_type == "layerwise":
         with activation_equalization_mode(model, alpha, add_mul_node=True, layerwise=True):
             with torch.no_grad():
@@ -285,9 +287,6 @@ def apply_act_equalization(
     else:
         raise ValueError(f"The activation equalization type {act_equalization_type} not supported.")
 
-    # Remove all accelerate hooks.
-    remove_hooks(model)
-
 
 @torch.no_grad()
 def apply_gptq(
@@ -299,8 +298,6 @@ def apply_gptq(
     """
     To speed up GPTQ computation, we can look through the model to find layers that can be optimized in parallel because they do not depend on each other. A typical case is the input matrices of the attention layer. We just need to specify the suffix of the layer, and they will be matched across the entire structure.
     """
-    model = offload_model(model)
-
     with gptq_mode(
         model,
         use_quant_activations=False,
@@ -313,30 +310,17 @@ def apply_gptq(
                 gptq.model(**inps)
             gptq.update()
 
-    # Remove all accelerate hooks.
-    remove_hooks(model)
-
 
 @torch.no_grad()
 def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
-    model = offload_model(model)
-
     with calibration_mode(model):
         with torch.no_grad():
             for inps in tqdm(dataset):
                 model(**inps)
 
-    # Remove all accelerate hooks.
-    remove_hooks(model)
-
 
 @torch.no_grad()
 def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict]) -> None:
-    model = offload_model(model)
-
     with bias_correction_mode(model):
         for inps in tqdm(dataset):
             model(**inps)
-
-    # Remove all accelerate hooks.
-    remove_hooks(model)
