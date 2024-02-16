@@ -158,11 +158,17 @@ class BrevitasQuantizer(OptimumQuantizer):
             apply_weight_equalization(model)
             logger.info("Weight equalization applied.")
 
+        if use_accelerate:
+            offload_context = accelerate_offload(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
+        else:
+            offload_context = contextlib.nullcontext()
+
         if quantization_config.activations_equalization is not None:
             logger.info(
                 f"Applying Activation Equalization {quantization_config.activations_equalization} (SmoothQuant)..."
             )
-            apply_act_equalization(model, quantization_config.activations_equalization, calibration_dataset)
+            with offload_context:
+                apply_act_equalization(model, quantization_config.activations_equalization, calibration_dataset)
             logger.info("Activation equalization applied.")
 
         if use_accelerate:
@@ -230,8 +236,6 @@ class BrevitasQuantizer(OptimumQuantizer):
 
         if use_accelerate:
             offload_context = accelerate_offload(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
-        else:
-            offload_context = contextlib.nullcontext()
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
