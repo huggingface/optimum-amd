@@ -23,7 +23,7 @@ QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]
 EXTRAS_REQUIRE = {
     "quality": QUALITY_REQUIRE,
     "tests": TESTS_REQUIRE,
-    "brevitas": ["brevitas", "datasets>=2.17", "onnx", "onnxruntime"],
+    "brevitas": ["brevitas", "datasets>=2.17", "onnx", "onnxruntime", "accelerate"],
 }
 
 setup(
