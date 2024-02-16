@@ -49,6 +49,12 @@ parser.add_argument(
     default=128,
     help="Sequence length to use during calibration (default: %(default)s).",
 )
+parser.add_argument(
+    "--device",
+    type=str,
+    default="auto",
+    help="Device to run the example on (e.q., \"cpu\", \"cuda:0\", \"auto\"). \"auto\" will automatically select the device using HuggingFace Accelerate (default: %(default)s).",
+)
 
 args = parser.parse_args()
 
