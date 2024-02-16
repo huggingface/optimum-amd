@@ -49,7 +49,8 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
             # Add BOS token.
             subsample["input_ids"][:, 0] = tokenizer.bos_token_id
 
-            if not hasattr(model, "_hf_hook"):
+            use_accelerate = hasattr(model, "hf_device_map")
+            if not use_accelerate or (use_accelerate and not hasattr(model, "_hf_hook")):
                 device = next(model.parameters()).device
                 for name, val in subsample.items():
                     subsample[name] = val.to(device)

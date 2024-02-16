@@ -85,6 +85,11 @@ class BrevitasQuantizer(OptimumQuantizer):
         # task = TasksManager.infer_task_from_model(model_name_or_path)
         task = "text-generation"
 
+        device = None
+        if not isinstance(device_map, dict) and device_map not in ["auto", "balanced"]:
+            device = device_map
+            device_map = None
+
         model = TasksManager.get_model_from_task(
             task,
             model_name_or_path,
@@ -96,6 +101,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             force_download=force_download,
             trust_remote_code=trust_remote_code,
             device_map=device_map,
+            device=device,
             **model_kwargs,
         )
 
@@ -125,7 +131,7 @@ class BrevitasQuantizer(OptimumQuantizer):
                 f"No calibration_dataset was passed, but a calibration dataset is required with the quantization configuration activations_equalization={quantization_config.activations_equalization}, apply_gptq={quantization_config.apply_gptq}, is_static={quantization_config.is_static}."
             )
 
-        use_accelerate = hasattr(self.model, "_hf_hook")
+        use_accelerate = hasattr(self.model, "hf_device_map")
         dtype = next(iter(self.model.parameters())).dtype
 
         if quantization_config.requires_fx_graph():
@@ -144,14 +150,10 @@ class BrevitasQuantizer(OptimumQuantizer):
         else:
             model = self.model
 
-        if use_accelerate:
-            remove_hooks(model)
-
         # Because accelerate is not compatible with FX, we keep two versions of the Model
         # one with FX-traced, the other one not.
         # Since weights are shared across the two, we can apply weight/activation equalization
         # by using one representation or the other based on needs.
-
         if quantization_config.apply_weight_equalization:
             logger.info("Applying weight equalization...")
             apply_weight_equalization(model)
@@ -164,10 +166,13 @@ class BrevitasQuantizer(OptimumQuantizer):
             apply_act_equalization(model, quantization_config.activations_equalization, calibration_dataset)
             logger.info("Activation equalization applied.")
 
-        if not hasattr(model, "_hf_hook"):
+        if not use_accelerate:
             context = torch.device(next(model.parameters()).device)
         else:
             context = contextlib.nullcontext()
+
+        if use_accelerate:
+            remove_hooks(model)
 
         # We do not quantize embedding and last fully connected layer
         with context:
@@ -201,7 +206,6 @@ class BrevitasQuantizer(OptimumQuantizer):
         # https://github.com/Xilinx/brevitas/blob/84f42259ec869eb151af4cb8a8b23ad925f493db/src/brevitas/core/scaling/standalone.py#L205-L217
         with torch.no_grad():
             if calibration_dataset is not None:
-                print("calibration_dataset[0]", calibration_dataset[0])
                 model(**calibration_dataset[0])
             elif not isinstance(model, torch.fx.GraphModule):
                 model(input_ids=torch.tensor([[1]], dtype=torch.int64))

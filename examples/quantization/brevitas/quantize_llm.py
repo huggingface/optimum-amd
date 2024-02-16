@@ -8,6 +8,7 @@ from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
 from optimum.amd.brevitas.accelerate_utils import remove_hooks
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
 from optimum.exporters.onnx import onnx_export_from_model
+from optimum.utils import recurse_setattr
 from transformers import AutoTokenizer
 
 
@@ -71,7 +72,7 @@ qconfig = BrevitasQuantizationConfig(
 )
 
 quantizer = BrevitasQuantizer.from_pretrained(
-    args.model, device_map="cuda:0" if not args.cpu_offload else "auto", torch_dtype="auto"
+    args.model, device_map="auto" if args.cpu_offload else "cuda:0", torch_dtype="auto"
 )
 
 # Load the data for calibration and evaluation.
@@ -115,6 +116,14 @@ print("Exporting the model to ONNX...")
 if args.cpu_offload:
     # When exporting to ONNX, Accelerate's hooks need to be removed otherwise we have unwanted Cast nodes in the ONNX graph.
     remove_hooks(quantized_model)
+
+quantized_model = quantized_model.to("cpu")
+for name, param in quantized_model.named_parameters():
+    if param.dtype in [torch.float16, torch.bfloat16]:
+        recurse_setattr(quantized_model, name, torch.nn.Parameter(param.to(torch.float32)))
+for name, param in quantized_model.named_buffers():
+    if param.dtype in [torch.float16, torch.bfloat16]:
+        recurse_setattr(quantized_model, name, torch.nn.Parameter(param.to(torch.float32)))
 
 # Export to ONNX through optimum.exporters.
 with torch.no_grad(), brevitas_proxy_export_mode(quantized_model, export_manager=StdQCDQONNXManager):
