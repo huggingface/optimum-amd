@@ -102,3 +102,11 @@ class TestQuantization(unittest.TestCase):
             )
 
             self.assertTrue(isinstance(model, torch.fx.GraphModule))
+
+    @parameterized.expand(SUPPORTED_MODELS_TINY.keys())
+    def test_weights_only_quantization(self, model_type: str):
+        for model_id in _get_all_model_ids(model_type):
+            _ = get_quantized_model(
+                model_id,
+                weights_only=True,
+            )

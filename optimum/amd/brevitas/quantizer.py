@@ -187,7 +187,7 @@ class BrevitasQuantizer(OptimumQuantizer):
                 weight_quant_granularity=quantization_config.weights_quant_granularity,
                 weight_group_size=quantization_config.weights_group_size,
                 quantize_weight_zero_point=quantization_config.quantize_zero_point,
-                input_bit_width=quantization_config.activations_bitwidth,
+                input_bit_width=None if quantization_config.weights_only else quantization_config.activations_bitwidth,
                 input_quant_type="sym" if quantization_config.activations_symmetric else "asym",
                 input_quant_format="int",
                 input_param_method=quantization_config.activations_param_method,
@@ -245,7 +245,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             )
             logger.info("GPTQ applied.")
 
-        if quantization_config.activations_bitwidth is not None and quantization_config.is_static:
+        if not quantization_config.weights_only and quantization_config.is_static:
             logger.info("Applying activation calibration...")
             apply_calibration(model, calibration_dataset)
             logger.info("Activation calibration applied.")
