@@ -114,7 +114,7 @@ model = quantizer.model
 
 # Evaluation of the non-quantized model.
 if use_accelerate:
-    offload_model = offload_model(model, qconfig.gpu_device_map, qconfig.cpu_device_map)
+    model = offload_model(model, qconfig.gpu_device_map, qconfig.cpu_device_map)
 perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
 if use_accelerate:
     remove_hooks(model)
@@ -124,7 +124,7 @@ quantized_model = quantizer.quantize(qconfig, calibration_dataset)
 
 # Evaluation of the quantized model.
 if use_accelerate:
-    offload_model = offload_model(quantized_model, qconfig.gpu_device_map, qconfig.cpu_device_map)
+    quantized_model = offload_model(quantized_model, qconfig.gpu_device_map, qconfig.cpu_device_map)
 perplexity = compute_perplexity(quantized_model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
 if use_accelerate:
     remove_hooks(model)
