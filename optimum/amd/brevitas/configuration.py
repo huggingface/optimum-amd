@@ -59,7 +59,6 @@ class BrevitasQuantizationConfig:
             Whether to apply GPTQ algorithm for quantizing the weights.
         gptq_act_order (`Optional[bool]`, defaults to `None`):
             Whether to use activations reordering (act-order, also known as desc-act) when `apply_gptq=True`. If `apply_gptq=True`, defaults to `False`.
-        gpu_device_map (`Optional[bool[int, float]]`, defaults to `None`):
     """
 
     weights_bitwidth: int = 8
