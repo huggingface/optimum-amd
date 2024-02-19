@@ -20,7 +20,7 @@ from optimum.utils.normalized_config import NormalizedConfigManager
 from transformers import AutoConfig
 from transformers.utils.fx import symbolic_trace
 
-from .accelerate_utils import accelerate_offload
+from .accelerate_utils import offload_model, remove_hooks
 from .configuration import BrevitasQuantizationConfig
 
 
@@ -159,9 +159,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             logger.info("Weight equalization applied.")
 
         if use_accelerate:
-            offload_context = accelerate_offload(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
-        else:
-            offload_context = contextlib.nullcontext()
+            model = offload_model(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
 
         if quantization_config.activations_equalization is not None:
             logger.info(
@@ -172,6 +170,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             logger.info("Activation equalization applied.")
 
         if use_accelerate:
+            remove_hooks(model)
             device = None
             quantize_context = contextlib.nullcontext()
         else:
@@ -235,7 +234,7 @@ class BrevitasQuantizer(OptimumQuantizer):
                 )
 
         if use_accelerate:
-            offload_context = accelerate_offload(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
+            model = offload_model(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
@@ -262,6 +261,9 @@ class BrevitasQuantizer(OptimumQuantizer):
                     calibration_dataset,
                 )
             logger.info("Bias Correction applied.")
+
+        if use_accelerate:
+            remove_hooks(model)
 
         return model
 

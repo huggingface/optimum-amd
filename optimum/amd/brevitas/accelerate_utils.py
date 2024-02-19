@@ -364,20 +364,6 @@ def find_all_devices(data):
         return [(data, str(data.device))]
 
 
-class accelerate_offload:
-    def __init__(self, model: torch.nn.Module, gpu_device_map: Optional[Dict[int, float]] = None, cpu_device_map: Optional[Dict[str, float]] = None):
-        self.model = model
-        self.gpu_device_map = gpu_device_map
-        self.cpu_device_map = cpu_device_map
-
-    def __enter__(self):
-        offload_model(self.model, self.gpu_device_map, self.cpu_device_map)
-        return self.model
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        remove_hooks(self.model)
-
-
 def calc_gpu_device_map(absolute_mem_margin: float = 2.0*1e9, relative_mem_margin: float = 0.3) -> Dict[int, float]:
     torch.cuda.empty_cache()
     gpu_device_map = {i: (torch.cuda.mem_get_info(i)[0] - absolute_mem_margin) * (1.0 - relative_mem_margin) for i in range(torch.cuda.device_count())}

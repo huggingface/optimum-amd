@@ -6,7 +6,7 @@ from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 
 from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
-from optimum.amd.brevitas.accelerate_utils import accelerate_offload, calc_gpu_device_map, calc_cpu_device_map
+from optimum.amd.brevitas.accelerate_utils import offload_model, remove_hooks, calc_gpu_device_map, calc_cpu_device_map
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
 from optimum.exporters.onnx import onnx_export_from_model
 from optimum.utils import recurse_setattr
@@ -110,23 +110,24 @@ validation_dataset = get_dataset_for_model(
 )
 
 model = quantizer.model
-if args.device != "auto":
-    offload_context = contextlib.nullcontext()
-else:
-    offload_context = accelerate_offload(model, qconfig.gpu_device_map, qconfig.cpu_device_map)
+use_accelerate = args.device != "auto"
 
 # Evaluation of the non-quantized model.
-with offload_context:
-    perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
+if use_accelerate:
+    offload_model = offload_model(model, qconfig.gpu_device_map, qconfig.cpu_device_map)
+perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
+if use_accelerate:
+    remove_hooks(model)
 print(f"Perplexity (original model): {perplexity}")
 
-model = quantizer.quantize(qconfig, calibration_dataset)
-if args.device == "auto":
-    offload_context = accelerate_offload(model, qconfig.gpu_device_map, qconfig.cpu_device_map)
+quantized_model = quantizer.quantize(qconfig, calibration_dataset)
 
 # Evaluation of the quantized model.
-with offload_context:
-    perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
+if use_accelerate:
+    offload_model = offload_model(quantized_model, qconfig.gpu_device_map, qconfig.cpu_device_map)
+perplexity = compute_perplexity(quantized_model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
+if use_accelerate:
+    remove_hooks(model)
 print(f"Perplexity (quantized model): {perplexity}")
 
 print("Exporting the model to ONNX...")
