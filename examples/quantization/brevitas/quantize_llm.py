@@ -132,12 +132,6 @@ print(f"Perplexity (quantized model): {perplexity}")
 
 print("Exporting the model to ONNX...")
 model = model.to("cpu")
-for name, param in model.named_parameters():
-    if param.dtype in [torch.float16, torch.bfloat16]:
-        recurse_setattr(model, name, torch.nn.Parameter(param.to(torch.float32)))
-for name, param in model.named_buffers():
-    if param.dtype in [torch.float16, torch.bfloat16]:
-        recurse_setattr(model, name, torch.nn.Parameter(param.to(torch.float32)))
 
 # Export to ONNX through optimum.exporters.
 with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
