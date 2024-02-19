@@ -130,7 +130,7 @@ class BrevitasQuantizer(OptimumQuantizer):
                 f"No calibration_dataset was passed, but a calibration dataset is required with the quantization configuration activations_equalization={quantization_config.activations_equalization}, apply_gptq={quantization_config.apply_gptq}, is_static={quantization_config.is_static}."
             )
 
-        use_accelerate = hasattr(self.model, "hf_device_map")
+        use_accelerate = quantization_config.device == "auto"
         dtype = next(iter(self.model.parameters())).dtype
 
         if quantization_config.requires_fx_graph():
