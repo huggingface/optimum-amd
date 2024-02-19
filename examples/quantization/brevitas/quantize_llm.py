@@ -136,7 +136,7 @@ quantized_model = quantized_model.to("cpu")
 # Export to ONNX through optimum.exporters.
 with torch.no_grad(), brevitas_proxy_export_mode(quantized_model, export_manager=StdQCDQONNXManager):
     onnx_export_from_model(
-        model,
+        quantized_model,
         "llm_quantized_onnx",
         task="text-generation-with-past",
         do_validation=False,
