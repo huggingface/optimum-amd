@@ -131,7 +131,7 @@ if use_accelerate:
 print(f"Perplexity (quantized model): {perplexity}")
 
 print("Exporting the model to ONNX...")
-model = model.to("cpu")
+quantized_model = quantized_model.to("cpu")
 
 # Export to ONNX through optimum.exporters.
 with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
