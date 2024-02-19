@@ -13,8 +13,10 @@ class BrevitasQuantizationConfig:
     Args:
         weights_bitwidth (`int`, defaults to `8`):
             Bitwidth of the weights quantization. For example, with `weights_bitwidth=8`, each weight value is quantized on 8 bits.
-        activations_bitwidth (`int`, defaults to `8`):
+        activations_bitwidth (`Optional[int]`, defaults to `8`):
             Bitwidth of the activations quantization.
+        weights_only (`bool`, defaults to `False`):
+            If set to `True`, only weights are to be quantized, otherwise activations are quantized as well.
         weights_param_method (`str`, defaults to `stats`):
             Strategy to use to estimate the quantization parameters (scale, zero-point) for the weights. Two strategies are available:
             - `"stats"`: Use min-max to estimate the range to quantize on.
@@ -55,29 +57,30 @@ class BrevitasQuantizationConfig:
             Applies bias correction to compensate for changes in activation bias caused by quantization.
         apply_gptq (`bool`, defaults to `False`):
             Whether to apply GPTQ algorithm for quantizing the weights.
-        gptq_act_oder (`Optional[bool]`, defaults to `None`):
+        gptq_act_order (`Optional[bool]`, defaults to `None`):
             Whether to use activations reordering (act-order, also known as desc-act) when `apply_gptq=True`. If `apply_gptq=True`, defaults to `False`.
         gpu_device_map (`Optional[bool[int, float]]`, defaults to `None`):
     """
 
     weights_bitwidth: int = 8
-    activations_bitwidth: int = 8
+    activations_bitwidth: Optional[int] = 8
+    weights_only: bool = False
     weights_param_method: Literal["stats", "mse"] = "stats"
     weights_symmetric: bool = True
     scale_precision: Literal["float_scale", "power_of_two_scale"] = "float_scale"
     weights_quant_granularity: Literal["per_tensor", "per_channel", "per_group"] = "per_tensor"
     weights_group_size: Optional[int] = None
     quantize_zero_point: bool = True
-    activations_param_method: Literal["stats", "mse"] = "stats"
+    activations_param_method: Optional[Literal["stats", "mse"]] = "stats"
     is_static: bool = False
-    activations_symmetric: bool = False
-    activations_quant_granularity: Literal["per_tensor", "per_row", "per_group"] = "per_tensor"
+    activations_symmetric: Optional[bool] = False
+    activations_quant_granularity: Optional[Literal["per_tensor", "per_row", "per_group"]] = "per_tensor"
     activations_group_size: Optional[int] = None
-    activations_equalization: Literal[None, "layerwise", "cross_layer"] = "cross_layer"
+    activations_equalization: Optional[Literal[None, "layerwise", "cross_layer"]] = "cross_layer"
     apply_weight_equalization: bool = False
     apply_bias_correction: bool = False
     apply_gptq: bool = False
-    gptq_act_oder: Optional[bool] = None
+    gptq_act_order: Optional[bool] = None
     device: str = "auto"
     gpu_device_map: Optional[Dict[int, float]] = None
     cpu_device_map: Optional[Dict[str, float]] = None
@@ -89,8 +92,8 @@ class BrevitasQuantizationConfig:
         if self.weights_quant_granularity == "per_group" and self.weights_group_size is None:
             self.weights_group_size = 128
 
-        if self.apply_gptq and self.gptq_act_oder is None:
-            self.gptq_act_oder = False
+        if self.apply_gptq and self.gptq_act_order is None:
+            self.gptq_act_order = False
 
         if self.is_static and self.activations_quant_granularity != "per_tensor":
             raise ValueError(
@@ -123,6 +126,13 @@ class BrevitasQuantizationConfig:
             raise ValueError(
                 'The quantization configuration `scale_precision="power_of_two_scale"` is not supported along `is_static=False`. Dynamic activation quantization with power-of-two scale factor is not supported.'
             )
+
+        if self.weights_only:
+            self.activations_bitwidth = None
+            self.activations_symmetric = None
+            self.activations_equalization = None
+            self.activations_group_size = None
+            self.activations_param_method = None
 
     def requires_fx_graph(self):
         return self.activations_equalization == "cross_layer" or self.apply_weight_equalization

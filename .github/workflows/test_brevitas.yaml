@@ -3,8 +3,16 @@ name: Brevitas / Python - Test
 on:
   push:
     branches: [ main ]
+    paths:
+      - "optimum/amd/brevitas/**/*.py"
+      - "tests/brevitas/*.py"
+      - ".github/workflows/test_brevitas.yaml"
   pull_request:
     branches: [ main ]
+    paths:
+      - "optimum/amd/brevitas/**/*.py"
+      - "tests/brevitas/*.py"
+      - ".github/workflows/test_brevitas.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -30,7 +38,7 @@ jobs:
         # Transformers main may currently be broken due to the KV cache refactor that breaks many things, hence pin to the commit before that.
         pip install git+https://github.com/huggingface/transformers.git@4b236aed7618d90546cd2e8797dab5b4a24c5dce
         pip install git+https://github.com/huggingface/accelerate.git
-        pip install git+https://github.com/huggingface/optimum.git
+        pip install optimum
         pip install git+https://github.com/Xilinx/brevitas.git@dev
 
         pip install .[brevitas,tests]

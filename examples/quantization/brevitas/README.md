@@ -15,14 +15,16 @@ The examples were tested using:
 - `torch>=2.1.2`
 - `transformers` installed from main (`pip install git+https://github.com/huggingface/transformers.git@4b236aed7618d90546cd2e8797dab5b4a24c5dce`)
 - `optimum>=1.17.0`
+- `optimum-amd`` installed from main (`pip install git+https://github.com/huggingface/optimum-amd`)
 - Optionally, `accelerate` installed from main (`pip install git+https://github.com/huggingface/accelerate.git`)
 
 ## Running the Example
 
+To quantize OPT-125M with SmoothQuant post-training quantization algorithm, use:
+
 ```bash
 python quantize_llm.py --model facebook/opt-125m --activations-equalization layerwise
 ```
-To quantize OPT-125M with SmoothQuant post-training quantization algorithm.
 
 For all the options, please check:
 

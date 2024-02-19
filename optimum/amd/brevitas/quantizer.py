@@ -187,7 +187,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             weight_quant_granularity=quantization_config.weights_quant_granularity,
             weight_group_size=quantization_config.weights_group_size,
             quantize_weight_zero_point=quantization_config.quantize_zero_point,
-            input_bit_width=quantization_config.activations_bitwidth,
+            input_bit_width=None if quantization_config.weights_only else quantization_config.activations_bitwidth,
             input_quant_type="sym" if quantization_config.activations_symmetric else "asym",
             input_quant_format="int",
             input_param_method=quantization_config.activations_param_method,
@@ -207,6 +207,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             elif not isinstance(model, torch.fx.GraphModule):
                 model(input_ids=torch.tensor([[1]], dtype=torch.int64))
             else:
+                device = torch.device(next(model.parameters()).device)
                 # TODO: clean that later.
                 config = AutoConfig.from_pretrained(self.model_name_or_path)
 
@@ -228,6 +229,7 @@ class BrevitasQuantizer(OptimumQuantizer):
                     )
                     for _ in range(num_layers)
                 )
+                model(**sample)
 
         if use_accelerate:
             model = offload_model(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
@@ -237,12 +239,12 @@ class BrevitasQuantizer(OptimumQuantizer):
             apply_gptq(
                 model,
                 calibration_dataset,
-                act_order=quantization_config.gptq_act_oder,
+                act_order=quantization_config.gptq_act_order,
                 group_of_parallel_layers=self.group_of_parallel_layers,
             )
             logger.info("GPTQ applied.")
 
-        if quantization_config.activations_bitwidth is not None and quantization_config.is_static:
+        if not quantization_config.weights_only and quantization_config.is_static:
             logger.info("Applying activation calibration...")
             apply_calibration(model, calibration_dataset)
             logger.info("Activation calibration applied.")
