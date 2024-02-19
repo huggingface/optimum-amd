@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 import random
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
@@ -19,6 +20,17 @@ if TYPE_CHECKING:
 
 HIDDEN_SIZE_KEYS = ["d_model", "hidden_size"]
 NUM_HEADS_KEYS = ["num_attention_heads"]
+
+
+@torch.no_grad()
+def recursive_to_device(tensor_or_iterable: Union[Iterable, torch.Tensor], device) -> None:
+    if isinstance(tensor_or_iterable, torch.Tensor):
+        tensor_or_iterable.to(device)
+    elif isinstance(tensor_or_iterable, Iterable):
+        for i in tensor_or_iterable:
+            recursive_to_device(i, device)
+    else:
+        raise ValueError(f"Cannot move {type(tensor_or_iterable)} to {device}")
 
 
 @torch.no_grad()
@@ -53,12 +65,14 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
             if not use_accelerate or (use_accelerate and not hasattr(model, "_hf_hook")):
                 device = next(model.parameters()).device
                 for name, val in subsample.items():
-                    subsample[name] = val.to(device)
+                    recursive_to_device(val, device)
+                    subsample[name] = val
             else:
                 # In accelerate by default `io_same_device=True`, and here we want the of the model output on device.
                 device = model._hf_hook.execution_device
                 for name, val in subsample.items():
-                    subsample[name] = val.to(device)
+                    recursive_to_device(val, device)
+                    subsample[name] = val
 
             lm_logits = model(**subsample)["logits"]
 
