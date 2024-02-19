@@ -198,9 +198,6 @@ class BrevitasQuantizer(OptimumQuantizer):
                 quantize_input_zero_point=quantization_config.quantize_zero_point,
             )
 
-        if use_accelerate:
-            offload_model(model)
-
         # Perform a single inference pass to generate the correct state_dict. This is necessary as Brevitas has some magic where
         # a first forward pass need to be called before quantizing a model:
         # https://github.com/Xilinx/brevitas/blob/84f42259ec869eb151af4cb8a8b23ad925f493db/src/brevitas/core/scaling/standalone.py#L205-L217
@@ -210,6 +207,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             elif not isinstance(model, torch.fx.GraphModule):
                 model(input_ids=torch.tensor([[1]], dtype=torch.int64))
             else:
+                device = torch.device(next(model.parameters()).device)
                 # TODO: clean that later.
                 config = AutoConfig.from_pretrained(self.model_name_or_path)
 
@@ -221,23 +219,28 @@ class BrevitasQuantizer(OptimumQuantizer):
                 num_layers = normalized_config.num_layers
 
                 sample = {
-                    "input_ids": torch.tensor([[1]], dtype=torch.int64),
-                    "attention_mask": torch.tensor([[1]], dtype=torch.int64),
+                    "input_ids": torch.tensor([[1]], dtype=torch.int64, device=device),
+                    "attention_mask": torch.tensor([[1]], dtype=torch.int64, device=device),
                 }
                 sample["past_key_values"] = tuple(
                     (
-                        torch.zeros(1, num_heads, 0, head_dim, device=sample["input_ids"].device),
-                        torch.zeros(1, num_heads, 0, head_dim, device=sample["input_ids"].device),
+                        torch.zeros(1, num_heads, 0, head_dim, device=device),
+                        torch.zeros(1, num_heads, 0, head_dim, device=device),
                     )
                     for _ in range(num_layers)
                 )
+
+                model(**sample)
+
+        if use_accelerate:
+            offload_model(model)
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
             apply_gptq(
                 model,
                 calibration_dataset,
-                act_order=quantization_config.gptq_act_oder,
+                act_order=quantization_config.gptq_act_order,
                 group_of_parallel_layers=self.group_of_parallel_layers,
             )
             logger.info("GPTQ applied.")

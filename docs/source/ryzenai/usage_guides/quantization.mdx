@@ -5,10 +5,8 @@ Licensed under the MIT License.
 # Quantization for Ryzen AI
 
 Ryzen AI IPU best performances are achieved using [quantized models](https://huggingface.co/docs/optimum/concept_guides/quantization). There are two different ways to quantize models for Ryzen AI IPU:
-* through [Vitis AI Quantizer](https://docs.xilinx.com/r/en-US/ug1414-vitis-ai/Vitis-AI-Quantizer), used in Optimum's [`~ryzenai.RyzenAIOnnxQuantizer`].
-* through [Brevitas](https://github.com/Xilinx/brevitas) library, used in Optimum's [`~brevitas.BrevitasQuantizer`].
-
-[`~ryzenai.RyzenAIOnnxQuantizer`] is recommended to quantize [timm](https://github.com/huggingface/pytorch-image-models) models, while [`~brevitas.BrevitasQuantizer`] is recommended to quantize other models.
+* through [Vitis AI Quantizer](https://ryzenai.docs.amd.com/en/latest/vai_quant/vai_q_onnx.html), used in Optimum's [`~ryzenai.RyzenAIOnnxQuantizer`], which is designed for ONNX model quantization. Currently supports quantising [timm](https://github.com/huggingface/pytorch-image-models) models using dynamic and static quantization methods.
+* through [Brevitas](https://github.com/Xilinx/brevitas) library, used in Optimum's [`~brevitas.BrevitasQuantizer`]. Brevitas allows to quantize directly PyTorch models, which may be optionally exported to ONNX. This is recommended to quantize other models.
 
 ## Quantization using RyzenAIOnnxQuantizer
 
@@ -97,3 +95,7 @@ Below you will find an easy end-to-end example on how to quantize a VGG model fr
         save_dir=quantization_dir
     )
 ```
+
+## Quantization using BrevitasQuantizer
+
+Coming soon.

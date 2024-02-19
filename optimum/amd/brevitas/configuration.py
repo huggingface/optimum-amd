@@ -55,7 +55,7 @@ class BrevitasQuantizationConfig:
             Applies bias correction to compensate for changes in activation bias caused by quantization.
         apply_gptq (`bool`, defaults to `False`):
             Whether to apply GPTQ algorithm for quantizing the weights.
-        gptq_act_oder (`Optional[bool]`, defaults to `None`):
+        gptq_act_order (`Optional[bool]`, defaults to `None`):
             Whether to use activations reordering (act-order, also known as desc-act) when `apply_gptq=True`. If `apply_gptq=True`, defaults to `False`.
     """
 
@@ -76,7 +76,7 @@ class BrevitasQuantizationConfig:
     apply_weight_equalization: bool = False
     apply_bias_correction: bool = False
     apply_gptq: bool = False
-    gptq_act_oder: Optional[bool] = None
+    gptq_act_order: Optional[bool] = None
 
     def __post_init__(self):
         if self.activations_quant_granularity == "per_group" and self.activations_group_size is None:
@@ -85,8 +85,8 @@ class BrevitasQuantizationConfig:
         if self.weights_quant_granularity == "per_group" and self.weights_group_size is None:
             self.weights_group_size = 128
 
-        if self.apply_gptq and self.gptq_act_oder is None:
-            self.gptq_act_oder = False
+        if self.apply_gptq and self.gptq_act_order is None:
+            self.gptq_act_order = False
 
         if self.is_static and self.activations_quant_granularity != "per_tensor":
             raise ValueError(
