@@ -116,21 +116,17 @@ model = quantizer.model
 if use_accelerate:
     model = offload_model(model, qconfig.gpu_device_map, qconfig.cpu_device_map)
 perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
-if use_accelerate:
-    remove_hooks(model)
 print(f"Perplexity (original model): {perplexity}")
 
 quantized_model = quantizer.quantize(qconfig, calibration_dataset)
 
 # Evaluation of the quantized model.
-if use_accelerate:
-    quantized_model = offload_model(quantized_model, qconfig.gpu_device_map, qconfig.cpu_device_map)
 perplexity = compute_perplexity(quantized_model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
-if use_accelerate:
-    remove_hooks(quantized_model)
 print(f"Perplexity (quantized model): {perplexity}")
 
 print("Exporting the model to ONNX...")
+if use_accelerate:
+    remove_hooks(quantized_model)
 quantized_model = quantized_model.to("cpu")
 
 # Export to ONNX through optimum.exporters.

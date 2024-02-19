@@ -130,7 +130,7 @@ class BrevitasQuantizer(OptimumQuantizer):
                 f"No calibration_dataset was passed, but a calibration dataset is required with the quantization configuration activations_equalization={quantization_config.activations_equalization}, apply_gptq={quantization_config.apply_gptq}, is_static={quantization_config.is_static}."
             )
 
-        use_accelerate = quantization_config.device == "auto"
+        use_accelerate = hasattr(self.model, "hf_device_map")
         dtype = next(iter(self.model.parameters())).dtype
 
         if quantization_config.requires_fx_graph():
@@ -157,9 +157,6 @@ class BrevitasQuantizer(OptimumQuantizer):
             logger.info("Applying weight equalization...")
             apply_weight_equalization(model)
             logger.info("Weight equalization applied.")
-
-        if use_accelerate:
-            model = offload_model(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
 
         if quantization_config.activations_equalization is not None:
             logger.info(
@@ -257,9 +254,6 @@ class BrevitasQuantizer(OptimumQuantizer):
             )
             logger.info("Bias Correction applied.")
 
-        if use_accelerate:
-            remove_hooks(model)
-
         return model
 
     """
@@ -348,3 +342,8 @@ def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict]) -> None:
     with bias_correction_mode(model):
         for inps in tqdm(dataset):
             model(**inps)
+
+    # Recompile graph in case we've made any changes
+    if hasattr(model, "graph"):
+        model.recompile()
+        model.graph.lint()
