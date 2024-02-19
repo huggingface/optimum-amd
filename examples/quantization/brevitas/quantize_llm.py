@@ -67,6 +67,7 @@ tokenizer = AutoTokenizer.from_pretrained(args.model)
 # The absolute margin is in bytes & the relative margin is a ratio
 # The margins are the portions of the device which should be reserved for other functions
 # (not accelerate)
+use_accelerate = args.device != "auto"
 gpu_device_map = calc_gpu_device_map(absolute_mem_margin=2.0*1e9, relative_mem_margin=0.3)
 cpu_device_map = calc_cpu_device_map(absolute_mem_margin=2.0*1e9, relative_mem_margin=0.3)
 
@@ -95,7 +96,7 @@ calibration_dataset = get_dataset_for_model(
     nsamples=128,
     seqlen=args.seqlen,
     split="train",
-    device=args.device if args.device != "auto" else None,
+    device=args.device if not use_accelerate else None,
 )
 
 validation_dataset = get_dataset_for_model(
@@ -106,11 +107,10 @@ validation_dataset = get_dataset_for_model(
     nsamples=128,
     seqlen=args.seqlen,
     split="validation",
-    device=args.device if args.device != "auto" else None,
+    device=args.device if not use_accelerate else None,
 )
 
 model = quantizer.model
-use_accelerate = args.device != "auto"
 
 # Evaluation of the non-quantized model.
 if use_accelerate:
