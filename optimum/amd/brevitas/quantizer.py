@@ -204,7 +204,7 @@ class BrevitasQuantizer(OptimumQuantizer):
         # Perform a single inference pass to generate the correct state_dict. This is necessary as Brevitas has some magic where
         # a first forward pass need to be called before quantizing a model:
         # https://github.com/Xilinx/brevitas/blob/84f42259ec869eb151af4cb8a8b23ad925f493db/src/brevitas/core/scaling/standalone.py#L205-L217
-        with torch.no_grad():
+        with torch.no_grad(), quantize_context:
             if calibration_dataset is not None:
                 model(**calibration_dataset[0])
             elif not isinstance(model, torch.fx.GraphModule):
