@@ -83,7 +83,7 @@ qconfig = BrevitasQuantizationConfig(
 )
 
 quantizer = BrevitasQuantizer.from_pretrained(
-    args.model, device_map=args.device, # torch_dtype="auto" # fails for some reason with quantization enabled
+    args.model, device_map=args.device
 )
 
 # Load the data for calibration and evaluation.
