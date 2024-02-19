@@ -165,8 +165,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             logger.info(
                 f"Applying Activation Equalization {quantization_config.activations_equalization} (SmoothQuant)..."
             )
-            with offload_context:
-                apply_act_equalization(model, quantization_config.activations_equalization, calibration_dataset)
+            apply_act_equalization(model, quantization_config.activations_equalization, calibration_dataset)
             logger.info("Activation equalization applied.")
 
         if use_accelerate:
@@ -238,28 +237,25 @@ class BrevitasQuantizer(OptimumQuantizer):
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
-            with offload_context:
-                apply_gptq(
-                    model,
-                    calibration_dataset,
-                    act_order=quantization_config.gptq_act_oder,
-                    group_of_parallel_layers=self.group_of_parallel_layers,
-                )
+            apply_gptq(
+                model,
+                calibration_dataset,
+                act_order=quantization_config.gptq_act_oder,
+                group_of_parallel_layers=self.group_of_parallel_layers,
+            )
             logger.info("GPTQ applied.")
 
         if quantization_config.activations_bitwidth is not None and quantization_config.is_static:
             logger.info("Applying activation calibration...")
-            with offload_context:
-                apply_calibration(model, calibration_dataset)
+            apply_calibration(model, calibration_dataset)
             logger.info("Activation calibration applied.")
 
         if quantization_config.apply_bias_correction:
             logger.info("Applying Bias Correction...")
-            with offload_context:
-                apply_bias_correction(
-                    model,
-                    calibration_dataset,
-                )
+            apply_bias_correction(
+                model,
+                calibration_dataset,
+            )
             logger.info("Bias Correction applied.")
 
         if use_accelerate:
