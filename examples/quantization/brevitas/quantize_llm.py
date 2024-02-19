@@ -67,7 +67,7 @@ tokenizer = AutoTokenizer.from_pretrained(args.model)
 # The absolute margin is in bytes & the relative margin is a ratio
 # The margins are the portions of the device which should be reserved for other functions
 # (not accelerate)
-use_accelerate = args.device != "auto"
+use_accelerate = args.device == "auto"
 gpu_device_map = calc_gpu_device_map(absolute_mem_margin=2.0*1e9, relative_mem_margin=0.3)
 cpu_device_map = calc_cpu_device_map(absolute_mem_margin=2.0*1e9, relative_mem_margin=0.3)
 
