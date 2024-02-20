@@ -191,7 +191,11 @@ class DatasetToDevice(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         if self.device is not None:
-            return {name: val.to(self.device) for name, val in self.data[idx].items()}
+            ret = {}
+            for name, val in self.data[idx].items():
+                recursive_to_device(val, self.device)
+                ret[name] = val
+            return ret
         else:
             return self.data[idx]
 
