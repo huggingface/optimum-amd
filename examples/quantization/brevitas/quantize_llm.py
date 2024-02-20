@@ -1,11 +1,12 @@
 from argparse import ArgumentParser
+import contextlib
 
 import torch
 from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 
 from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
-from optimum.amd.brevitas.accelerate_utils import remove_hooks
+from optimum.amd.brevitas.accelerate_utils import offload_model, remove_hooks, calc_gpu_device_map, calc_cpu_device_map
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
 from optimum.exporters.onnx import onnx_export_from_model
 from optimum.utils import recurse_setattr
@@ -51,15 +52,24 @@ parser.add_argument(
     help="Sequence length to use during calibration (default: %(default)s).",
 )
 parser.add_argument(
-    "--cpu-offload",
-    action="store_true",
-    default=False,
-    help="Use Accelerate library to offload part of the model to RAM. This is useful when handling large models on a limited amount of GPU memory.",
+    "--device",
+    type=str,
+    choices=["cpu", "cuda:0", "auto"],
+    default="auto",
+    help="Device to run the example on (e.q., \"cpu\", \"cuda:0\", \"auto\"). \"auto\" will automatically select the device using HuggingFace Accelerate (choices: [%(choices)s], default: %(default)s).",
 )
 
 args = parser.parse_args()
 
 tokenizer = AutoTokenizer.from_pretrained(args.model)
+
+# Specify how much of each device should set aside for accelerate's offload functions
+# The absolute margin is in bytes & the relative margin is a ratio
+# The margins are the portions of the device which should be reserved for other functions
+# (not accelerate)
+use_accelerate = args.device == "auto"
+gpu_device_map = calc_gpu_device_map(absolute_mem_margin=2.0*1e9, relative_mem_margin=0.3)
+cpu_device_map = calc_cpu_device_map(absolute_mem_margin=2.0*1e9, relative_mem_margin=0.3)
 
 # Prepare the quantizer, specifying its configuration and loading the model.
 qconfig = BrevitasQuantizationConfig(
@@ -69,10 +79,12 @@ qconfig = BrevitasQuantizationConfig(
     is_static=args.is_static,
     weights_symmetric=True,
     activations_symmetric=args.is_static,  # ONNX export only supports unsigned for dynamic quantization
+    gpu_device_map=gpu_device_map,
+    cpu_device_map=cpu_device_map,
 )
 
 quantizer = BrevitasQuantizer.from_pretrained(
-    args.model, device_map="auto" if args.cpu_offload else "cuda:0", torch_dtype="auto"
+    args.model, device_map=args.device
 )
 
 # Load the data for calibration and evaluation.
@@ -84,7 +96,7 @@ calibration_dataset = get_dataset_for_model(
     nsamples=128,
     seqlen=args.seqlen,
     split="train",
-    device="cuda:0" if not args.cpu_offload else None,
+    device=args.device if not use_accelerate else None,
 )
 
 validation_dataset = get_dataset_for_model(
@@ -95,35 +107,27 @@ validation_dataset = get_dataset_for_model(
     nsamples=128,
     seqlen=args.seqlen,
     split="validation",
-    device="cuda:0" if not args.cpu_offload else None,
+    device=args.device if not use_accelerate else None,
 )
 
-perplexity = compute_perplexity(
-    quantizer.model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer
-)
+model = quantizer.model
 
+# Evaluation of the non-quantized model.
+if use_accelerate:
+    model = offload_model(model, qconfig.gpu_device_map, qconfig.cpu_device_map)
+perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
 print(f"Perplexity (original model): {perplexity}")
 
 quantized_model = quantizer.quantize(qconfig, calibration_dataset)
 
 # Evaluation of the quantized model.
-perplexity = compute_perplexity(
-    quantized_model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer
-)
+perplexity = compute_perplexity(quantized_model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
 print(f"Perplexity (quantized model): {perplexity}")
 
 print("Exporting the model to ONNX...")
-if args.cpu_offload:
-    # When exporting to ONNX, Accelerate's hooks need to be removed otherwise we have unwanted Cast nodes in the ONNX graph.
+if use_accelerate:
     remove_hooks(quantized_model)
-
 quantized_model = quantized_model.to("cpu")
-for name, param in quantized_model.named_parameters():
-    if param.dtype in [torch.float16, torch.bfloat16]:
-        recurse_setattr(quantized_model, name, torch.nn.Parameter(param.to(torch.float32)))
-for name, param in quantized_model.named_buffers():
-    if param.dtype in [torch.float16, torch.bfloat16]:
-        recurse_setattr(quantized_model, name, torch.nn.Parameter(param.to(torch.float32)))
 
 # Export to ONNX through optimum.exporters.
 with torch.no_grad(), brevitas_proxy_export_mode(quantized_model, export_manager=StdQCDQONNXManager):

@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal, Optional, Dict
 
 
 @dataclass
@@ -80,6 +80,9 @@ class BrevitasQuantizationConfig:
     apply_bias_correction: bool = False
     apply_gptq: bool = False
     gptq_act_order: Optional[bool] = None
+    device: str = "auto"
+    gpu_device_map: Optional[Dict[int, float]] = None
+    cpu_device_map: Optional[Dict[str, float]] = None
 
     def __post_init__(self):
         if self.activations_quant_granularity == "per_group" and self.activations_group_size is None:

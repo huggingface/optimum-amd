@@ -26,7 +26,6 @@ from .configuration import BrevitasQuantizationConfig
 
 logger = logging.getLogger(__name__)
 
-
 class BrevitasQuantizer(OptimumQuantizer):
     """
     Handles the Runtime quantization process for models shared on huggingface.co/models.
@@ -166,37 +165,35 @@ class BrevitasQuantizer(OptimumQuantizer):
             apply_act_equalization(model, quantization_config.activations_equalization, calibration_dataset)
             logger.info("Activation equalization applied.")
 
-        if not use_accelerate:
-            context = torch.device(next(model.parameters()).device)
-        else:
-            context = contextlib.nullcontext()
-
         if use_accelerate:
             remove_hooks(model)
+            device = None
+        else:
+            device = next(model.parameters()).device
 
         # We do not quantize embedding and last fully connected layer
-        with context:
-            model = quantize_model(
-                model,
-                dtype=dtype,
-                weight_quant_format="int",
-                weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
-                weight_bit_width=quantization_config.weights_bitwidth,
-                weight_param_method=quantization_config.weights_param_method,
-                weight_scale_precision=quantization_config.scale_precision,
-                weight_quant_granularity=quantization_config.weights_quant_granularity,
-                weight_group_size=quantization_config.weights_group_size,
-                quantize_weight_zero_point=quantization_config.quantize_zero_point,
-                input_bit_width=None if quantization_config.weights_only else quantization_config.activations_bitwidth,
-                input_quant_type="sym" if quantization_config.activations_symmetric else "asym",
-                input_quant_format="int",
-                input_param_method=quantization_config.activations_param_method,
-                input_scale_precision=quantization_config.scale_precision,
-                input_scale_type="static" if quantization_config.is_static else "dynamic",
-                input_quant_granularity=quantization_config.activations_quant_granularity,
-                input_group_size=quantization_config.activations_group_size,
-                quantize_input_zero_point=quantization_config.quantize_zero_point,
-            )
+        model = quantize_model(
+            model,
+            dtype=dtype,
+            device=device,
+            weight_quant_format="int",
+            weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
+            weight_bit_width=quantization_config.weights_bitwidth,
+            weight_param_method=quantization_config.weights_param_method,
+            weight_scale_precision=quantization_config.scale_precision,
+            weight_quant_granularity=quantization_config.weights_quant_granularity,
+            weight_group_size=quantization_config.weights_group_size,
+            quantize_weight_zero_point=quantization_config.quantize_zero_point,
+            input_bit_width=None if quantization_config.weights_only else quantization_config.activations_bitwidth,
+            input_quant_type="sym" if quantization_config.activations_symmetric else "asym",
+            input_quant_format="int",
+            input_param_method=quantization_config.activations_param_method,
+            input_scale_precision=quantization_config.scale_precision,
+            input_scale_type="static" if quantization_config.is_static else "dynamic",
+            input_quant_granularity=quantization_config.activations_quant_granularity,
+            input_group_size=quantization_config.activations_group_size,
+            quantize_input_zero_point=quantization_config.quantize_zero_point,
+        )
 
         # Perform a single inference pass to generate the correct state_dict. This is necessary as Brevitas has some magic where
         # a first forward pass need to be called before quantizing a model:
@@ -229,11 +226,10 @@ class BrevitasQuantizer(OptimumQuantizer):
                     )
                     for _ in range(num_layers)
                 )
-
                 model(**sample)
 
         if use_accelerate:
-            offload_model(model)
+            model = offload_model(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
@@ -309,9 +305,6 @@ def apply_act_equalization(
     else:
         raise ValueError(f"The activation equalization type {act_equalization_type} not supported.")
 
-    # Remove all accelerate hooks.
-    remove_hooks(model)
-
 
 @torch.no_grad()
 def apply_gptq(
@@ -335,9 +328,6 @@ def apply_gptq(
                 gptq.model(**inps)
             gptq.update()
 
-    # Remove all accelerate hooks.
-    remove_hooks(model)
-
 
 @torch.no_grad()
 def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
@@ -346,15 +336,9 @@ def apply_calibration(model: torch.nn.Module, dataset: List[Dict]) -> None:
             for inps in tqdm(dataset):
                 model(**inps)
 
-    # Remove all accelerate hooks.
-    remove_hooks(model)
-
 
 @torch.no_grad()
 def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict]) -> None:
     with bias_correction_mode(model):
         for inps in tqdm(dataset):
             model(**inps)
-
-    # Remove all accelerate hooks.
-    remove_hooks(model)
