@@ -342,8 +342,3 @@ def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict]) -> None:
     with bias_correction_mode(model):
         for inps in tqdm(dataset):
             model(**inps)
-
-    # Recompile graph in case we've made any changes
-    if hasattr(model, "graph"):
-        model.recompile()
-        model.graph.lint()
