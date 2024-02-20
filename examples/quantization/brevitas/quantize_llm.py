@@ -80,7 +80,9 @@ def main(args):
     quantized_model = quantized_model.to("cpu")
 
     # Export to ONNX through optimum.exporters.
-    with torch.no_grad(), brevitas_proxy_export_mode(quantized_model, export_manager=StdQCDQONNXManager):
+    export_manager = StdQCDQONNXManager
+    export_manager.change_weight_export(export_weight_q_node=True)
+    with torch.no_grad(), brevitas_proxy_export_mode(quantized_model, export_manager=export_manager):
         onnx_export_from_model(
             quantized_model,
             args.onnx_output_path,
