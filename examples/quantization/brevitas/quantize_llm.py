@@ -52,6 +52,12 @@ parser.add_argument(
     help="Sequence length to use during calibration (default: %(default)s).",
 )
 parser.add_argument(
+    "--nsamples",
+    type=int,
+    default=128,
+    help="Number of samples to use during calibration & validation (default: %(default)s).",
+)
+parser.add_argument(
     "--device",
     type=str,
     choices=["cpu", "cuda:0", "auto"],
@@ -93,7 +99,7 @@ calibration_dataset = get_dataset_for_model(
     qconfig=qconfig,
     dataset_name="wikitext2",
     tokenizer=tokenizer,
-    nsamples=128,
+    nsamples=args.nsamples,
     seqlen=args.seqlen,
     split="train",
     device=args.device if not use_accelerate else None,
@@ -104,7 +110,7 @@ validation_dataset = get_dataset_for_model(
     qconfig=qconfig,
     dataset_name="wikitext2",
     tokenizer=tokenizer,
-    nsamples=128,
+    nsamples=args.nsamples,
     seqlen=args.seqlen,
     split="validation",
     device=args.device if not use_accelerate else None,
