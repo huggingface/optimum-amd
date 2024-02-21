@@ -110,7 +110,7 @@ def pipeline(
         model (Optional[Any], *optional*):
             The model that will be used by the pipeline to make predictions. This can be a model identifier or an
             actual instance of a pretrained model. If not provided, the default model for the specified task will be loaded.
-  
+
         model_type (Optional[str], *optional*):
             Model type for the model
 
