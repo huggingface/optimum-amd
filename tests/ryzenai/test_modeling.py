@@ -157,45 +157,45 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
 
         gc.collect()
 
-    # @parameterized.expand(PIPELINE_SUPPORTED_MODEL_ARCH)
-    # @slow
-    # def test_pipeline(self, model_arch):
-    #     os.environ["XLNX_ENABLE_CACHE"] = "0"
-    #     os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+    @parameterized.expand(PIPELINE_SUPPORTED_MODEL_ARCH)
+    @slow
+    def test_pipeline(self, model_arch):
+        os.environ["XLNX_ENABLE_CACHE"] = "0"
+        os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-    #     model_id = RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION[model_arch]
-    #     pipe = pipeline("object-detection", model=model_id, vaip_config=self.VAIP_CONFIG, model_type=model_arch)
+        model_id = RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION[model_arch]
+        pipe = pipeline("object-detection", model=model_id, vaip_config=self.VAIP_CONFIG, model_type=model_arch)
 
-    #     url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-    #     image = Image.open(requests.get(url, stream=True).raw)
-    #     outputs = pipe(image)
+        url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+        image = Image.open(requests.get(url, stream=True).raw)
+        outputs = pipe(image)
 
-    #     self.assertTrue(len(outputs) > 0)
+        self.assertTrue(len(outputs) > 0)
 
-    #     for pred in outputs:
-    #         self.assertIn("box", pred)
-    #         self.assertIn("label", pred)
-    #         self.assertIn("score", pred)
-    #         self.assertGreaterEqual(pred["score"], 0.0)
+        for pred in outputs:
+            self.assertIn("box", pred)
+            self.assertIn("label", pred)
+            self.assertIn("score", pred)
+            self.assertGreaterEqual(pred["score"], 0.0)
 
-    # @slow
-    # def test_pipeline_model_is_none(self):
-    #     os.environ["XLNX_ENABLE_CACHE"] = "0"
-    #     os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+    @slow
+    def test_pipeline_model_is_none(self):
+        os.environ["XLNX_ENABLE_CACHE"] = "0"
+        os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-    #     pipe = pipeline("object-detection", vaip_config=self.VAIP_CONFIG)
+        pipe = pipeline("object-detection", vaip_config=self.VAIP_CONFIG)
 
-    #     url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-    #     image = Image.open(requests.get(url, stream=True).raw)
-    #     outputs = pipe(image)
+        url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+        image = Image.open(requests.get(url, stream=True).raw)
+        outputs = pipe(image)
 
-    #     self.assertTrue(len(outputs) > 0)
+        self.assertTrue(len(outputs) > 0)
 
-    #     for pred in outputs:
-    #         self.assertIn("box", pred)
-    #         self.assertIn("label", pred)
-    #         self.assertIn("score", pred)
-    #         self.assertGreaterEqual(pred["score"], 0.0)
+        for pred in outputs:
+            self.assertIn("box", pred)
+            self.assertIn("label", pred)
+            self.assertIn("score", pred)
+            self.assertGreaterEqual(pred["score"], 0.0)
 
 
 class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):

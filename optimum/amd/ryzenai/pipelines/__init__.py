@@ -67,14 +67,14 @@ def load_model(
         ort_model_class = SUPPORTED_TASKS[task]["class"][0]
 
         model = ort_model_class.from_pretrained(
-            model_id, vaip_config=vaip_config, use_auth_token=token, revision=revision, provider="CPUExecutionProvider"
+            model_id, vaip_config=vaip_config, use_auth_token=token, revision=revision
         )
     elif isinstance(model, RyzenAIModel):
         model_id = None
     else:
         raise ValueError(
-            f"""Model {model} is not supported. Please provide a valid model either as string or RyzenAIModel.
-            You can also provide non model then a default one will be used"""
+            f"Model {model} is not supported. Please provide a valid model either as string or RyzenAIModel."
+            "You can also provide non model then a default one will be used"
         )
     return model, model_id, model_type
 
@@ -103,10 +103,14 @@ def pipeline(
 
     if model.config is None:
         if model_type is None:
-            raise ValueError("Error!")
+            raise ValueError(
+                "Could not automatically find model_type for the model, you must pass a " "model_type explictly"
+            )
 
         if model_type not in pipeline_map:
-            raise ValueError("Error!")
+            raise ValueError(
+                f"Model type: {model_type} is not supported by Ryzen pipelines. Please open a issue / PR to support the same!"
+            )
 
         image_processor = pipeline_map[model_type]["preprocessor"]()
         ryzen_pipeline = pipeline_map[model_type]["impl"]
@@ -126,7 +130,7 @@ def pipeline(
                         break
                 if image_processor is None:
                     raise ValueError(
-                        "Could not automatically find image processor for the RyzenAIModel, you must pass a "
+                        "Could not automatically find image processor for the model, you must pass a "
                         "image_processor explictly"
                     )
 
