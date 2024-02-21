@@ -25,10 +25,16 @@ NUM_HEADS_KEYS = ["num_attention_heads"]
 @torch.no_grad()
 def recursive_to_device(tensor_or_iterable: Union[Iterable, torch.Tensor], device) -> None:
     if isinstance(tensor_or_iterable, torch.Tensor):
-        tensor_or_iterable.to(device)
+        return tensor_or_iterable.to(device)
+    elif isinstance(tensor_or_iterable, tuple): # Special handling of tuples, since they are immutable
+        tmp_list = []
+        for i in tensor_or_iterable:
+            tmp_list.append(recursive_to_device(i, device))
+        return tuple(tmp_list)
     elif isinstance(tensor_or_iterable, Iterable):
         for i in tensor_or_iterable:
-            recursive_to_device(i, device)
+            tensor_or_iterable[i] = recursive_to_device(i, device)
+        return tensor_or_iterable
     else:
         raise ValueError(f"Cannot move {type(tensor_or_iterable)} to {device}")
 
@@ -65,14 +71,12 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
             if not use_accelerate or (use_accelerate and not hasattr(model, "_hf_hook")):
                 device = next(model.parameters()).device
                 for name, val in subsample.items():
-                    recursive_to_device(val, device)
-                    subsample[name] = val
+                    subsample[name] = recursive_to_device(val, device)
             else:
                 # In accelerate by default `io_same_device=True`, and here we want the of the model output on device.
                 device = model._hf_hook.execution_device
                 for name, val in subsample.items():
-                    recursive_to_device(val, device)
-                    subsample[name] = val
+                    subsample[name] = recursive_to_device(val, device)
 
             lm_logits = model(**subsample)["logits"]
 
@@ -191,7 +195,7 @@ class DatasetToDevice(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         if self.device is not None:
-            return {name: val.to(self.device) for name, val in self.data[idx].items()}
+            return {name: recursive_to_device(val, self.device) for name, val in self.data[idx].items()}
         else:
             return self.data[idx]
 
