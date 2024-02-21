@@ -2,7 +2,6 @@
 # Licensed under the MIT License.
 
 
-
 import cv2
 
 from transformers.image_transforms import pad

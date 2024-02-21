@@ -24,6 +24,7 @@ from ..detection_utils import non_max_suppression, scale_coords
 from ..image_transforms import letterbox_image
 
 
+# TODO: replace the function to avoid GPL license conflict
 def dist2bbox(distance, anchor_points, xywh=True, dim=-1):
     """Transform distance(ltrb) to box(xywh or xyxy)."""
     lt, rb = torch.split(distance, 2, dim)
@@ -36,6 +37,7 @@ def dist2bbox(distance, anchor_points, xywh=True, dim=-1):
     return torch.cat((x1y1, x2y2), dim)  # xyxy bbox
 
 
+# TODO: replace the function to avoid GPL license conflict
 def make_anchors(feats, strides, grid_cell_offset=0.5):
     """Generate anchors from features."""
     anchor_points, stride_tensor = [], []
