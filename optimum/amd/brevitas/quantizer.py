@@ -134,6 +134,9 @@ class BrevitasQuantizer(OptimumQuantizer):
         dtype = next(iter(self.model.parameters())).dtype
 
         if quantization_config.requires_fx_graph():
+            if use_accelerate: # Remove hooks if we're converting to a fx.GraphModule
+                remove_hooks(self.model)
+
             forward_signature = inspect.signature(self.model.forward).parameters
             if all(
                 input_name in forward_signature for input_name in ["input_ids", "attention_mask", "past_key_values"]
@@ -146,6 +149,9 @@ class BrevitasQuantizer(OptimumQuantizer):
 
             with torch.no_grad():
                 model = symbolic_trace(self.model, input_names)
+
+            if use_accelerate:
+                model = offload_model(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
         else:
             model = self.model
 
