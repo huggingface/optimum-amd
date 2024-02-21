@@ -128,11 +128,11 @@ class YoloXImageProcessor(BaseImageProcessor):
         # All transformations expect numpy arrays
         images = [to_numpy_array(image) for image in images]
         # We assume that all images have the same channel dimension format.
-        input_data_format = infer_channel_dimension_format(images[0])
 
         target_sizes = []
         padded_images = []
         for image in images:
+            input_data_format = infer_channel_dimension_format(images[0])
             image = flip_channel_order(image, input_data_format=input_data_format)
             input_height, input_width = get_image_size(image, channel_dim=input_data_format)
             target_sizes.append(image.shape)

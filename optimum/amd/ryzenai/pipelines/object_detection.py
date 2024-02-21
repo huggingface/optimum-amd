@@ -2,10 +2,12 @@
 # Licensed under the MIT License.
 
 
+from typing import Dict
+
+import torch
+
 from transformers import Pipeline
 from transformers.image_utils import load_image
-import torch
-from typing import Dict
 
 
 class YoloObjectDetectionPipeline(Pipeline):

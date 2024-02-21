@@ -9,7 +9,6 @@ import torch.nn as nn
 
 from transformers.image_processing_utils import BaseImageProcessor, BatchFeature
 from transformers.image_transforms import (
-    flip_channel_order,
     rescale,
 )
 from transformers.image_utils import (
@@ -22,7 +21,7 @@ from transformers.image_utils import (
 from transformers.utils import TensorType
 
 from ..detection_utils import non_max_suppression, scale_coords
-from ..image_transforms import letterbox
+from ..image_transforms import letterbox_image
 
 
 def dist2bbox(distance, anchor_points, xywh=True, dim=-1):
@@ -125,18 +124,17 @@ class YoloV8ImageProcessor(BaseImageProcessor):
         preprocessed_images = []
         target_sizes = []
         for image in images:
-            image = flip_channel_order(image, input_data_format=input_data_format)
             if input_data_format == ChannelDimension.FIRST:
                 image = image.transpose((2, 0, 1))
                 input_data_format = ChannelDimension.LAST
 
             target_sizes.append(image.shape)
 
-            image = letterbox(image, [self.size["height"], self.size["width"]], auto=False)[0]
-            image = image.transpose((2, 0, 1))
-            input_data_format = ChannelDimension.FIRST
-
-            image = flip_channel_order(image, input_data_format=input_data_format)
+            image = letterbox_image(
+                image,
+                [self.size["height"], self.size["width"]],
+                input_data_format=input_data_format,
+            )
 
             image = np.ascontiguousarray(image, dtype=np.float32)
 
