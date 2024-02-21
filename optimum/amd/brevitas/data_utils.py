@@ -26,7 +26,7 @@ NUM_HEADS_KEYS = ["num_attention_heads"]
 def recursive_to_device(tensor_or_iterable: Union[Iterable, torch.Tensor], device) -> None:
     if isinstance(tensor_or_iterable, torch.Tensor):
         return tensor_or_iterable.to(device)
-    elif isinstance(tensor_or_iterable, tuple): # Special handling of tuples, since they are immutable
+    elif isinstance(tensor_or_iterable, tuple):  # Special handling of tuples, since they are immutable
         tmp_list = []
         for i in tensor_or_iterable:
             tmp_list.append(recursive_to_device(i, device))

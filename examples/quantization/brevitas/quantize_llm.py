@@ -1,15 +1,13 @@
 from argparse import ArgumentParser
-import contextlib
 
 import torch
 from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 
 from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
-from optimum.amd.brevitas.accelerate_utils import offload_model, remove_hooks, calc_gpu_device_map, calc_cpu_device_map
+from optimum.amd.brevitas.accelerate_utils import calc_cpu_device_map, calc_gpu_device_map, offload_model, remove_hooks
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
 from optimum.exporters.onnx import onnx_export_from_model
-from optimum.utils import recurse_setattr
 from transformers import AutoTokenizer
 
 
@@ -31,9 +29,7 @@ def main(args):
         cpu_device_map=args.cpu_device_map,
     )
 
-    quantizer = BrevitasQuantizer.from_pretrained(
-        args.model, device_map=args.device
-    )
+    quantizer = BrevitasQuantizer.from_pretrained(args.model, device_map=args.device)
 
     # Load the data for calibration and evaluation.
     calibration_dataset = get_dataset_for_model(
@@ -70,7 +66,9 @@ def main(args):
     quantized_model = quantizer.quantize(qconfig, calibration_dataset)
 
     # Evaluation of the quantized model.
-    perplexity = compute_perplexity(quantized_model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
+    perplexity = compute_perplexity(
+        quantized_model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer
+    )
     return_val["quant_perplexity"] = perplexity
     print(f"Perplexity (quantized model): {perplexity}")
 
@@ -106,7 +104,10 @@ if __name__ == "__main__":
         help="Apply the GPTQ algorithm during quantization (Note, currently slow!). This option requires a calibration dataset.",
     )
     parser.add_argument(
-        "--apply-weight-equalization", action="store_true", default=False, help="Apply the weight equalization algorithm."
+        "--apply-weight-equalization",
+        action="store_true",
+        default=False,
+        help="Apply the weight equalization algorithm.",
     )
     parser.add_argument(
         "--apply-bias-correction", action="store_true", default=False, help="Apply the bias correction algorithm."
@@ -141,7 +142,7 @@ if __name__ == "__main__":
         type=str,
         choices=["cpu", "cuda:0", "auto"],
         default="auto",
-        help="Device to run the example on (e.q., \"cpu\", \"cuda:0\", \"auto\"). \"auto\" will automatically select the device using HuggingFace Accelerate (choices: [%(choices)s], default: %(default)s).",
+        help='Device to run the example on (e.q., "cpu", "cuda:0", "auto"). "auto" will automatically select the device using HuggingFace Accelerate (choices: [%(choices)s], default: %(default)s).',
     )
     parser.add_argument(
         "--onnx-output-path",
@@ -156,7 +157,7 @@ if __name__ == "__main__":
     # The absolute margin is in bytes & the relative margin is a ratio
     # The margins are the portions of the device which should be reserved for other functions
     # (not accelerate)
-    args.gpu_device_map = calc_gpu_device_map(absolute_mem_margin=2.0*1e9, relative_mem_margin=0.3)
-    args.cpu_device_map = calc_cpu_device_map(absolute_mem_margin=2.0*1e9, relative_mem_margin=0.3)
+    args.gpu_device_map = calc_gpu_device_map(absolute_mem_margin=2.0 * 1e9, relative_mem_margin=0.3)
+    args.cpu_device_map = calc_cpu_device_map(absolute_mem_margin=2.0 * 1e9, relative_mem_margin=0.3)
 
     main(args)

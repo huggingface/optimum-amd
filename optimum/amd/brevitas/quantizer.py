@@ -1,7 +1,6 @@
 # Copyright 2023 The HuggingFace Team. All rights reserved.
 # Licensed under the MIT License.
 
-import contextlib
 import inspect
 import logging
 from typing import Dict, List, Optional, Union
@@ -25,6 +24,7 @@ from .configuration import BrevitasQuantizationConfig
 
 
 logger = logging.getLogger(__name__)
+
 
 class BrevitasQuantizer(OptimumQuantizer):
     """
@@ -134,7 +134,7 @@ class BrevitasQuantizer(OptimumQuantizer):
         dtype = next(iter(self.model.parameters())).dtype
 
         if quantization_config.requires_fx_graph():
-            if use_accelerate: # Remove hooks if we're converting to a fx.GraphModule
+            if use_accelerate:  # Remove hooks if we're converting to a fx.GraphModule
                 remove_hooks(self.model)
 
             forward_signature = inspect.signature(self.model.forward).parameters
