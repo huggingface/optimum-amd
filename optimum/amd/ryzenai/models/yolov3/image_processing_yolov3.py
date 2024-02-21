@@ -53,10 +53,9 @@ def postprocess(inputs, anchors, num_classes=80, stride=[8, 16, 32], shapes=[80,
         xy = (torch.sigmoid(inputs[i][..., 0:2]) + grid) * stride[2 - i]
         wh = (torch.exp(inputs[i][..., 2:4])) * anchor_grid
 
-        conf = inputs[i][..., 4:]
+        conf = torch.sigmoid_(inputs[i][..., 4:])
         y = torch.cat((xy, wh, conf), -1)
         outputs.append(y.view(bs, -1, no))
-
     return torch.cat(outputs, 1)
 
 
@@ -138,15 +137,15 @@ class YoloV3ImageProcessor(BaseImageProcessor):
         threshold: float = 0.25,
         nms_threshold: float = 0.45,
         target_sizes: Union[TensorType, List[Tuple]] = None,
-        data_format: Union[str, ChannelDimension] = None,
         agnostic_nms=False,
-        merge_nms=True,
-        multi_label=True,
+        merge_nms=False,
         max_detections=1000,
-        classes=None,
+        data_format: Union[str, ChannelDimension] = None,
     ):
         data_format = data_format if data_format is not None else self.data_format
-        num_classes = len(classes) if classes else self.num_classes
+
+        if merge_nms:
+            raise ValueError("Merge NMS is not yet supported!")
 
         outputs = list(outputs.values())
 
@@ -157,8 +156,7 @@ class YoloV3ImageProcessor(BaseImageProcessor):
             outputs = [torch.permute(out, (0, 3, 1, 2)) for out in outputs]
 
         anchors = torch.tensor(self.anchors)
-        predictions = postprocess(outputs, anchors, num_classes, self.stride)
-
+        predictions = postprocess(outputs, anchors, self.num_classes, self.stride)
         has_confidence = predictions[..., 4] > threshold
 
         dets = non_max_suppression(
@@ -166,25 +164,19 @@ class YoloV3ImageProcessor(BaseImageProcessor):
             has_confidence,
             threshold,
             nms_threshold,
-            classes,
-            agnostic_nms,
-            multi_label=multi_label,
+            agnostic=agnostic_nms,
             max_detections=max_detections,
-            merge_nms=merge_nms,
         )
 
         results = []
-
         for i, det in enumerate(dets):
             if target_sizes is not None:
                 det[:, :4] = scale_coords(
-                    (self.size["height"], self.size["width"]), det[:, :4], target_sizes[i]
+                    (self.size["height"], self.size["width"]),
+                    target_sizes[i],
+                    det[:, :4],
                 ).round()
 
-            outputs = []
-            for *box, score, cls in reversed(det):
-                label = int(cls)
-                outputs.append({"score": score.item(), "label": label, "box": np.array(box)})
-            results.append(outputs)
+            results.append({"scores": det[:, 4], "labels": det[:, 5], "boxes": det[:, :4]})
 
         return results

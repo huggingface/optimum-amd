@@ -138,15 +138,15 @@ class YoloV5ImageProcessor(BaseImageProcessor):
         threshold: float = 0.25,
         nms_threshold: float = 0.45,
         target_sizes: Union[TensorType, List[Tuple]] = None,
-        data_format: Union[str, ChannelDimension] = None,
         agnostic_nms=False,
         merge_nms=False,
-        multi_label=False,
         max_detections=1000,
-        classes=None,
+        data_format: Union[str, ChannelDimension] = None,
     ):
         data_format = data_format if data_format is not None else self.data_format
-        num_classes = len(classes) if classes else self.num_classes
+
+        if merge_nms:
+            raise ValueError("Merge NMS is not yet supported!")
 
         outputs = list(outputs.values())
 
@@ -157,7 +157,7 @@ class YoloV5ImageProcessor(BaseImageProcessor):
             outputs = [torch.permute(out, (0, 3, 1, 2)) for out in outputs]
 
         anchors = torch.tensor(self.anchors)
-        predictions = postprocess(outputs, anchors, num_classes, self.stride)
+        predictions = postprocess(outputs, anchors, self.num_classes, self.stride)
 
         has_confidence = predictions[..., 4] > threshold  # Candidates
 
@@ -166,25 +166,19 @@ class YoloV5ImageProcessor(BaseImageProcessor):
             has_confidence,
             threshold,
             nms_threshold,
-            classes,
-            agnostic_nms,
-            multi_label=multi_label,
+            agnostic=agnostic_nms,
             max_detections=max_detections,
-            merge_nms=merge_nms,
         )
 
         results = []
-
         for i, det in enumerate(dets):
             if target_sizes is not None:
                 det[:, :4] = scale_coords(
-                    (self.size["height"], self.size["width"]), det[:, :4], target_sizes[i]
+                    (self.size["height"], self.size["width"]),
+                    target_sizes[i],
+                    det[:, :4],
                 ).round()
 
-            outputs = []
-            for *box, score, cls in reversed(det):
-                label = int(cls)
-                outputs.append({"score": score.item(), "label": label, "box": np.array(box)})
-            results.append(outputs)
+            results.append({"scores": det[:, 4], "labels": det[:, 5], "boxes": det[:, :4]})
 
         return results

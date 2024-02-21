@@ -165,14 +165,15 @@ class YoloXImageProcessor(BaseImageProcessor):
         threshold: float = 0.1,
         nms_threshold: float = 0.45,
         target_sizes: Union[TensorType, List[Tuple]] = None,
-        data_format: Union[str, ChannelDimension] = None,
         agnostic_nms=True,
         merge_nms=False,
-        multi_label=False,
         max_detections=1000,
-        classes=None,
+        data_format: Union[str, ChannelDimension] = None,
     ):
         data_format = data_format if data_format is not None else self.data_format
+
+        if merge_nms:
+            raise ValueError("Merge NMS is not yet supported!")
 
         outputs = list(outputs.values())
 
@@ -191,11 +192,8 @@ class YoloXImageProcessor(BaseImageProcessor):
             has_confidence,
             threshold,
             nms_threshold,
-            classes,
-            agnostic_nms,
-            multi_label=multi_label,
+            agnostic=agnostic_nms,
             max_detections=max_detections,
-            merge_nms=merge_nms,
         )
 
         results = []
@@ -205,10 +203,6 @@ class YoloXImageProcessor(BaseImageProcessor):
                 ratio = min(self.size["height"] / input_height, self.size["width"] / input_width)
                 det[:, :4] /= ratio
 
-            outputs = []
-            for *box, score, cls in reversed(det):
-                label = int(cls)
-                outputs.append({"score": score.item(), "label": label, "box": np.array(box)})
-            results.append(outputs)
+            results.append({"scores": det[:, 4], "labels": det[:, 5], "boxes": det[:, :4]})
 
         return results
