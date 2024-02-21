@@ -36,4 +36,4 @@ Most options can be applied independently. For optimal results, we suggest using
 
 ## RAM offloading
 
-If quantizing large models, we recommend using the option `--cpu-offload` to offload the model to RAM using [Accelerate](https://huggingface.co/docs/accelerate/index), which loads the model's submodules dynamically to GPU.
+If quantizing large models, we recommend using the option `--device auto` to offload the model to RAM using [Accelerate](https://huggingface.co/docs/accelerate/index), which loads the model's submodules dynamically to GPU.
