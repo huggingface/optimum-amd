@@ -24,7 +24,7 @@ from ..detection_utils import non_max_suppression, scale_coords
 from ..image_transforms import letterbox_image
 
 
-# TODO: replace the function to avoid GPL license conflict
+# TODO: replace / reimplement the function to avoid GPL license conflict
 def dist2bbox(distance, anchor_points, xywh=True, dim=-1):
     """Transform distance(ltrb) to box(xywh or xyxy)."""
     lt, rb = torch.split(distance, 2, dim)
@@ -37,7 +37,7 @@ def dist2bbox(distance, anchor_points, xywh=True, dim=-1):
     return torch.cat((x1y1, x2y2), dim)  # xyxy bbox
 
 
-# TODO: replace the function to avoid GPL license conflict
+# TODO: replace / reimplement the function to avoid GPL license conflict
 def make_anchors(feats, strides, grid_cell_offset=0.5):
     """Generate anchors from features."""
     anchor_points, stride_tensor = [], []
@@ -69,7 +69,7 @@ def postprocess(inputs, reg_max=16, num_classes=80, stride=[8, 16, 32]):
 
     return y
 
-
+# TODO: replace / reimplement the function to avoid GPL license conflict
 class DFL(nn.Module):
     # Integral module of Distribution Focal Loss (DFL) proposed in Generalized Focal Loss https://ieeexplore.ieee.org/document/9792391
     def __init__(self, c1=16):
