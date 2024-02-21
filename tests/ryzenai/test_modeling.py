@@ -11,7 +11,9 @@ import numpy as np
 import onnx
 import onnxruntime
 import pytest
+import requests
 from parameterized import parameterized
+from PIL import Image
 from testing_utils import (
     DEFAULT_CACHE_DIR,
     DEFAULT_VAIP_CONFIG,
@@ -30,6 +32,7 @@ from optimum.amd.ryzenai import (
     RyzenAIModelForImageSegmentation,
     RyzenAIModelForImageToImage,
     RyzenAIModelForObjectDetection,
+    pipeline,
 )
 from optimum.utils import (
     DummyInputGenerator,
@@ -114,6 +117,22 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
 
         gc.collect()
 
+    @parameterized.expand(
+        ["mohitsha/timm-resnet18-onnx-quantized-ryzen", "mohitsha/transformers-resnet18-onnx-quantized-ryzen"]
+    )
+    @slow
+    def test_pipeline_model(self, model_id):
+        os.environ["XLNX_ENABLE_CACHE"] = "0"
+        os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+
+        pipe = pipeline("image-classification", model=model_id, vaip_config=self.VAIP_CONFIG)
+
+        url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+        image = Image.open(requests.get(url, stream=True).raw)
+        outputs = pipe(image)[0]
+
+        self.assertGreaterEqual(outputs["score"], 0.0)
+
 
 class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION)
@@ -137,6 +156,46 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
         self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
 
         gc.collect()
+
+    # @parameterized.expand(PIPELINE_SUPPORTED_MODEL_ARCH)
+    # @slow
+    # def test_pipeline(self, model_arch):
+    #     os.environ["XLNX_ENABLE_CACHE"] = "0"
+    #     os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+
+    #     model_id = RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION[model_arch]
+    #     pipe = pipeline("object-detection", model=model_id, vaip_config=self.VAIP_CONFIG, model_type=model_arch)
+
+    #     url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    #     image = Image.open(requests.get(url, stream=True).raw)
+    #     outputs = pipe(image)
+
+    #     self.assertTrue(len(outputs) > 0)
+
+    #     for pred in outputs:
+    #         self.assertIn("box", pred)
+    #         self.assertIn("label", pred)
+    #         self.assertIn("score", pred)
+    #         self.assertGreaterEqual(pred["score"], 0.0)
+
+    # @slow
+    # def test_pipeline_model_is_none(self):
+    #     os.environ["XLNX_ENABLE_CACHE"] = "0"
+    #     os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+
+    #     pipe = pipeline("object-detection", vaip_config=self.VAIP_CONFIG)
+
+    #     url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    #     image = Image.open(requests.get(url, stream=True).raw)
+    #     outputs = pipe(image)
+
+    #     self.assertTrue(len(outputs) > 0)
+
+    #     for pred in outputs:
+    #         self.assertIn("box", pred)
+    #         self.assertIn("label", pred)
+    #         self.assertIn("score", pred)
+    #         self.assertGreaterEqual(pred["score"], 0.0)
 
 
 class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
