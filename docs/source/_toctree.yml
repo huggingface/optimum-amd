@@ -13,11 +13,15 @@
     - sections:
       - local: ryzenai/usage_guides/quantization
         title: How to apply quantization
+      - local: ryzenai/usage_guides/pipelines
+        title: Inference pipelines
       title: How-to guides
       isExpanded: false
     - sections:
       - local: ryzenai/package_reference/modeling
         title: RyzenAI Models
+      - local: ryzenai/package_reference/pipelines
+        title: RyzenAI Inference Pipelines
       - local: ryzenai/package_reference/configuration
         title: Configuration
       - local: ryzenai/package_reference/quantization

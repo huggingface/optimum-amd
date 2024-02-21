@@ -1,0 +1,123 @@
+# Ryzen Inference pipelines
+
+The pipelines are a great and easy way to use models for inference. These pipelines are objects that abstract most of the complex code from the library, offering a simple API dedicated to several tasks.
+
+Currently the supported tasks are:
+
+* `image-classification`
+* `object-detection` (Supported model types - yolox, yolov3, yolov5, yolov8)
+
+<Tip warning={true}>
+The RyzenAI pipelines requires a runtime configuration file for inference. A default version of this runtime configuration file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
+
+For more information refer to [runtime-configuration-file](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html#runtime-configuration-file)
+</Tip>
+
+## The pipeline abstraction
+The pipeline abstraction is a wrapper around all the available pipelines for specific tasks. The pipeline() function automatically loads a default model and tokenizer/feature-extractor capable of performing inference for your task.
+
+1. Start by creating a pipeline by specifying an inference task:
+
+```python
+>>> from optimum.amd.ryzenai import pipeline
+
+>>> detector = pipeline("object-detection", vaip_config=vaip_config_patj)
+```
+
+2. Pass your input text/image to the [`~pipelines.pipeline`] function:
+
+```python
+>>> import requests
+>>> from PIL import Image
+
+>>> url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+>>> image = Image.open(requests.get(url, stream=True).raw)
+
+>>> detector(image)  # doctest: +IGNORE_RESULT
+[   {   'box': {'xmax': 325, 'xmin': 2, 'ymax': 465, 'ymin': 50},
+        'label': 15.0,
+        'score': 0.7081549763679504},
+    {   'box': {'xmax': 630, 'xmin': 347, 'ymax': 381, 'ymin': 16},
+        'label': 15.0,
+        'score': 0.6494212746620178},
+    {   'box': {'xmax': 369, 'xmin': 335, 'ymax': 187, 'ymin': 76},
+        'label': 65.0,
+        'score': 0.6064183115959167},
+    {   'box': {'xmax': 645, 'xmin': 2, 'ymax': 475, 'ymin': 4},
+        'label': 57.0,
+        'score': 0.599224865436554},
+    {   'box': {'xmax': 174, 'xmin': 40, 'ymax': 116, 'ymin': 73},
+        'label': 65.0,
+        'score': 0.408765971660614}]
+```
+
+<Tip warning={true}>
+The detault model is only supported for `object-detection task. For other tasks, please provide the `model_id / RyzenAIModel` for inference.`
+</Tip>
+
+## Using Ryzen models
+
+The [`~ryzenai.pipelines.pipeline`] function accepts Ryzen supported models from the [Hugging Face Hub](https://huggingface.co/models?other=RyzenAI)
+
+Once you have picked an appropriate model, you can create the [`~ryzenai.pipelines.pipeline`] by specifying the model repo:
+
+```python
+import requests
+from PIL import Image
+
+from optimum.amd.ryzenai import pipeline
+
+url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+image = Image.open(requests.get(url, stream=True).raw)
+
+model_id = "mohitsha/timm-resnet18-onnx-quantized-ryzen"
+
+pipe = pipeline("image-classification", model=model_id, vaip_config="vaip_config.json")
+print(pipe(image))
+```
+
+It is also possible to load it with the `from_pretrained(model_name_or_path, export=True)`
+method associated with the `RyzenModelForXXX` class.
+
+For example, here is how you can load the [`~ryzenai.RyzenModelForImageClassification`] class for image classification:
+
+```python
+import requests
+from PIL import Image
+
+from optimum.amd.ryzenai import RyzenAIModelForImageClassification
+from optimum.amd.ryzenai import pipeline
+
+
+url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+image = Image.open(requests.get(url, stream=True).raw)
+
+model_id = "mohitsha/timm-resnet18-onnx-quantized-ryzen"
+model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config="vaip_config.json")
+
+pipe = pipeline("image-classification", model=model)
+print(pipe(image))
+```
+
+Note for a few models, `model_type` amd `image_preprocessor` has to be provided in addition to the model_id for inference.
+
+For example, here is how you can run inference using `yolox`
+
+```python
+import requests
+from PIL import Image
+
+from optimum.amd.ryzenai import pipeline
+
+img = ".\\image.jpg"
+url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+image = Image.open(requests.get(url, stream=True).raw)
+img = ".\\image2.jpg"
+
+image = Image.open(img)
+
+model_id = "amd/yolox-s"
+
+detector = pipeline("object-detection", model=model_id, vaip_config="vaip_config.json", model_type="yolox")
+detector = pipe(image)
+```
