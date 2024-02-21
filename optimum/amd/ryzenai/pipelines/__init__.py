@@ -80,9 +80,9 @@ def load_model(
 
 
 def pipeline(
-    task: str = None,
+    task,
+    vaip_config,
     model: Optional[Any] = None,
-    vaip_config: str = None,
     model_type: str = None,
     feature_extractor: Optional[Union[str, "PreTrainedFeatureExtractor"]] = None,
     image_processor: Optional[Union[str, BaseImageProcessor]] = None,
@@ -98,37 +98,37 @@ def pipeline(
     The pipeline includes components such as a image processor and model.
 
     Args:
-        task (str, optional):
+        task (str):
             The task defining which pipeline will be returned. Available tasks include:
             - "image-classification"
             - "object-detection"
 
-        model (Optional[Any], optional):
-            The model that will be used by the pipeline to make predictions. This can be a model identifier or an
-            actual instance of a pretrained model. If not provided, the default model for the specified task will be loaded.
-
-        vaip_config (str, optional):
+        vaip_config (str):
             Runtime configuration file for inference with Ryzen IPU. A default config file can be found in the Ryzen AI VOE package,
             extracted during installation under the name `vaip_config.json`.
 
-        model_type (str, optional):
+        model (Optional[Any], *optional*):
+            The model that will be used by the pipeline to make predictions. This can be a model identifier or an
+            actual instance of a pretrained model. If not provided, the default model for the specified task will be loaded.
+  
+        model_type (Optional[str], *optional*):
             Model type for the model
 
-        feature_extractor (Union[str, "PreTrainedFeatureExtractor"], optional):
+        feature_extractor (Union[str, "PreTrainedFeatureExtractor"], *optional*):
             The feature extractor that will be used by the pipeline to encode data for the model. This can be a model
             identifier or an actual pretrained feature extractor.
 
-        image_processor (Union[str, BaseImageProcessor], optional):
+        image_processor (Union[str, BaseImageProcessor], *optional*):
             The image processor that will be used by the pipeline for image-related tasks.
 
-        use_fast (bool, optional):
+        use_fast (bool, *optional*, defaults to True):
             Whether or not to use a Fast tokenizer if possible.
 
-        token (Union[str, bool], optional):
+        token (Union[str, bool], *optional*):
             The token to use as HTTP bearer authorization for remote files. If True, will use the token generated when
             running `huggingface-cli login` (stored in `~/.huggingface`).
 
-        revision (str, optional):
+        revision (str, *optional*):
             The specific model version to use, specified as a branch name, tag name, or commit id.
 
         **kwargs:
