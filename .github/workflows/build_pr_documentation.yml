@@ -53,7 +53,7 @@ jobs:
           cd ../../../../optimum-amd
           pip install .[brevitas]
 
-          pip install onnxruntime==1.14.0
+          pip install onnxruntime==1.14.0 torchvision
           cd ..
 
       - name: Make documentation
