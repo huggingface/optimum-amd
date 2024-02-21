@@ -91,6 +91,53 @@ def pipeline(
     revision: Optional[str] = None,
     **kwargs,
 ) -> Pipeline:
+    """
+    Utility method to build a pipeline for various RyzenAI tasks.
+
+    This function creates a pipeline for a specified task, utilizing a given model or loading the default model for the task.
+    The pipeline includes components such as a image processor and model.
+
+    Args:
+        task (str, optional):
+            The task defining which pipeline will be returned. Available tasks include:
+            - "image-classification"
+            - "object-detection"
+
+        model (Optional[Any], optional):
+            The model that will be used by the pipeline to make predictions. This can be a model identifier or an
+            actual instance of a pretrained model. If not provided, the default model for the specified task will be loaded.
+
+        vaip_config (str, optional):
+            Runtime configuration file for inference with Ryzen IPU. A default config file can be found in the Ryzen AI VOE package,
+            extracted during installation under the name `vaip_config.json`.
+
+        model_type (str, optional):
+            Model type for the model
+
+        feature_extractor (Union[str, "PreTrainedFeatureExtractor"], optional):
+            The feature extractor that will be used by the pipeline to encode data for the model. This can be a model
+            identifier or an actual pretrained feature extractor.
+
+        image_processor (Union[str, BaseImageProcessor], optional):
+            The image processor that will be used by the pipeline for image-related tasks.
+
+        use_fast (bool, optional):
+            Whether or not to use a Fast tokenizer if possible.
+
+        token (Union[str, bool], optional):
+            The token to use as HTTP bearer authorization for remote files. If True, will use the token generated when
+            running `huggingface-cli login` (stored in `~/.huggingface`).
+
+        revision (str, optional):
+            The specific model version to use, specified as a branch name, tag name, or commit id.
+
+        **kwargs:
+            Additional keyword arguments passed to the underlying pipeline class.
+
+    Returns:
+        Pipeline:
+            An instance of the specified pipeline for the given task and model.
+    """
     model, model_id, model_type = load_model(
         model,
         task=task,
