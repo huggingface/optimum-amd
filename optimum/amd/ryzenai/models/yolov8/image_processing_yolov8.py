@@ -25,19 +25,6 @@ from ..image_transforms import letterbox_image
 
 
 # TODO: replace / reimplement the function to avoid GPL license conflict
-def dist2bbox(distance, anchor_points, xywh=True, dim=-1):
-    """Transform distance(ltrb) to box(xywh or xyxy)."""
-    lt, rb = torch.split(distance, 2, dim)
-    x1y1 = anchor_points - lt
-    x2y2 = anchor_points + rb
-    if xywh:
-        c_xy = (x1y1 + x2y2) / 2
-        wh = x2y2 - x1y1
-        return torch.cat((c_xy, wh), dim)  # xywh bbox
-    return torch.cat((x1y1, x2y2), dim)  # xyxy bbox
-
-
-# TODO: replace / reimplement the function to avoid GPL license conflict
 def make_anchors(feats, strides, grid_cell_offset=0.5):
     """Generate anchors from features."""
     anchor_points, stride_tensor = [], []
@@ -64,10 +51,17 @@ def postprocess(inputs, reg_max=16, num_classes=80, stride=[8, 16, 32]):
     )
     anchors, strides = (x.transpose(0, 1) for x in make_anchors(inputs, stride, 0.5))
 
-    dbox = dist2bbox(dfl(box), anchors.unsqueeze(0), xywh=True, dim=1) * strides
+    distance = dfl(box).chunk(2, 1)
+
+    x1_y1 = anchors.unsqueeze(0) - distance[0]
+    x2_y2 = anchors.unsqueeze(0) + distance[1]
+
+    dbox = torch.cat(((x2_y2 + x1_y1) / 2, x2_y2 - x1_y1), dim=1) * strides
+
     y = torch.cat((dbox, cls.sigmoid()), 1)
 
     return y
+
 
 # TODO: replace / reimplement the function to avoid GPL license conflict
 class DFL(nn.Module):
