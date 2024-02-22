@@ -108,7 +108,9 @@ def get_wikitext2(
         data = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
 
     if fuse_sequences:
-        tokenized_data = tokenizer("\n\n".join(data["text"]), return_tensors="pt")
+        data = data.shuffle(seed=seed)
+        # wikitext2 is too big.
+        tokenized_data = tokenizer("\n\n".join(data["text"])[:100000], return_tensors="pt")
 
         dataset = []
         for _ in range(nsamples):
