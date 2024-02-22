@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 
+import os
 import torch
 from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
@@ -9,6 +10,7 @@ from optimum.amd.brevitas.accelerate_utils import calc_cpu_device_map, calc_gpu_
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
 from optimum.exporters.onnx import onnx_export_from_model
 from transformers import AutoTokenizer
+from rewriter import rewrite_graph
 
 
 def main(args):
@@ -84,8 +86,9 @@ def main(args):
             args.onnx_output_path,
             task="text-generation-with-past",
             do_validation=False,
-            no_post_process=True,
-        )
+            no_post_process=True)
+        # TODO: add configuration flag
+        rewrite_graph(os.path.join(args.onnx_output_path, 'model.onnx'))
     return return_val
 
 
