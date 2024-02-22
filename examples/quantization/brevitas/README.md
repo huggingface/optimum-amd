@@ -32,7 +32,7 @@ For all the options, please check:
 python quantize_llm.py --help
 ```
 
-Most options can be applied independently. For optimal results, we suggest using the `--activations-equalization layerwise --apply-gtpq`, but GPTQ may take a long time, depending on your available hardware.
+Most options can be applied independently. For optimal results, we suggest using the `--activations-equalization layerwise --apply-gptq`, but GPTQ may take a long time, depending on your available hardware.
 
 ## RAM offloading
 
