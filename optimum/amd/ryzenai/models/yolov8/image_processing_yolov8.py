@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
 
 from transformers.image_processing_utils import BaseImageProcessor, BatchFeature
 from transformers.image_transforms import (
@@ -33,15 +32,22 @@ def make_anchor(input, ny, nx, grid_cell_offset=0.5):
     return torch.stack((x, y), -1).view(-1, 2)
 
 
-def postprocess(inputs, reg_max=16, num_classes=80, stride=[8, 16, 32]):
-    dfl = DFL(reg_max)
+def dfl(x, c1=16):
+    b, c, a = x.shape
 
+    weights = torch.arange(c1, dtype=torch.float).view(1, c1, 1, 1)
+    inter = x.view(b, 4, c1, a).transpose(2, 1).softmax(1)
+    return (inter * weights).sum(dim=1, keepdim=True).view(b, 4, a)
+
+
+def postprocess(inputs, reg_max=16, num_classes=80, stride=[8, 16, 32]):
     nl = len(stride)
     no = num_classes + reg_max * 4
 
     box, cls = torch.cat([xi.view(inputs[0].shape[0], no, -1) for xi in inputs], 2).split(
         (reg_max * 4, num_classes), 1
     )
+    distance = dfl(box).chunk(2, 1)
 
     anchors, strides = [], []
     for i in range(nl):
@@ -64,21 +70,6 @@ def postprocess(inputs, reg_max=16, num_classes=80, stride=[8, 16, 32]):
     y = torch.cat((dbox, cls.sigmoid()), 1)
 
     return y
-
-
-# TODO: replace / reimplement the function to avoid GPL license conflict
-class DFL(nn.Module):
-    # Integral module of Distribution Focal Loss (DFL) proposed in Generalized Focal Loss https://ieeexplore.ieee.org/document/9792391
-    def __init__(self, c1=16):
-        super().__init__()
-        self.conv = nn.Conv2d(c1, 1, 1, bias=False).requires_grad_(False)
-        x = torch.arange(c1, dtype=torch.float)
-        self.conv.weight.data[:] = nn.Parameter(x.view(1, c1, 1, 1))
-        self.c1 = c1
-
-    def forward(self, x):
-        b, c, a = x.shape  # batch, channels, anchors
-        return self.conv(x.view(b, 4, self.c1, a).transpose(2, 1).softmax(1)).view(b, 4, a)
 
 
 class YoloV8ImageProcessor(BaseImageProcessor):
