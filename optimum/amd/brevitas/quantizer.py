@@ -206,7 +206,10 @@ class BrevitasQuantizer(OptimumQuantizer):
         # https://github.com/Xilinx/brevitas/blob/84f42259ec869eb151af4cb8a8b23ad925f493db/src/brevitas/core/scaling/standalone.py#L205-L217
         with torch.no_grad():
             if calibration_dataset is not None:
+                is_training = model.training
+                model.train()
                 model(**calibration_dataset[0])
+                model.train(is_training)
             elif not isinstance(model, torch.fx.GraphModule):
                 model(input_ids=torch.tensor([[1]], dtype=torch.int64))
             else:
