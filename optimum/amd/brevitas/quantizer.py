@@ -101,6 +101,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             trust_remote_code=trust_remote_code,
             device_map=device_map,
             device=device,
+            framework="pt",
             **model_kwargs,
         )
 
