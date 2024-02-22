@@ -26,5 +26,12 @@
       isExpanded: false
     title: Ryzen AI
     isExpanded: false
+  - sections:
+    - local: brevitas/usage_guide
+      title: Usage guides
+    - local: brevitas/api_reference
+      title: API reference
+    title: Brevitas
+    isExpanded: false
   title: Optimum-AMD
   isExpanded: false
