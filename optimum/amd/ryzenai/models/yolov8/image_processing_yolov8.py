@@ -24,37 +24,40 @@ from ..detection_utils import non_max_suppression, scale_coords
 from ..image_transforms import letterbox_image
 
 
-# TODO: replace / reimplement the function to avoid GPL license conflict
-def make_anchors(feats, strides, grid_cell_offset=0.5):
-    """Generate anchors from features."""
-    anchor_points, stride_tensor = [], []
-    dtype, device = feats[0].dtype, feats[0].device
-    for i, stride in enumerate(strides):
-        _, _, h, w = feats[i].shape
-        sx = torch.arange(end=w, device=device, dtype=dtype) + grid_cell_offset  # shift x
-        sy = torch.arange(end=h, device=device, dtype=dtype) + grid_cell_offset  # shift y
-        sy, sx = torch.meshgrid(sy, sx, indexing="ij")
-        anchor_points.append(torch.stack((sx, sy), -1).view(-1, 2))
-        stride_tensor.append(torch.full((h * w, 1), stride, dtype=dtype, device=device))
+def make_anchor(input, ny, nx, grid_cell_offset=0.5):
+    t, d = input.dtype, input.device
 
-    return torch.cat(anchor_points), torch.cat(stride_tensor)
+    y, x = torch.arange(ny, device=d, dtype=t), torch.arange(nx, device=d, dtype=t)
+    y, x = torch.meshgrid(y + grid_cell_offset, x + grid_cell_offset, indexing="ij")
+
+    return torch.stack((x, y), -1).view(-1, 2)
 
 
 def postprocess(inputs, reg_max=16, num_classes=80, stride=[8, 16, 32]):
     dfl = DFL(reg_max)
 
+    nl = len(stride)
     no = num_classes + reg_max * 4
-    stride = torch.tensor(stride)
 
     box, cls = torch.cat([xi.view(inputs[0].shape[0], no, -1) for xi in inputs], 2).split(
         (reg_max * 4, num_classes), 1
     )
-    anchors, strides = (x.transpose(0, 1) for x in make_anchors(inputs, stride, 0.5))
 
+    anchors, strides = [], []
+    for i in range(nl):
+        _, _, ny, nx = inputs[i].shape
+        anchor = make_anchor(inputs[i], ny, nx)
+        ustride = torch.full((ny * nx, 1), stride[i], dtype=inputs[i].dtype, device=inputs[i].device)
+
+        anchors.append(anchor)
+        strides.append(ustride)
+
+    anchors = torch.cat(anchors).transpose(0, 1).unsqueeze(0)
+    strides = torch.cat(strides).transpose(0, 1)
     distance = dfl(box).chunk(2, 1)
 
-    x1_y1 = anchors.unsqueeze(0) - distance[0]
-    x2_y2 = anchors.unsqueeze(0) + distance[1]
+    x1_y1 = anchors - distance[0]
+    x2_y2 = anchors + distance[1]
 
     dbox = torch.cat(((x2_y2 + x1_y1) / 2, x2_y2 - x1_y1), dim=1) * strides
 
