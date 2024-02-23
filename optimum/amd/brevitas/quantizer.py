@@ -15,8 +15,6 @@ from tqdm import tqdm
 
 from optimum.exporters import TasksManager
 from optimum.quantization_base import OptimumQuantizer
-from optimum.utils.normalized_config import NormalizedConfigManager
-from transformers import AutoConfig
 from transformers.utils.fx import symbolic_trace
 
 from .accelerate_utils import offload_model, remove_hooks
