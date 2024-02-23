@@ -57,8 +57,6 @@ def main(args):
     model = quantizer.model
 
     # Evaluation of the non-quantized model.
-    if use_accelerate:
-        model = offload_model(model, qconfig.gpu_device_map, qconfig.cpu_device_map)
     perplexity = compute_perplexity(model, validation_dataset, context_length=args.seqlen // 2, tokenizer=tokenizer)
     return_val["float_perplexity"] = perplexity
     print(f"Perplexity (original model): {perplexity}")
@@ -75,7 +73,6 @@ def main(args):
     print("Exporting the model to ONNX...")
     if use_accelerate:
         remove_hooks(quantized_model)
-    quantized_model = quantized_model.to("cpu")
 
     # Export to ONNX through optimum.exporters.
     export_manager = StdQCDQONNXManager
