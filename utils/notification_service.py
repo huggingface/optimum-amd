@@ -378,7 +378,7 @@ def retrieve_available_artifacts():
             for artifact_name in os.listdir(directory):
                 _available_artifacts[artifact_name] = Artifact(artifact_name)
 
-                _available_artifacts[artifact_name].add_path(directory)
+                _available_artifacts[artifact_name].add_path(os.path.join(directory, artifact_name))
 
     return _available_artifacts
 
