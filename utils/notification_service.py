@@ -344,7 +344,7 @@ class Message:
         # )
 
 
-def retrieve_artifact(artifact_path: str, gpu: Optional[str]):
+def retrieve_artifact(artifact_path: str):
     _artifact = {}
 
     if os.path.exists(artifact_path):
@@ -374,12 +374,11 @@ def retrieve_available_artifacts():
 
     directories = filter(os.path.isdir, os.listdir())
     for directory in directories:
-        if directory.startswith("run_tests"):
-            artifact_name = directory
+        if directory.startswith("reports/"):
+            for artifact_name in os.listdir(directory):
+                _available_artifacts[artifact_name] = Artifact(artifact_name)
 
-            _available_artifacts[artifact_name] = Artifact(artifact_name)
-
-            _available_artifacts[artifact_name].add_path(directory)
+                _available_artifacts[artifact_name].add_path(directory)
 
     return _available_artifacts
 
