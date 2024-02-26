@@ -212,9 +212,7 @@ class Message:
             category_failures.append((f"{report}"))
 
         header = "Failed | Success | Category \n"
-        category_failures_report = prepare_reports(
-            title="Test results", header=header, reports=category_failures
-        )
+        category_failures_report = prepare_reports(title="Test results", header=header, reports=category_failures)
 
         return {"type": "section", "text": {"type": "mrkdwn", "text": category_failures_report}}
 
