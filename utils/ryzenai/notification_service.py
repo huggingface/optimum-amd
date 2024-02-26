@@ -31,11 +31,6 @@ import tests.ryzenai.testing_utils as tu  # noqa
 
 client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
 
-# os.environ["CI_EVENT"] = "scheduled"
-# os.environ["CI_SHA"] = "scheduled"
-# os.environ["CI_WORKFLOW_REF"] = "scheduled"
-# os.environ["GITHUB_RUN_ID"] = "7919603663"
-
 
 def infer_model_id(model):
     model_name_replacement = model.replace(".", "_").replace("-", "_")
@@ -235,11 +230,11 @@ class Message:
             failures = result["failures"]
             for failure in failures:
                 line = failure["line"]
+                match = None
                 if "amd" in line:
                     match = re.search(r"::test_model_\d+_amd_([a-zA-Z0-9]+)", line)
                     if match:
                         model_id = "amd/" + match.group(1)
-                # Extracting TIMM model names
                 elif "timm" in line:
                     match = re.search(
                         r"::test_timm_quantization_\d+_default_timm_config_image_classification_timm_([a-zA-Z0-9_]+)_in1k",
@@ -248,19 +243,36 @@ class Message:
                     if match:
                         model_id = "timm/" + match.group(1) + "_in1k"
 
-                model_id = infer_model_id(model_id)
+                if not match:
+                    raise ValueError("model-id could not be determined!")
+
+                model_id = infer_model_id(model_id)[:40]
 
                 # Check if regressed
+                # diff = str(current) - str(baseline)
+                # diff = f"+{diff}" if diff != "0" and not diff.startswith("-") else diff
+                diff = "0"
                 extracted_models.append(
-                    f"{str(0).rjust(9)} | {str(0).rjust(14)} | {str(0).rjust(14)} | {str(False).rjust(9)} | {model_id}"
+                    f"{str(0).rjust(9)} | {diff.rjust(7)} | {model_id}"
                 )
 
+            model_header = "Total Ops | DPU Ops | Model\n"
+            model_failures_report = prepare_reports(
+                title=f"These following {key} tests had failures", header=model_header, reports=extracted_models
+            )
+
+            model_failure_sections.append(
+                {
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": model_failures_report},
+                },
+            )
             model_failure_sections.append(
                 {
                     "type": "section",
                     "text": {
                         "type": "plain_text",
-                        "text": f"These following {key} tests had failures",
+                        "text": f"",
                         "emoji": True,
                     },
                     "accessory": {
@@ -269,15 +281,6 @@ class Message:
                         "url": result["job_link"],
                     },
                 }
-            )
-            model_header = "Total Ops | DPU Ops (Curr) | DPU Ops (Base) | Regressed | Model\n"
-            model_failures_report = prepare_reports(title="", header=model_header, reports=extracted_models)
-
-            model_failure_sections.append(
-                {
-                    "type": "section",
-                    "text": {"type": "mrkdwn", "text": model_failures_report},
-                },
             )
 
             model_failures_report = prepare_reports(
