@@ -203,10 +203,6 @@ class Message:
             },
         }
 
-    @staticmethod
-    def get_category_report(report, rjust=6):
-        return
-
     @property
     def category_failures(self) -> Dict:
         category_failures = []
@@ -272,7 +268,7 @@ class Message:
                     "type": "section",
                     "accessory": {
                         "type": "button",
-                        "text": {"type": "plain_text", "text": "Github Action Job", "emoji": True},
+                        "text": {"type": "plain_text", "text": "Check results", "emoji": True},
                         "url": result["job_link"],
                     },
                 }
@@ -304,8 +300,7 @@ class Message:
             blocks.append(self.failures)
             blocks.append(self.category_failures)
             for block in self.model_failures:
-                if block["text"]["text"]:
-                    blocks.append(block)
+                blocks.append(block)
         else:
             blocks.append(self.no_failures)
 
