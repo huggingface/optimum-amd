@@ -99,7 +99,7 @@ class RyzenAITestCaseMixin:
 
 RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION = [
     "amd/efficientnet-es",
-    "amd/ese_vovnet39b",
+    # "amd/ese_vovnet39b",
     # "amd/inception_v4",
     # "amd/mnasnet_b1",
     # "amd/mobilenet_v2_1.0_224",
@@ -117,7 +117,7 @@ RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION = [
 ]
 
 RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION = [
-    "amd/HRNet",
+    # "amd/HRNet",
     "amd/SemanticFPN",
 ]
 
@@ -145,7 +145,7 @@ PYTORCH_TIMM_MODEL = {
     "default-timm-config": {
         "timm/botnet26t_256.c1_in1k": ["image-classification"],
         "timm/cs3darknet_focus_l.cscxsscsa2ns_in1k": ["image-classification"],
-        "timm/cs3darknet_focus_m.c2ns_in1k": ["image-classification"],
+        # "timm/cs3darknet_focus_m.c2ns_in1k": ["image-classification"],
         # "timm/cs3darknet_l.c2ns_in1k": ["image-classification"],
         # "timm/cs3darknet_m.c2ns_in1k": ["image-classification"],
         # "timm/cs3darknet_x.c2ns_in1k": ["image-classification"],

@@ -269,7 +269,7 @@ class Message:
         return json.dumps(blocks)
 
     @staticmethod
-    def error_out(title, ci_title="", runner_not_available=False, runner_failed=False):
+    def error_out(title, ci_title="", runner_not_available=False, runner_failed=False, setup_failed=False):
         blocks = []
         title_block = {"type": "header", "text": {"type": "plain_text", "text": title}}
         blocks.append(title_block)
@@ -286,6 +286,8 @@ class Message:
                 offline_runners = json.loads(result)
         elif runner_failed:
             text = "💔 CI runners have problems! Tests are not run. 😭"
+        elif setup_failed:
+            text = "💔 Tests are not run. 😭"
         else:
             text = "💔 There was an issue running the tests. 😭"
 
@@ -372,7 +374,7 @@ def retrieve_available_artifacts():
 
     directories = filter(os.path.isdir, os.listdir())
     for directory in directories:
-        if directories.startswith("run_tests"):
+        if directory.startswith("run_tests"):
             artifact_name = directory
 
             _available_artifacts[artifact_name] = Artifact(artifact_name)
@@ -485,13 +487,12 @@ if __name__ == "__main__":
     artifact_name_to_job_map = {}
     for job in github_actions_jobs:
         artifact_name = job["name"].split(" ")[0]
-        for step in job["steps"]:
-            if step["name"].startswith("Test suite reports artifacts: "):
-                artifact_name = step["name"][len("Test suite reports artifacts: ") :]
-                artifact_name_to_job_map[artifact_name] = job
-                break
+        artifact_name_to_job_map[artifact_name] = job
 
     available_artifacts = retrieve_available_artifacts()
+    if len(available_artifacts) == 0:
+        Message.error_out(title, ci_title, runner_not_available, runner_failed, setup_failed=True)
+        exit(0)
 
     test_categories = {
         "Pre-Quantized": "run_tests_prequantized_models",
@@ -545,4 +546,5 @@ if __name__ == "__main__":
         ci_title,
         results,
     )
-    # message.post()
+
+    message.post()
