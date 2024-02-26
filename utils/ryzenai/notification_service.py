@@ -16,24 +16,25 @@ import json
 import math
 import os
 import re
-
-os.environ["CI_EVENT"] = "scheduled"
-os.environ["CI_SHA"] = "scheduled"
-os.environ["CI_WORKFLOW_REF"] = "scheduled"
-os.environ["GITHUB_RUN_ID"] = "7919603663"
 import sys
 import traceback
 from typing import Dict
 
 import requests
 from slack_sdk import WebClient
+
+
 sys.path.append(os.path.join(os.getcwd()))
 
-import tests.ryzenai.testing_utils as tu
+import tests.ryzenai.testing_utils as tu  # noqa
 
 
+client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
 
-# client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
+# os.environ["CI_EVENT"] = "scheduled"
+# os.environ["CI_SHA"] = "scheduled"
+# os.environ["CI_WORKFLOW_REF"] = "scheduled"
+# os.environ["GITHUB_RUN_ID"] = "7919603663"
 
 
 def infer_model_id(model):
