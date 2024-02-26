@@ -208,12 +208,12 @@ class Message:
         category_failures = []
         for key in self.model_results:
             report = self.model_results[key]
-            report = f"{str(report['failed']).rjust(6)} | {str(report['success']).rjust(7)} | "
-            category_failures.append((f"{report}{key}"))
+            report = f"{str(report['failed']).rjust(6)} | {str(report['success']).rjust(7)} | {report}"
+            category_failures.append((f"{report}"))
 
         header = "Failed | Success | Category \n"
         category_failures_report = prepare_reports(
-            title="Test Category Results", header=header, reports=category_failures
+            title="Test results", header=header, reports=category_failures
         )
 
         return {"type": "section", "text": {"type": "mrkdwn", "text": category_failures_report}}
@@ -255,7 +255,7 @@ class Message:
                     "type": "section",
                     "text": {
                         "type": "plain_text",
-                        "text": f"These following {key} tests had failures",
+                        "text": f"These following *{key.lower()}* tests had failures",
                         "emoji": True,
                     },
                     "accessory": {
