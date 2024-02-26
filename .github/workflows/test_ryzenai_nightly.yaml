@@ -53,7 +53,7 @@ jobs:
           pip install slack_sdk
           pip show slack_sdk
           ls reports/**
-          python utils/notification_service.py
+          python utils/ryzenai/notification_service.py
 
       # Upload complete failure tables, as they might be big and only truncated versions could be sent to Slack.
       - name: Failure table artifacts
