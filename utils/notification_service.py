@@ -28,10 +28,10 @@ import os
 # os.environ["CI_SHA"] = "scheduled"
 # os.environ["CI_WORKFLOW_REF"] = "scheduled"
 # os.environ["GITHUB_RUN_ID"] = "7919603663"
-# from slack_sdk import WebClient
+from slack_sdk import WebClient
 
 
-# client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
+client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
 
 
 def get_jobs(workflow_run_id, token=None):
@@ -330,11 +330,11 @@ class Message:
         print("Sending the following payload")
         print(json.dumps({"blocks": blocks}))
 
-        # client.chat_postMessage(
-        #     channel=os.environ["CI_SLACK_REPORT_CHANNEL_ID"],
-        #     text=text,
-        #     blocks=payload,
-        # )
+        client.chat_postMessage(
+            channel=os.environ["CI_SLACK_REPORT_CHANNEL_ID"],
+            text=text,
+            blocks=payload,
+        )
 
     def post(self):
         payload = self.payload
@@ -343,11 +343,11 @@ class Message:
 
         text = f"{self.n_failures} failures out of {self.n_tests} tests," if self.n_failures else "All tests passed."
 
-        # self.thread_ts = client.chat_postMessage(
-        #     channel=os.environ["CI_SLACK_REPORT_CHANNEL_ID"],
-        #     blocks=payload,
-        #     text=text,
-        # )
+        self.thread_ts = client.chat_postMessage(
+            channel=os.environ["CI_SLACK_REPORT_CHANNEL_ID"],
+            blocks=payload,
+            text=text,
+        )
 
 
 def retrieve_artifact(artifact_path: str):
