@@ -252,23 +252,12 @@ class Message:
                     f"{str(0).rjust(9)} | {diff.rjust(15)} | {model_id}"
                 )
 
-            model_header = "Total Ops | IPU Ops (Delta) | Model\n"
-            model_failures_report = prepare_reports(
-                title=f"These following {key} tests had failures", header=model_header, reports=extracted_models
-            )
-
-            model_failure_sections.append(
-                {
-                    "type": "section",
-                    "text": {"type": "mrkdwn", "text": model_failures_report},
-                },
-            )
             model_failure_sections.append(
                 {
                     "type": "section",
                     "text": {
                         "type": "plain_text",
-                        "text": f"",
+                        "text": f"These following {key} tests had failures",
                         "emoji": True,
                     },
                     "accessory": {
@@ -278,6 +267,18 @@ class Message:
                     },
                 }
             )
+            model_header = "Total Ops | IPU Ops (Delta) | Model\n"
+            model_failures_report = prepare_reports(
+                title="", header=model_header, reports=extracted_models
+            )
+
+            model_failure_sections.append(
+                {
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": model_failures_report},
+                },
+            )
+            
 
             model_failures_report = prepare_reports(
                 title=f"These following {key} tests had failures",
@@ -439,7 +440,11 @@ def prepare_reports(title, header, reports, to_truncate=True):
 
         for idx in range(len(reports)):
             _report = header + "\n".join(reports[: idx + 1])
-            new_report = f"{title}:\n```\n{_report}\n```\n"
+            if title:
+                new_report = f"{title}:\n```\n{_report}\n```\n"
+            else:
+                new_report = f"```\n{_report}\n```\n"
+
             if len(new_report) > MAX_ERROR_TEXT:
                 # `report` here has length <= 3000
                 report = report + "[Truncated]"
