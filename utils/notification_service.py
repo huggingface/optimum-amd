@@ -17,12 +17,9 @@ import math
 import os
 import re
 import traceback
-from typing import Dict, Optional
+from typing import Dict
 
 import requests
-
-
-import os
 
 # os.environ["CI_EVENT"] = "scheduled"
 # os.environ["CI_SHA"] = "scheduled"
@@ -184,16 +181,17 @@ class Message:
 
     @staticmethod
     def get_category_report(report, rjust=6):
-        return f"{str(report['failed']).rjust(rjust)} | {str(report['success']).rjust(rjust)}"
+        return
 
     @property
     def category_failures(self) -> Dict:
         category_failures = []
         for key in self.model_results:
-            report = self.get_category_report(self.model_results[key])
-            category_failures.append((f"{key} | {report}"))
+            report = self.model_results[key]
+            report = f"{str(report['failed']).rjust(6)} | {str(report['success']).rjust(7)} | "
+            category_failures.append((f"{report}{key}"))
 
-        header = "Category | Failed | Success \n"
+        header = "Failed | Success | Category \n"
         category_failures_report = prepare_reports(
             title="Test Category Results", header=header, reports=category_failures
         )
@@ -222,12 +220,27 @@ class Message:
                         model_id = "timm/" + match.group(1) + "_in1k"
 
                 # Check if regressed
-                extracted_models.append(f"{model_id} | False | 0 | 0 | 0 ")
+                extracted_models.append(
+                    f"{str(0).rjust(9)} | {str(0).rjust(14)} | {str(0).rjust(14)} | {str(False).rjust(9)} | {model_id}"
+                )
 
-            model_header = "Model | Regressed | Total Operators | DPU Operators (Current) | DPU Operators (Baseline)\n"
-            model_failures_report = prepare_reports(
-                title=f"These following {key} tests had failures", header=model_header, reports=extracted_models
+            model_failure_sections.append(
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "plain_text",
+                        "text": f"These following {key} tests had failures",
+                        "emoji": True,
+                    },
+                    "accessory": {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "Check failures", "emoji": True},
+                        "url": result["job_link"],
+                    },
+                }
             )
+            model_header = "Total Ops | DPU Ops (Curr) | DPU Ops (Base) | Regressed | Model\n"
+            model_failures_report = prepare_reports(title="", header=model_header, reports=extracted_models)
 
             model_failure_sections.append(
                 {
