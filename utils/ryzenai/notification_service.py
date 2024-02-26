@@ -253,10 +253,10 @@ class Message:
                 # diff = f"+{diff}" if diff != "0" and not diff.startswith("-") else diff
                 diff = "0"
                 extracted_models.append(
-                    f"{str(0).rjust(9)} | {diff.rjust(7)} | {model_id}"
+                    f"{str(0).rjust(9)} | {diff.rjust(15)} | {model_id}"
                 )
 
-            model_header = "Total Ops | DPU Ops | Model\n"
+            model_header = "Total Ops | DPU Ops (Delta) | Model\n"
             model_failures_report = prepare_reports(
                 title=f"These following {key} tests had failures", header=model_header, reports=extracted_models
             )
