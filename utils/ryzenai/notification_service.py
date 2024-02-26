@@ -266,6 +266,11 @@ class Message:
             model_failure_sections.append(
                 {
                     "type": "section",
+                    "text": {
+                        "type": "plain_text",
+                        "text": f"",
+                        "emoji": True,
+                    },
                     "accessory": {
                         "type": "button",
                         "text": {"type": "plain_text", "text": "Check results", "emoji": True},
