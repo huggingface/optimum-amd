@@ -15,14 +15,14 @@ jobs:
     with:
       pytest_marker: "prequantized_model_test"
       test_file: "tests/ryzenai/test_modeling.py"
-      report_name: "run_tests_prequantized_models"
+      report_name: "tests_prequantized_models"
       
   run_tests_quantization:
     uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
     with:
       pytest_marker: "quant_test"
       test_file: "tests/ryzenai/test_quantization.py"
-      report_name: "run_tests_quantization"
+      report_name: "tests_quantization"
       slow_test: true
       timeout_minutes: 1200
     secrets:
@@ -47,7 +47,7 @@ jobs:
           sudo apt-get install -y curl
           pip install slack_sdk
           pip show slack_sdk
-          ls *
+          ls
           python utils/notification_service.py
 
       # Upload complete failure tables, as they might be big and only truncated versions could be sent to Slack.
