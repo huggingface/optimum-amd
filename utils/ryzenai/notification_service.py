@@ -256,7 +256,7 @@ class Message:
                     f"{str(0).rjust(9)} | {diff.rjust(15)} | {model_id}"
                 )
 
-            model_header = "Total Ops | DPU Ops (Delta) | Model\n"
+            model_header = "Total Ops | IPU Ops (Delta) | Model\n"
             model_failures_report = prepare_reports(
                 title=f"These following {key} tests had failures", header=model_header, reports=extracted_models
             )
@@ -270,14 +270,9 @@ class Message:
             model_failure_sections.append(
                 {
                     "type": "section",
-                    "text": {
-                        "type": "plain_text",
-                        "text": f"",
-                        "emoji": True,
-                    },
                     "accessory": {
                         "type": "button",
-                        "text": {"type": "plain_text", "text": "Check failures", "emoji": True},
+                        "text": {"type": "plain_text", "text": "Github Action Job", "emoji": True},
                         "url": result["job_link"],
                     },
                 }
