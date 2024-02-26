@@ -631,6 +631,7 @@ class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):
         onnx_inputs = {
             list(self.inputs_names.keys())[0]: pixel_values,
         }
+        raise ValueError("Fail!")
 
         # run inference
         onnx_outputs = self.model.run(None, onnx_inputs)
