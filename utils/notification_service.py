@@ -22,6 +22,12 @@ from typing import Dict, Optional
 import requests
 
 
+import os
+
+# os.environ["CI_EVENT"] = "scheduled"
+# os.environ["CI_SHA"] = "scheduled"
+# os.environ["CI_WORKFLOW_REF"] = "scheduled"
+# os.environ["GITHUB_RUN_ID"] = "7919603663"
 # from slack_sdk import WebClient
 
 
@@ -374,7 +380,7 @@ def retrieve_available_artifacts():
 
     directories = filter(os.path.isdir, os.listdir())
     for directory in directories:
-        if directory.startswith("reports/"):
+        if directory == "reports":
             for artifact_name in os.listdir(directory):
                 _available_artifacts[artifact_name] = Artifact(artifact_name)
 
@@ -487,8 +493,8 @@ if __name__ == "__main__":
     for job in github_actions_jobs:
         artifact_name = job["name"].split(" ")[0]
         artifact_name_to_job_map[artifact_name] = job
-
     available_artifacts = retrieve_available_artifacts()
+
     if len(available_artifacts) == 0:
         Message.error_out(title, ci_title, runner_not_available, runner_failed, setup_failed=True)
         exit(0)
@@ -504,7 +510,7 @@ if __name__ == "__main__":
             "success": 0,
             "time_spent": "",
             "error": False,
-            "failures": {},
+            "failures": [],
             "job_link": 0,
         }
         for key in test_categories.keys()
@@ -517,10 +523,11 @@ if __name__ == "__main__":
 
         artifact_path = available_artifacts[test_categories[key]].path
 
-        job = artifact_name_to_job_map[artifact_path]
+        job = artifact_name_to_job_map[test_categories[key]]
         results[key]["job_link"] = job["html_url"]
 
         artifact = retrieve_artifact(artifact_path)
+
         stacktraces = handle_stacktraces(artifact["failures_line"])
 
         failed, success, time_spent = handle_test_results(artifact["stats"])
