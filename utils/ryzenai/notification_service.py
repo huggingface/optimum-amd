@@ -248,9 +248,7 @@ class Message:
                 # diff = str(current) - str(baseline)
                 # diff = f"+{diff}" if diff != "0" and not diff.startswith("-") else diff
                 diff = "0"
-                extracted_models.append(
-                    f"{str(0).rjust(9)} | {diff.rjust(15)} | {model_id}"
-                )
+                extracted_models.append(f"{str(0).rjust(9)} | {diff.rjust(15)} | {model_id}")
 
             model_failure_sections.append(
                 {
@@ -268,9 +266,7 @@ class Message:
                 }
             )
             model_header = "Total Ops | IPU Ops (Delta) | Model\n"
-            model_failures_report = prepare_reports(
-                title="", header=model_header, reports=extracted_models
-            )
+            model_failures_report = prepare_reports(title="", header=model_header, reports=extracted_models)
 
             model_failure_sections.append(
                 {
@@ -278,7 +274,6 @@ class Message:
                     "text": {"type": "mrkdwn", "text": model_failures_report},
                 },
             )
-            
 
             model_failures_report = prepare_reports(
                 title=f"These following {key} tests had failures",
