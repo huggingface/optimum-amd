@@ -99,16 +99,23 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase):
             os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
             os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
 
+            provider_options = {
+                "cacheDir": "image_classification_tests",
+                "cacheKey": f"{model_id.replace('/', '_')}"
+            }
+
             model = RyzenAIModelForImageClassification.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
+                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json", provider_options=provider_options
             )
 
             outputs = model(ort_input)
 
-            return outputs
+            return outputs, provider_options
 
-        output_ipu = run(model_id, file_name, ort_input, use_cpu_runner=0, compile_reserve_const_data=0)
-        output_cpu = run(model_id, file_name, ort_input, use_cpu_runner=1, compile_reserve_const_data=1)
+        output_ipu, provider_options = run(model_id, file_name, ort_input, use_cpu_runner=0, compile_reserve_const_data=0)
+        output_cpu, _ = run(model_id, file_name, ort_input, use_cpu_runner=1, compile_reserve_const_data=1)
+
+        vaip_report = os.path.join(provider_options["cacheDir"], provider_options["cacheKey"])
 
         self.assertIn("logits", output_ipu)
         self.assertIn("logits", output_cpu)
