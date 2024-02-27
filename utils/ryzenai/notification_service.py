@@ -220,44 +220,53 @@ class Message:
     def model_failures(self):
         with open(tu.BASELINE_JSON, "r") as json_file:
             data = json.load(json_file)
-       
+
         model_failure_sections = []
         for key, result in self.model_results.items():
             extracted_models = []
             failures = result["failures"]
             for failure in failures:
                 line = failure["line"]
-                match = None
-                if "amd" in line:
-                    match = re.search(r"::test_model_\d+_amd_([a-zA-Z0-9]+)", line)
+                model_id = None
+                line_contains_amd = "amd" in line
+                line_contains_timm = "timm" in line
+
+                if line_contains_amd:
+                    match = re.match(r"::test_model_\d+_amd_([a-zA-Z0-9]+)", line)
                     if match:
                         model_id = "amd/" + match.group(1)
-                elif "timm" in line:
-                    match = re.search(
+
+                elif line_contains_timm:
+                    match = re.match(
                         r"::test_timm_quantization_\d+_default_timm_config_image_classification_timm_([a-zA-Z0-9_]+)",
                         line,
                     )
                     if match:
                         model_id = "timm/" + match.group(1)
 
-                if not match:
+                if not model_id:
                     raise ValueError("Model id could not be determined!")
 
-                model_id = infer_model_id(model_id)[:40]
+                model_id = infer_model_id(model_id)
 
                 baseline_ops = data[model_id]
+                model_id = model_id[:40]
 
                 if "DPU operators do not match!" in line:
                     match = re.search(r"(\d+) != (\d+)", line)
                     baseline, current = match.groups()
-                    from pdb import set_trace; set_trace()
+                    from pdb import set_trace
+
+                    set_trace()
                 else:
                     baseline, current = baseline_ops["dpu"], baseline_ops["dpu"]
 
                 # Check if regressed
                 diff = str(current) - str(baseline)
                 diff = f"+{diff}" if diff != "0" and not diff.startswith("-") else diff
-                extracted_models.append(f"{str(baseline).rjust(9)} | {str(current).rjust(7)} | {diff.rjust(14)} | {model_id}")
+                extracted_models.append(
+                    f"{str(baseline).rjust(9)} | {str(current).rjust(7)} | {diff.rjust(14)} | {model_id}"
+                )
 
             model_failure_sections.append(
                 {

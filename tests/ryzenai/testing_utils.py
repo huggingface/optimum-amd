@@ -121,13 +121,12 @@ RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION = [
     "amd/SemanticFPN",
 ]
 
-RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE = ["amd/PAN",
-                                            # "amd/rcan", "amd/sesr"
-                                            ]
+RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE = [
+    "amd/PAN",
+    # "amd/rcan", "amd/sesr"
+]
 
-RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS = [
-    "amd/movenet"
-    ]
+RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS = ["amd/movenet"]
 
 PYTORCH_TIMM_MODEL_SUBSET = {
     "default-timm-config": {
@@ -144,7 +143,7 @@ PYTORCH_TIMM_MODEL_SUBSET = {
 PYTORCH_TIMM_MODEL = {
     "default-timm-config": {
         "timm/botnet26t_256.c1_in1k": ["image-classification"],
-        "timm/cs3darknet_focus_l.cscxsscsa2ns_in1k": ["image-classification"],
+        "timm/cs3darknet_focus_l.c2ns_in1k": ["image-classification"],
         # "timm/cs3darknet_focus_m.c2ns_in1k": ["image-classification"],
         # "timm/cs3darknet_l.c2ns_in1k": ["image-classification"],
         # "timm/cs3darknet_m.c2ns_in1k": ["image-classification"],
