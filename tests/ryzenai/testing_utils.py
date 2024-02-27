@@ -85,7 +85,7 @@ class RyzenAITestCaseMixin:
         result = parse_json(os.path.join(cache_dir, cache_key, "vitisai_ep_report.json"))
         return result
 
-    def get_baseline_ops(key):
+    def get_baseline_ops(self, key):
         with open(BASELINE_JSON, "r") as json_file:
             data = json.load(json_file)
             return data[key]

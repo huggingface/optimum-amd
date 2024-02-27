@@ -90,7 +90,7 @@ class RyzenAIModelIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
 class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION)
     @pytest.mark.prequantized_model_test
-    def test_integration(self, model_id):
+    def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_")
 
@@ -116,7 +116,7 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
 class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION)
     @pytest.mark.prequantized_model_test
-    def test_integration(self, model_id):
+    def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_")
 
@@ -140,7 +140,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
 class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION)
     @pytest.mark.prequantized_model_test
-    def test_integration(self, model_id):
+    def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_")
 
@@ -164,7 +164,7 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAI
 class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE)
     @pytest.mark.prequantized_model_test
-    def test_integration(self, model_id):
+    def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_")
 
@@ -188,7 +188,7 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase, RyzenAITestC
 class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS)
     @pytest.mark.prequantized_model_test
-    def test_integration(self, model_id):
+    def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_")
 
