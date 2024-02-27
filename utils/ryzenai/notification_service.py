@@ -251,7 +251,7 @@ class Message:
 
                 # Append information about the failure
                 failures_info.append(
-                    f"{all_value_str.rjust(9)} | {dpu_value_str.rjust(7)} | {cpu_value_str.rjust(7)} | {regressed.rjust(9)} | {model_id[:40]}"
+                    f"{all_value_str.rjust(9)} | {dpu_value_str.rjust(9)} | {cpu_value_str.rjust(9)} | {regressed.rjust(4)} | {model_id[:40]}"
                 )
 
             # Prepare model failure sections
@@ -308,7 +308,7 @@ class Message:
                 "type": "section",
                 "text": {
                     "type": "plain_text",
-                    "text": f"These following {key.lower()} tests had failures\n. If a failure occurs due to operators' regression, the baseline values are provided within parentheses.",
+                    "text": f"These following {key.lower()} tests had failures.\nIf a failure occurs due to operators' regression (Reg.), the baseline values are provided within parentheses.",
                 },
                 "accessory": {
                     "type": "button",
@@ -319,7 +319,7 @@ class Message:
         )
 
         # Section for detailed failure reports
-        model_header = "Total Ops | DPU Ops | CPU Ops | Regressed | Model\n"
+        model_header = "Total Ops |   DPU Ops |   CPU Ops | Reg. | Model\n"
         model_failures_report = prepare_reports(title="", header=model_header, reports=failures_info)
 
         model_failure_sections.append(
@@ -331,7 +331,7 @@ class Message:
 
         # Save detailed failure report to a file
         model_failures_report = prepare_reports(
-            title=f"These following {key.lower()} tests had failures\n. If a failure occurs due to operators' regression, the baseline values are provided within parentheses.",
+            title=f"These following {key.lower()} tests had failures.\nIf a failure occurs due to operators' regression, the baseline values are provided within parentheses.",
             header=model_header,
             reports=failures_info,
             to_truncate=False,
