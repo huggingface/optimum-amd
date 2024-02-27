@@ -52,9 +52,8 @@ def load_model_and_input(model_id, repo_type="model"):
     input_shape[0] = 1
 
     ort_input = DummyInputGenerator.random_float_tensor(input_shape, framework="np")
-    ort_input = {input_name: ort_input}
 
-    return file_name, ort_input
+    return file_name, ort_input, input_name
 
 
 class RyzenAIModelIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
@@ -96,7 +95,7 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_")
 
-        file_name, ort_input = load_model_and_input(model_id)
+        file_name, ort_input, input_name = load_model_and_input(model_id)
 
         vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
         outputs_ipu, outputs_cpu = self.prepare_outputs(
@@ -122,7 +121,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_")
 
-        file_name, ort_input = load_model_and_input(model_id)
+        file_name, ort_input, input_name = load_model_and_input(model_id)
 
         vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
         outputs_ipu, outputs_cpu = self.prepare_outputs(
@@ -146,7 +145,7 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAI
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_")
 
-        file_name, ort_input = load_model_and_input(model_id)
+        file_name, ort_input, input_name = load_model_and_input(model_id)
 
         vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
         outputs_ipu, outputs_cpu = self.prepare_outputs(
@@ -170,7 +169,7 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase, RyzenAITestC
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_")
 
-        file_name, ort_input = load_model_and_input(model_id)
+        file_name, ort_input, input_name = load_model_and_input(model_id)
 
         vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
         outputs_ipu, outputs_cpu = self.prepare_outputs(
@@ -194,7 +193,8 @@ class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase, RyzenAITestCa
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_")
 
-        file_name, ort_input = load_model_and_input(model_id)
+        file_name, ort_input, input_name = load_model_and_input(model_id)
+        ort_input = {input_name: ort_input}
 
         vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
         outputs_ipu, outputs_cpu = self.prepare_outputs(
