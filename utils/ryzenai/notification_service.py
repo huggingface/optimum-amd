@@ -208,7 +208,7 @@ class Message:
         category_failures = []
         for key in self.model_results:
             report = self.model_results[key]
-            report = f"{str(report['failed']).rjust(6)} | {str(report['success']).rjust(7)} | {report}"
+            report = f"{str(report['failed']).rjust(6)} | {str(report['success']).rjust(7)} | {key}"
             category_failures.append((f"{report}"))
 
         header = "Failed | Success | Category \n"
@@ -218,6 +218,9 @@ class Message:
 
     @property
     def model_failures(self):
+        with open(tu.BASELINE_JSON, "r") as json_file:
+            data = json.load(json_file)
+       
         model_failure_sections = []
         for key, result in self.model_results.items():
             extracted_models = []
@@ -231,29 +234,37 @@ class Message:
                         model_id = "amd/" + match.group(1)
                 elif "timm" in line:
                     match = re.search(
-                        r"::test_timm_quantization_\d+_default_timm_config_image_classification_timm_([a-zA-Z0-9_]+)_in1k",
+                        r"::test_timm_quantization_\d+_default_timm_config_image_classification_timm_([a-zA-Z0-9_]+)",
                         line,
                     )
                     if match:
-                        model_id = "timm/" + match.group(1) + "_in1k"
+                        model_id = "timm/" + match.group(1)
 
                 if not match:
-                    raise ValueError("model-id could not be determined!")
+                    raise ValueError("Model id could not be determined!")
 
                 model_id = infer_model_id(model_id)[:40]
 
+                baseline_ops = data[model_id]
+
+                if "DPU operators do not match!" in line:
+                    match = re.search(r"(\d+) != (\d+)", line)
+                    baseline, current = match.groups()
+                    from pdb import set_trace; set_trace()
+                else:
+                    baseline, current = baseline_ops["dpu"], baseline_ops["dpu"]
+
                 # Check if regressed
-                # diff = str(current) - str(baseline)
-                # diff = f"+{diff}" if diff != "0" and not diff.startswith("-") else diff
-                diff = "0"
-                extracted_models.append(f"{str(0).rjust(9)} | {diff.rjust(15)} | {model_id}")
+                diff = str(current) - str(baseline)
+                diff = f"+{diff}" if diff != "0" and not diff.startswith("-") else diff
+                extracted_models.append(f"{str(baseline).rjust(9)} | {str(current).rjust(7)} | {diff.rjust(14)} | {model_id}")
 
             model_failure_sections.append(
                 {
                     "type": "section",
                     "text": {
                         "type": "plain_text",
-                        "text": f"These following *{key.lower()}* tests had failures",
+                        "text": f"These following {key.lower()} tests had failures",
                         "emoji": True,
                     },
                     "accessory": {
@@ -263,7 +274,7 @@ class Message:
                     },
                 }
             )
-            model_header = "Total Ops | IPU Ops (Delta) | Model\n"
+            model_header = "Total Ops | DPU Ops | DPU Ops (Diff) | Model\n"
             model_failures_report = prepare_reports(title="", header=model_header, reports=extracted_models)
 
             model_failure_sections.append(
