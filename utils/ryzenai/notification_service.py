@@ -218,95 +218,131 @@ class Message:
 
     @property
     def model_failures(self):
+        # Load baseline data from a JSON file
         with open(tu.BASELINE_JSON, "r") as json_file:
-            data = json.load(json_file)
+            baseline_data = json.load(json_file)
 
         model_failure_sections = []
+
         for key, result in self.model_results.items():
-            extracted_models = []
-            failures = result["failures"]
-            for failure in failures:
+            failures_info = []
+
+            for failure in result["failures"]:
+                # Extract information from failure details
                 line = failure["line"]
-                model_id = None
-                line_contains_amd = "amd" in line
-                line_contains_timm = "timm" in line
+                trace = failure["trace"]
 
-                if line_contains_amd:
-                    match = re.match(r"::test_model_\d+_amd_([a-zA-Z0-9]+)", line)
-                    if match:
-                        model_id = "amd/" + match.group(1)
-
-                elif line_contains_timm:
-                    match = re.match(
-                        r"::test_timm_quantization_\d+_default_timm_config_image_classification_timm_([a-zA-Z0-9_]+)",
-                        line,
-                    )
-                    if match:
-                        model_id = "timm/" + match.group(1)
-
-                if not model_id:
-                    raise ValueError("Model id could not be determined!")
-
+                # Identify model_id based on the failure line
+                model_id = self.extract_model_id(line)
                 model_id = infer_model_id(model_id)
 
-                baseline_ops = data[model_id]
-                model_id = model_id[:40]
+                # Get baseline values for the identified model_id
+                baseline_ops = baseline_data.get(model_id.lower().replace("/", "_"), {})
 
-                if "DPU operators do not match!" in line:
-                    match = re.search(r"(\d+) != (\d+)", line)
-                    baseline, current = match.groups()
-                    from pdb import set_trace
+                # Extract baseline values
+                cpu_baseline_value = baseline_ops.get("cpu", 0)
+                dpu_baseline_value = baseline_ops.get("dpu", 0)
+                all_baseline_value = baseline_ops.get("all", 0)
 
-                    set_trace()
-                else:
-                    baseline, current = baseline_ops["dpu"], baseline_ops["dpu"]
-
-                # Check if regressed
-                diff = str(current) - str(baseline)
-                diff = f"+{diff}" if diff != "0" and not diff.startswith("-") else diff
-                extracted_models.append(
-                    f"{str(baseline_ops["all"]).rjust(9)} | {str(current).rjust(7)} | {diff.rjust(14)} | {model_id}"
+                # Extract and compare values from the failure trace
+                all_value_str, dpu_value_str, cpu_value_str = self.extract_operator_values(
+                    trace, all_baseline_value, dpu_baseline_value, cpu_baseline_value
                 )
 
-            model_failure_sections.append(
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "plain_text",
-                        "text": f"These following {key.lower()} tests had failures",
-                        "emoji": True,
-                    },
-                    "accessory": {
-                        "type": "button",
-                        "text": {"type": "plain_text", "text": "Check results", "emoji": True},
-                        "url": result["job_link"],
-                    },
-                }
-            )
-            model_header = "Total Ops | DPU Ops | DPU Ops (Diff) | Model\n"
-            model_failures_report = prepare_reports(title="", header=model_header, reports=extracted_models)
+                # Append information about the failure
+                failures_info.append(
+                    f"{all_value_str.rjust(9)} | {dpu_value_str.rjust(7)} | {cpu_value_str.rjust(7)} | {model_id[:40]}"
+                )
 
-            model_failure_sections.append(
-                {
-                    "type": "section",
-                    "text": {"type": "mrkdwn", "text": model_failures_report},
-                },
-            )
-
-            model_failures_report = prepare_reports(
-                title=f"These following {key} tests had failures",
-                header=model_header,
-                reports=extracted_models,
-                to_truncate=False,
-            )
-            os.makedirs(os.path.join(os.getcwd(), "prev_ci_results"), exist_ok=True)
-            file_path = os.path.join(
-                os.getcwd(), "prev_ci_results", f"model_failures_report_{key.replace(' ', '_').replace('-', '_')}.txt"
-            )
-            with open(file_path, "w", encoding="UTF-8") as fp:
-                fp.write(model_failures_report)
+            # Prepare model failure sections
+            model_failure_sections.extend(self.prepare_model_failure_sections(key, result["job_link"], failures_info))
 
         return model_failure_sections
+
+    def extract_model_id(self, line):
+        # Extract model_id based on the line content
+        if "amd" in line:
+            match = re.search(r"::test_model_\d+_amd_([a-zA-Z0-9_-]+)", line)
+            if match:
+                return "amd/" + match.group(1)
+        elif "timm" in line:
+            match = re.search(r"default_timm_config_image_classification_timm_(\w+)", line)
+            if match:
+                return "timm/" + match.group(1)
+
+        raise ValueError("Model id could not be determined!")
+
+    def extract_and_compare_values(self, trace, all_baseline_value, dpu_baseline_value, cpu_baseline_value):
+        # Extract values from trace and compare with baseline
+        if "DPU operators do not match!" in trace or "Total operators do not match!" in trace:
+            match = re.search(r"\{'all': (\d+), 'dpu': (\d+), 'cpu': (\d+)\}", trace)
+            all_value = int(match.group(1))
+            dpu_value = int(match.group(2))
+            cpu_value = int(match.group(3))
+
+            # Process values and compare with baseline
+            all_value_str = f"{all_value}({all_baseline_value})" if "Total" in trace else str(all_value)
+            dpu_value_str = (
+                f"{dpu_value}({dpu_baseline_value})" if dpu_value != dpu_baseline_value else str(dpu_baseline_value)
+            )
+            cpu_value_str = (
+                f"{cpu_value}({cpu_baseline_value})" if cpu_value != cpu_baseline_value else str(cpu_baseline_value)
+            )
+        else:
+            # No mismatch, use baseline values
+            cpu_value_str = str(cpu_baseline_value)
+            dpu_value_str = str(dpu_baseline_value)
+            all_value_str = str(all_baseline_value)
+
+        return all_value_str, dpu_value_str, cpu_value_str
+
+    def prepare_model_failure_sections(self, key, job_link, failures_info):
+        # Prepare sections for model failures
+        model_failure_sections = []
+
+        # Section for failure information and a button to check results
+        model_failure_sections.append(
+            {
+                "type": "section",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"These following {key.lower()} tests had failures\n. If a failure occurs due to operators' regression, the baseline values are provided within parentheses.",
+                },
+                "accessory": {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "Check results", "emoji": True},
+                    "url": job_link,
+                },
+            }
+        )
+
+        # Section for detailed failure reports
+        model_header = "Total Ops | DPU Ops | CPU Ops | Model\n"
+        model_failures_report = self.prepare_reports(title="", header=model_header, reports=failures_info)
+
+        model_failure_sections.append(
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": model_failures_report},
+            }
+        )
+
+        # Save detailed failure report to a file
+        model_failures_report = self.prepare_reports(
+            title="", header=model_header, reports=failures_info, to_truncate=False
+        )
+        self.save_failure_report_to_file(key, model_failures_report)
+
+        return model_failure_sections
+
+    def save_failure_report_to_file(self, key, model_failures_report):
+        # Save detailed failure report to a file
+        os.makedirs(os.path.join(os.getcwd(), "prev_ci_results"), exist_ok=True)
+        file_path = os.path.join(
+            os.getcwd(), "prev_ci_results", f"model_failures_report_{key.replace(' ', '_').replace('-', '_')}.txt"
+        )
+        with open(file_path, "w", encoding="UTF-8") as fp:
+            fp.write(model_failures_report)
 
     @property
     def payload(self) -> str:
