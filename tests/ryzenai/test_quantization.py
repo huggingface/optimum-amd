@@ -112,7 +112,7 @@ class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
 
         # inference
         cache_dir = DEFAULT_CACHE_DIR
-        cache_key = model_name.replace("/", "_")
+        cache_key = model_name.replace("/", "_").lower()
         vaip_config = DEFAULT_VAIP_CONFIG
 
         evaluation_set = load_dataset(dataset_name, split="validation", streaming=True, trust_remote_code=True)

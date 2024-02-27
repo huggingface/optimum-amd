@@ -94,7 +94,7 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
     @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
-        cache_key = model_id.replace("/", "_")
+        cache_key = model_id.replace("/", "_").lower()
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
@@ -120,7 +120,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
     @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
-        cache_key = model_id.replace("/", "_")
+        cache_key = model_id.replace("/", "_").lower()
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
@@ -144,7 +144,7 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAI
     @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
-        cache_key = model_id.replace("/", "_")
+        cache_key = model_id.replace("/", "_").lower()
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
@@ -168,7 +168,7 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase, RyzenAITestC
     @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
-        cache_key = model_id.replace("/", "_")
+        cache_key = model_id.replace("/", "_").lower()
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
@@ -192,7 +192,7 @@ class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase, RyzenAITestCa
     @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
-        cache_key = model_id.replace("/", "_")
+        cache_key = model_id.replace("/", "_").lower()
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
         ort_input = {input_name: ort_input}

@@ -51,7 +51,11 @@ class RyzenAITestCaseMixin:
             model_id, file_name=file_name, vaip_config=vaip_config, provider_options=provider_options
         )
 
-        outputs = model_instance(ort_input)
+        if isinstance(ort_input, dict):
+            outputs = model_instance(**ort_input)
+        else:
+            outputs = model_instance(ort_input)
+        
         return outputs
 
     def prepare_outputs(
