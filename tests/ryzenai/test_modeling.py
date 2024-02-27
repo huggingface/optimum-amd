@@ -13,11 +13,13 @@ import onnxruntime
 import pytest
 from parameterized import parameterized
 from testing_utils import (
+    DEFAULT_CACHE_DIR,
     RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS,
     RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION,
     RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION,
     RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE,
     RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION,
+    RyzenAITestCaseMixin,
 )
 
 from optimum.amd.ryzenai import (
@@ -32,13 +34,25 @@ from optimum.utils import (
     DummyInputGenerator,
     logging,
 )
-from transformers import set_seed
 
 
 logger = logging.get_logger()
 
 
-SEED = 42
+def load_model_and_input(model_id, repo_type="model"):
+    all_files = huggingface_hub.list_repo_files(model_id, repo_type=repo_type)
+    file_name = [name for name in all_files if name.endswith(".onnx")][0]
+
+    onnx_model_path = huggingface_hub.hf_hub_download(model_id, file_name)
+    model = onnx.load(onnx_model_path)
+
+    input_shape = model.graph.input[0].type.tensor_type.shape.dim
+    input_shape = [dim.dim_value for dim in input_shape]
+    input_shape[0] = 1
+
+    ort_input = DummyInputGenerator.random_float_tensor(input_shape, framework="np")
+
+    return file_name, ort_input
 
 
 class RyzenAIModelIntegrationTest(unittest.TestCase):
@@ -73,96 +87,52 @@ class RyzenAIModelIntegrationTest(unittest.TestCase):
             self.assertTrue("ResNet_int.onnx" in folder_contents)
 
 
-class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase):
+class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION)
     @pytest.mark.prequantized_model_test
-    def test_model(self, model_id):
-        set_seed(SEED)
+    def test_integration(self, model_id):
+        cache_dir = DEFAULT_CACHE_DIR
+        cache_key = model_id.replace("/", "_")
 
-        all_files = huggingface_hub.list_repo_files(model_id, repo_type="model")
+        file_name, ort_input = load_model_and_input(model_id)
 
-        file_name = [name for name in all_files if name.endswith(".onnx")][0]
+        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        outputs_ipu, outputs_cpu = self.prepare_outputs(
+            model_id, RyzenAIModelForImageClassification, ort_input, vaip_config, cache_dir, cache_key, file_name
+        )
 
-        onnx_model_path = huggingface_hub.hf_hub_download(model_id, file_name)
-        model = onnx.load(onnx_model_path)
+        self.assertIn("logits", outputs_ipu)
+        self.assertIn("logits", outputs_cpu)
 
-        input_shape = model.graph.input[0].type.tensor_type.shape.dim
-        input_shape = [dim.dim_value for dim in input_shape]
-        input_shape[0] = 1
+        self.assertTrue(np.allclose(outputs_ipu.logits, outputs_cpu.logits, atol=1e-4))
 
-        ort_input = DummyInputGenerator.random_float_tensor(input_shape, framework="np")
-
-        def run(model_id, file_name, ort_input, use_cpu_runner, compile_reserve_const_data):
-            os.environ["XLNX_ENABLE_CACHE"] = "0"
-            os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
-
-            os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
-            os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
-
-            provider_options = {
-                "cacheDir": "image_classification_tests",
-                "cacheKey": f"{model_id.replace('/', '_')}"
-            }
-
-            model = RyzenAIModelForImageClassification.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json", provider_options=provider_options
-            )
-
-            outputs = model(ort_input)
-
-            return outputs, provider_options
-
-        output_ipu, provider_options = run(model_id, file_name, ort_input, use_cpu_runner=0, compile_reserve_const_data=0)
-        output_cpu, _ = run(model_id, file_name, ort_input, use_cpu_runner=1, compile_reserve_const_data=1)
-
-        vaip_report = os.path.join(provider_options["cacheDir"], provider_options["cacheKey"])
-
-        self.assertIn("logits", output_ipu)
-        self.assertIn("logits", output_cpu)
-
-        self.assertTrue(np.allclose(output_ipu.logits, output_cpu.logits, atol=1e-4))
+        current_ops = self.get_ops(cache_dir, cache_key)
+        baseline_ops = self.get_baseline_ops(cache_key)
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
 
         gc.collect()
 
 
-class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase):
+class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION)
     @pytest.mark.prequantized_model_test
-    def test_model(self, model_id):
-        set_seed(SEED)
+    def test_integration(self, model_id):
+        cache_dir = DEFAULT_CACHE_DIR
+        cache_key = model_id.replace("/", "_")
 
-        all_files = huggingface_hub.list_repo_files(model_id, repo_type="model")
-        file_name = [name for name in all_files if name.endswith(".onnx")][0]
+        file_name, ort_input = load_model_and_input(model_id)
 
-        onnx_model_path = huggingface_hub.hf_hub_download(model_id, file_name)
-        model = onnx.load(onnx_model_path)
-
-        input_shape = model.graph.input[0].type.tensor_type.shape.dim
-        input_shape = [dim.dim_value for dim in input_shape]
-        input_shape[0] = 1
-
-        ort_input = DummyInputGenerator.random_float_tensor(input_shape, framework="np")
-
-        def run(model_id, file_name, ort_input, use_cpu_runner, compile_reserve_const_data):
-            os.environ["XLNX_ENABLE_CACHE"] = "0"
-            os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
-
-            os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
-            os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
-
-            model = RyzenAIModelForObjectDetection.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
-            )
-
-            outputs = model(ort_input)
-
-            return outputs
-
-        outputs_ipu = run(model_id, file_name, ort_input, use_cpu_runner=0, compile_reserve_const_data=0)
-        outputs_cpu = run(model_id, file_name, ort_input, use_cpu_runner=1, compile_reserve_const_data=1)
+        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        outputs_ipu, outputs_cpu = self.prepare_outputs(
+            model_id, RyzenAIModelForObjectDetection, ort_input, vaip_config, cache_dir, cache_key, file_name
+        )
 
         for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
             self.assertTrue(np.allclose(output_ipu, output_cpu, atol=1e-4))
+
+        current_ops = self.get_ops(cache_dir, cache_key)
+        baseline_ops = self.get_baseline_ops(cache_key)
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
 
         gc.collect()
 
@@ -170,41 +140,23 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase):
 class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION)
     @pytest.mark.prequantized_model_test
-    def test_model(self, model_id):
-        set_seed(SEED)
+    def test_integration(self, model_id):
+        cache_dir = DEFAULT_CACHE_DIR
+        cache_key = model_id.replace("/", "_")
 
-        all_files = huggingface_hub.list_repo_files(model_id, repo_type="model")
-        file_name = [name for name in all_files if name.endswith(".onnx")][0]
+        file_name, ort_input = load_model_and_input(model_id)
 
-        onnx_model_path = huggingface_hub.hf_hub_download(model_id, file_name)
-        model = onnx.load(onnx_model_path)
-
-        input_shape = model.graph.input[0].type.tensor_type.shape.dim
-        input_shape = [dim.dim_value for dim in input_shape]
-        input_shape[0] = 1
-
-        ort_input = DummyInputGenerator.random_float_tensor(input_shape, framework="np")
-
-        def run(model_id, file_name, ort_input, use_cpu_runner, compile_reserve_const_data):
-            os.environ["XLNX_ENABLE_CACHE"] = "0"
-            os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
-
-            os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
-            os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
-
-            model = RyzenAIModelForImageSegmentation.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
-            )
-
-            outputs = model(ort_input)
-
-            return outputs
-
-        outputs_ipu = run(model_id, file_name, ort_input, use_cpu_runner=0, compile_reserve_const_data=0)
-        outputs_cpu = run(model_id, file_name, ort_input, use_cpu_runner=1, compile_reserve_const_data=1)
+        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        outputs_ipu, outputs_cpu = self.prepare_outputs(
+            model_id, RyzenAIModelForImageSegmentation, ort_input, vaip_config, cache_dir, cache_key, file_name
+        )
 
         for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
             self.assertTrue(np.allclose(output_ipu, output_cpu, atol=1e-4))
+
+        current_ops = self.get_ops(cache_dir, cache_key)
+        baseline_ops = self.get_baseline_ops(cache_key)
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
 
         gc.collect()
 
@@ -212,41 +164,23 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase):
 class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE)
     @pytest.mark.prequantized_model_test
-    def test_model(self, model_id):
-        set_seed(SEED)
+    def test_integration(self, model_id):
+        cache_dir = DEFAULT_CACHE_DIR
+        cache_key = model_id.replace("/", "_")
 
-        all_files = huggingface_hub.list_repo_files(model_id, repo_type="model")
-        file_name = [name for name in all_files if name.endswith(".onnx")][0]
+        file_name, ort_input = load_model_and_input(model_id)
 
-        onnx_model_path = huggingface_hub.hf_hub_download(model_id, file_name)
-        model = onnx.load(onnx_model_path)
-
-        input_shape = model.graph.input[0].type.tensor_type.shape.dim
-        input_shape = [dim.dim_value for dim in input_shape]
-        input_shape[0] = 1
-
-        ort_input = DummyInputGenerator.random_float_tensor(input_shape, framework="np")
-
-        def run(model_id, file_name, ort_input, use_cpu_runner, compile_reserve_const_data):
-            os.environ["XLNX_ENABLE_CACHE"] = "0"
-            os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
-
-            os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
-            os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
-
-            model = RyzenAIModelForImageToImage.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
-            )
-
-            outputs = model(ort_input)
-
-            return outputs
-
-        outputs_ipu = run(model_id, file_name, ort_input, use_cpu_runner=0, compile_reserve_const_data=0)
-        outputs_cpu = run(model_id, file_name, ort_input, use_cpu_runner=1, compile_reserve_const_data=1)
+        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        outputs_ipu, outputs_cpu = self.prepare_outputs(
+            model_id, RyzenAIModelForImageToImage, ort_input, vaip_config, cache_dir, cache_key, file_name
+        )
 
         for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
             self.assertTrue(np.allclose(output_ipu, output_cpu, atol=1e-4))
+
+        current_ops = self.get_ops(cache_dir, cache_key)
+        baseline_ops = self.get_baseline_ops(cache_key)
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
 
         gc.collect()
 
@@ -254,42 +188,22 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase):
 class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS)
     @pytest.mark.prequantized_model_test
-    def test_model_vision(self, model_id):
-        set_seed(SEED)
+    def test_integration(self, model_id):
+        cache_dir = DEFAULT_CACHE_DIR
+        cache_key = model_id.replace("/", "_")
 
-        all_files = huggingface_hub.list_repo_files(model_id, repo_type="model")
-        file_name = [name for name in all_files if name.endswith(".onnx")][0]
+        file_name, ort_input = load_model_and_input(model_id)
 
-        onnx_model_path = huggingface_hub.hf_hub_download(model_id, file_name)
-        model = onnx.load(onnx_model_path)
-
-        input_name = model.graph.input[0].name
-        input_shape = model.graph.input[0].type.tensor_type.shape.dim
-        input_shape = [dim.dim_value for dim in input_shape]
-        input_shape[0] = 1
-
-        ort_input = DummyInputGenerator.random_float_tensor(input_shape, framework="np")
-        ort_input = {input_name: ort_input}
-
-        def run(model_id, file_name, ort_input, use_cpu_runner, compile_reserve_const_data):
-            os.environ["XLNX_ENABLE_CACHE"] = "0"
-            os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
-
-            os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
-            os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
-
-            model = RyzenAIModelForCustomTasks.from_pretrained(
-                model_id, file_name=file_name, vaip_config=".\\tests\\ryzenai\\vaip_config.json"
-            )
-
-            outputs = model(**ort_input)
-
-            return outputs
-
-        outputs_ipu = run(model_id, file_name, ort_input, use_cpu_runner=0, compile_reserve_const_data=0)
-        outputs_cpu = run(model_id, file_name, ort_input, use_cpu_runner=1, compile_reserve_const_data=1)
+        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        outputs_ipu, outputs_cpu = self.prepare_outputs(
+            model_id, RyzenAIModelForCustomTasks, ort_input, vaip_config, cache_dir, cache_key, file_name
+        )
 
         for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
             self.assertTrue(np.allclose(output_ipu, output_cpu, atol=1e-4))
+
+        current_ops = self.get_ops(cache_dir, cache_key)
+        baseline_ops = self.get_baseline_ops(cache_key)
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
 
         gc.collect()

@@ -1,15 +1,104 @@
 # Copyright 2023 The HuggingFace Team. All rights reserved.
 # Licensed under the MIT License.
 
+import json
+import os
+
+from transformers import set_seed
+
+
+SEED = 42
+
+BASELINE_JSON = ".\\tests\\ryzenai\\operators_baseline.json"
+DEFAULT_CACHE_DIR = "ryzen_cache"
+
+
+def parse_json(json_path):
+    with open(json_path, "r") as json_file:
+        data = json.load(json_file)
+        result = {"all": 0, "dpu": 0, "cpu": 0}
+        for entry in data["deviceStat"]:
+            result[entry["name"].lower()] = entry["nodeNum"]
+        return result
+
+
+class RyzenAITestCaseMixin:
+    def run_model(
+        self,
+        model_class,
+        model_id,
+        ort_input,
+        use_cpu_runner,
+        compile_reserve_const_data,
+        vaip_config,
+        cache_dir=None,
+        cache_key=None,
+        file_name=None,
+    ):
+        os.environ["XLNX_ENABLE_CACHE"] = "0"
+        os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+        os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
+        os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
+
+        provider_options = {}
+        if cache_dir:
+            provider_options["cacheDir"] = cache_dir
+        if cache_key:
+            provider_options["cacheKey"] = cache_key
+
+        model_instance = model_class.from_pretrained(
+            model_id, file_name=file_name, vaip_config=vaip_config, provider_options=provider_options
+        )
+
+        outputs = model_instance(ort_input)
+        return outputs
+
+    def prepare_outputs(
+        self, model_id, model_class, ort_input, vaip_config, cache_dir=None, cache_key=None, file_name=None
+    ):
+        set_seed(SEED)
+        output_ipu = self.run_model(
+            model_class,
+            model_id,
+            ort_input,
+            use_cpu_runner=0,
+            compile_reserve_const_data=0,
+            vaip_config=vaip_config,
+            cache_dir=cache_dir,
+            cache_key=cache_key,
+            file_name=file_name,
+        )
+
+        output_cpu = self.run_model(
+            model_class,
+            model_id,
+            ort_input,
+            use_cpu_runner=1,
+            compile_reserve_const_data=1,
+            vaip_config=vaip_config,
+            file_name=file_name,
+        )
+
+        return output_ipu, output_cpu
+
+    def get_ops(self, cache_dir, cache_key):
+        result = parse_json(os.path.join(cache_dir, cache_key, "vitisai_ep_report.json"))
+        return result
+
+    def get_baseline_ops(key):
+        with open(BASELINE_JSON, "r") as json_file:
+            data = json.load(json_file)
+            return data[key]
+
 
 RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION = [
     "amd/efficientnet-es",
-    # "amd/ese_vovnet39b",
-    # "amd/inception_v4",
-    # "amd/mnasnet_b1",
-    # "amd/mobilenet_v2_1.0_224",
-    # "amd/resnet50",
-    # "amd/squeezenet",
+    "amd/ese_vovnet39b",
+    "amd/inception_v4",
+    "amd/mnasnet_b1",
+    "amd/mobilenet_v2_1.0_224",
+    "amd/resnet50",
+    "amd/squeezenet",
 ]
 
 

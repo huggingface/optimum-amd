@@ -1,7 +1,6 @@
 # Copyright 2023 The HuggingFace Team. All rights reserved.
 # Licensed under the MIT License.
 
-import os
 import tempfile
 import unittest
 from functools import partial
@@ -12,7 +11,12 @@ import timm
 import torch
 from datasets import load_dataset
 from parameterized import parameterized
-from testing_utils import PYTORCH_TIMM_MODEL, PYTORCH_TIMM_MODEL_SUBSET
+from testing_utils import (
+    DEFAULT_CACHE_DIR,
+    PYTORCH_TIMM_MODEL,
+    PYTORCH_TIMM_MODEL_SUBSET,
+    RyzenAITestCaseMixin,
+)
 
 from optimum.amd.ryzenai import (
     AutoQuantizationConfig,
@@ -52,7 +56,7 @@ def _get_models_to_test(export_models_dict: Dict, library_name: str = "timm"):
         return sorted(models_to_test)
 
 
-class TestTimmQuantization(unittest.TestCase):
+class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
     def _quantize(
         self,
         model_name: str,
@@ -105,30 +109,23 @@ class TestTimmQuantization(unittest.TestCase):
             quantization_config=quantization_config, dataset=train_calibration_dataset, save_dir=quantization_dir.name
         )
 
-        def run(use_cpu_runner, compile_reserve_const_data):
-            os.environ["XLNX_ENABLE_CACHE"] = "0"
-            os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
+        # inference
+        cache_dir = DEFAULT_CACHE_DIR
+        cache_key = model_name.replace("/", "_")
+        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
 
-            os.environ["USE_CPU_RUNNER"] = "1" if use_cpu_runner else "0"
-            os.environ["VAIP_COMPILE_RESERVE_CONST_DATA"] = "1" if compile_reserve_const_data else "0"
+        evaluation_set = load_dataset(dataset_name, split="validation", streaming=True, trust_remote_code=True)
+        ort_inputs = preprocess_fn(next(iter(evaluation_set)), transforms)["pixel_values"].unsqueeze(0)
 
-            ryzen_model = RyzenAIModelForImageClassification.from_pretrained(
-                quantization_dir.name,
-                vaip_config=".\\tests\\ryzenai\\vaip_config.json",
-            )
+        outputs_ipu, outputs_cpu = self.prepare_outputs(
+            quantization_dir.name, RyzenAIModelForImageClassification, ort_inputs, vaip_config, cache_dir, cache_key
+        )
 
-            evaluation_set = load_dataset(dataset_name, split="validation", streaming=True, trust_remote_code=True)
-            data = next(iter(evaluation_set))
+        self.assertTrue(torch.allclose(outputs_ipu.logits, outputs_cpu.logits, atol=1e-4))
 
-            pixel_values = preprocess_fn(data, transforms)["pixel_values"]
-            outputs = ryzen_model(pixel_values.unsqueeze(0))
-
-            return outputs
-
-        output_ipu = run(use_cpu_runner=0, compile_reserve_const_data=0)
-        output_cpu = run(use_cpu_runner=1, compile_reserve_const_data=1)
-
-        self.assertTrue(torch.allclose(output_ipu.logits, output_cpu.logits, atol=1e-4))
+        current_ops = self.get_ops(cache_dir, cache_key)
+        baseline_ops = self.get_baseline_ops(cache_key)
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
 
         export_dir.cleanup()
         quantization_dir.cleanup()
