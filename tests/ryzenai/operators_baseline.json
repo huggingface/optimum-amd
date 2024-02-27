@@ -1,0 +1,1657 @@
+{
+  "amd_efficientnet-es": {
+    "all": 336,
+    "dpu": 334,
+    "cpu": 2
+  },
+  "amd_ese_vovnet39b": {
+    "all": 374,
+    "dpu": 372,
+    "cpu": 2
+  },
+  "amd_hrnet": {
+    "all": 2604,
+    "dpu": 2554,
+    "cpu": 50
+  },
+  "amd_inception_v4": {
+    "all": 1109,
+    "dpu": 1106,
+    "cpu": 3
+  },
+  "amd_mnasnet_b1": {
+    "all": 350,
+    "dpu": 348,
+    "cpu": 2
+  },
+  "amd_mobilenet_v2_1.0_224": {
+    "all": 350,
+    "dpu": 348,
+    "cpu": 2
+  },
+  "amd_movenet": {
+    "all": 492,
+    "dpu": 477,
+    "cpu": 15
+  },
+  "amd_pan": {
+    "all": 798,
+    "dpu": 790,
+    "cpu": 8
+  },
+  "amd_rcan": {
+    "all": 79,
+    "dpu": 74,
+    "cpu": 5
+  },
+  "amd_resnet50": {
+    "all": 404,
+    "dpu": 389,
+    "cpu": 15
+  },
+  "amd_retinaface": {
+    "all": 360,
+    "dpu": 356,
+    "cpu": 4
+  },
+  "amd_semanticfpn": {
+    "all": 291,
+    "dpu": 286,
+    "cpu": 5
+  },
+  "amd_sesr": {
+    "all": 94,
+    "dpu": 89,
+    "cpu": 5
+  },
+  "amd_squeezenet": {
+    "all": 178,
+    "dpu": 176,
+    "cpu": 2
+  },
+  "amd_yolov3": {
+    "all": 565,
+    "dpu": 552,
+    "cpu": 13
+  },
+  "amd_yolov5s": {
+    "all": 914,
+    "dpu": 901,
+    "cpu": 13
+  },
+  "amd_yolov8m": {
+    "all": 1253,
+    "dpu": 1240,
+    "cpu": 13
+  },
+  "amd_yolox-s": {
+    "all": 559,
+    "dpu": 546,
+    "cpu": 13
+  },
+  "timm_botnet26t_256.c1_in1k": {
+    "all": 635,
+    "dpu": 0,
+    "cpu": 635
+  },
+  "timm_cs3darknet_focus_l.c2ns_in1k": {
+    "all": 852,
+    "dpu": 850,
+    "cpu": 2
+  },
+  "timm_cs3darknet_focus_m.c2ns_in1k": {
+    "all": 642,
+    "dpu": 640,
+    "cpu": 2
+  },
+  "timm_cs3darknet_l.c2ns_in1k": {
+    "all": 865,
+    "dpu": 863,
+    "cpu": 2
+  },
+  "timm_cs3darknet_m.c2ns_in1k": {
+    "all": 655,
+    "dpu": 653,
+    "cpu": 2
+  },
+  "timm_cs3darknet_x.c2ns_in1k": {
+    "all": 955,
+    "dpu": 953,
+    "cpu": 2
+  },
+  "timm_cs3edgenet_x.c2_in1k": {
+    "all": 955,
+    "dpu": 953,
+    "cpu": 2
+  },
+  "timm_cs3se_edgenet_x.c2ns_in1k": {
+    "all": 1681,
+    "dpu": 1679,
+    "cpu": 2
+  },
+  "timm_cs3sedarknet_l.c2ns_in1k": {
+    "all": 1501,
+    "dpu": 1499,
+    "cpu": 2
+  },
+  "timm_cs3sedarknet_x.c2ns_in1k": {
+    "all": 1681,
+    "dpu": 1679,
+    "cpu": 2
+  },
+  "timm_cspdarknet53.ra_in1k": {
+    "all": 557,
+    "dpu": 555,
+    "cpu": 2
+  },
+  "timm_cspresnet50.ra_in1k": {
+    "all": 434,
+    "dpu": 432,
+    "cpu": 2
+  },
+  "timm_cspresnext50.ra_in1k": {
+    "all": 434,
+    "dpu": 432,
+    "cpu": 2
+  },
+  "timm_densenet121.ra_in1k": {
+    "all": 1717,
+    "dpu": 1715,
+    "cpu": 2
+  },
+  "timm_densenet169.tv_in1k": {
+    "all": 2793,
+    "dpu": 2791,
+    "cpu": 2
+  },
+  "timm_densenetblur121d.ra_in1k": {
+    "all": 1736,
+    "dpu": 1734,
+    "cpu": 2
+  },
+  "timm_dla102.in1k": {
+    "all": 887,
+    "dpu": 884,
+    "cpu": 3
+  },
+  "timm_dla102x.in1k": {
+    "all": 887,
+    "dpu": 884,
+    "cpu": 3
+  },
+  "timm_dla102x2.in1k": {
+    "all": 887,
+    "dpu": 884,
+    "cpu": 3
+  },
+  "timm_dla169.in1k": {
+    "all": 1418,
+    "dpu": 1415,
+    "cpu": 3
+  },
+  "timm_dla34.in1k": {
+    "all": 319,
+    "dpu": 316,
+    "cpu": 3
+  },
+  "timm_dla46_c.in1k": {
+    "all": 386,
+    "dpu": 383,
+    "cpu": 3
+  },
+  "timm_dla46x_c.in1k": {
+    "all": 386,
+    "dpu": 383,
+    "cpu": 3
+  },
+  "timm_dla60.in1k": {
+    "all": 501,
+    "dpu": 498,
+    "cpu": 3
+  },
+  "timm_dla60_res2net.in1k": {
+    "all": 1093,
+    "dpu": 1090,
+    "cpu": 3
+  },
+  "timm_dla60_res2next.in1k": {
+    "all": 1093,
+    "dpu": 1090,
+    "cpu": 3
+  },
+  "timm_dla60x.in1k": {
+    "all": 501,
+    "dpu": 498,
+    "cpu": 3
+  },
+  "timm_dla60x_c.in1k": {
+    "all": 496,
+    "dpu": 493,
+    "cpu": 3
+  },
+  "timm_dpn68.mx_in1k": {
+    "all": 959,
+    "dpu": 956,
+    "cpu": 3
+  },
+  "timm_dpn68b.ra_in1k": {
+    "all": 915,
+    "dpu": 912,
+    "cpu": 3
+  },
+  "timm_dpn92.mx_in1k": {
+    "all": 1279,
+    "dpu": 1276,
+    "cpu": 3
+  },
+  "timm_dpn98.mx_in1k": {
+    "all": 1359,
+    "dpu": 1356,
+    "cpu": 3
+  },
+  "timm_eca_botnext26ts_256.c1_in1k": {
+    "all": 944,
+    "dpu": 331,
+    "cpu": 613
+  },
+  "timm_eca_nfnet_l0.ra2_in1k": {
+    "all": 1212,
+    "dpu": 1126,
+    "cpu": 86
+  },
+  "timm_eca_resnet33ts.ra2_in1k": {
+    "all": 755,
+    "dpu": 683,
+    "cpu": 72
+  },
+  "timm_eca_resnext26ts.ch_in1k": {
+    "all": 611,
+    "dpu": 553,
+    "cpu": 58
+  },
+  "timm_ecaresnet101d.miil_in1k": {
+    "all": 1615,
+    "dpu": 0,
+    "cpu": 1615
+  },
+  "timm_ecaresnet101d_pruned.miil_in1k": {
+    "all": 1615,
+    "dpu": 0,
+    "cpu": 1615
+  },
+  "timm_ecaresnet26t.ra2_in1k": {
+    "all": 431,
+    "dpu": 373,
+    "cpu": 58
+  },
+  "timm_ecaresnet50d.miil_in1k": {
+    "all": 816,
+    "dpu": 0,
+    "cpu": 816
+  },
+  "timm_ecaresnet50d_pruned.miil_in1k": {
+    "all": 816,
+    "dpu": 0,
+    "cpu": 816
+  },
+  "timm_ecaresnet50t.ra2_in1k": {
+    "all": 799,
+    "dpu": 0,
+    "cpu": 799
+  },
+  "timm_ecaresnetlight.miil_in1k": {
+    "all": 804,
+    "dpu": 0,
+    "cpu": 804
+  },
+  "timm_edgenext_base.usi_in1k": {
+    "all": 2298,
+    "dpu": 0,
+    "cpu": 2298
+  },
+  "timm_edgenext_small.usi_in1k": {
+    "all": 2298,
+    "dpu": 0,
+    "cpu": 2298
+  },
+  "timm_edgenext_small_rw.sw_in1k": {
+    "all": 2159,
+    "dpu": 0,
+    "cpu": 2159
+  },
+  "timm_edgenext_x_small.in1k": {
+    "all": 2278,
+    "dpu": 0,
+    "cpu": 2278
+  },
+  "timm_edgenext_xx_small.in1k": {
+    "all": 1770,
+    "dpu": 0,
+    "cpu": 1770
+  },
+  "timm_efficientnet_b0.ra_in1k": {
+    "all": 1054,
+    "dpu": 1052,
+    "cpu": 2
+  },
+  "timm_efficientnet_b1.ft_in1k": {
+    "all": 1505,
+    "dpu": 1503,
+    "cpu": 2
+  },
+  "timm_efficientnet_b2.ra_in1k": {
+    "all": 1481,
+    "dpu": 1479,
+    "cpu": 2
+  },
+  "timm_efficientnet_b3.ra2_in1k": {
+    "all": 1705,
+    "dpu": 1703,
+    "cpu": 2
+  },
+  "timm_efficientnet_el.ra_in1k": {
+    "all": 499,
+    "dpu": 497,
+    "cpu": 2
+  },
+  "timm_efficientnet_el_pruned.in1k": {
+    "all": 499,
+    "dpu": 497,
+    "cpu": 2
+  },
+  "timm_efficientnet_em.ra2_in1k": {
+    "all": 441,
+    "dpu": 439,
+    "cpu": 2
+  },
+  "timm_efficientnet_es.ra_in1k": {
+    "all": 338,
+    "dpu": 336,
+    "cpu": 2
+  },
+  "timm_efficientnet_es_pruned.in1k": {
+    "all": 338,
+    "dpu": 336,
+    "cpu": 2
+  },
+  "timm_efficientnet_lite0.ra_in1k": {
+    "all": 328,
+    "dpu": 326,
+    "cpu": 2
+  },
+  "timm_efficientnetv2_rw_s.ra2_in1k": {
+    "all": 2190,
+    "dpu": 2188,
+    "cpu": 2
+  },
+  "timm_efficientnetv2_rw_t.ra2_in1k": {
+    "all": 2115,
+    "dpu": 2113,
+    "cpu": 2
+  },
+  "timm_ese_vovnet19b_dw.ra_in1k": {
+    "all": 315,
+    "dpu": 313,
+    "cpu": 2
+  },
+  "timm_ese_vovnet39b.ra_in1k": {
+    "all": 387,
+    "dpu": 385,
+    "cpu": 2
+  },
+  "timm_fbnetc_100.rmsp_in1k": {
+    "all": 443,
+    "dpu": 441,
+    "cpu": 2
+  },
+  "timm_fbnetv3_b.ra2_in1k": {
+    "all": 1572,
+    "dpu": 1570,
+    "cpu": 2
+  },
+  "timm_fbnetv3_d.ra2_in1k": {
+    "all": 1703,
+    "dpu": 1701,
+    "cpu": 2
+  },
+  "timm_fbnetv3_g.ra2_in1k": {
+    "all": 1945,
+    "dpu": 1943,
+    "cpu": 2
+  },
+  "timm_gcresnet33ts.ra2_in1k": {
+    "all": 1325,
+    "dpu": 1131,
+    "cpu": 194
+  },
+  "timm_gcresnet50t.ra2_in1k": {
+    "all": 1683,
+    "dpu": 0,
+    "cpu": 1683
+  },
+  "timm_gcresnext26ts.ch_in1k": {
+    "all": 1059,
+    "dpu": 921,
+    "cpu": 138
+  },
+  "timm_gcresnext50ts.ch_in1k": {
+    "all": 2043,
+    "dpu": 0,
+    "cpu": 2043
+  },
+  "timm_gernet_l.idstcv_in1k": {
+    "all": 423,
+    "dpu": 421,
+    "cpu": 2
+  },
+  "timm_gernet_m.idstcv_in1k": {
+    "all": 336,
+    "dpu": 334,
+    "cpu": 2
+  },
+  "timm_gernet_s.idstcv_in1k": {
+    "all": 335,
+    "dpu": 333,
+    "cpu": 2
+  },
+  "timm_ghostnet_100.in1k": {
+    "all": 909,
+    "dpu": 907,
+    "cpu": 2
+  },
+  "timm_hardcorenas_a.miil_green_in1k": {
+    "all": 528,
+    "dpu": 526,
+    "cpu": 2
+  },
+  "timm_hardcorenas_b.miil_green_in1k": {
+    "all": 650,
+    "dpu": 648,
+    "cpu": 2
+  },
+  "timm_hardcorenas_c.miil_green_in1k": {
+    "all": 696,
+    "dpu": 694,
+    "cpu": 2
+  },
+  "timm_hardcorenas_d.miil_green_in1k": {
+    "all": 975,
+    "dpu": 973,
+    "cpu": 2
+  },
+  "timm_hardcorenas_e.miil_green_in1k": {
+    "all": 906,
+    "dpu": 904,
+    "cpu": 2
+  },
+  "timm_hardcorenas_f.miil_green_in1k": {
+    "all": 928,
+    "dpu": 926,
+    "cpu": 2
+  },
+  "timm_hrnet_w18_small.gluon_in1k": {
+    "all": 758,
+    "dpu": 756,
+    "cpu": 2
+  },
+  "timm_hrnet_w18_small_v2.gluon_in1k": {
+    "all": 1398,
+    "dpu": 1396,
+    "cpu": 2
+  },
+  "timm_inception_v3.gluon_in1k": {
+    "all": 693,
+    "dpu": 691,
+    "cpu": 2
+  },
+  "timm_inception_v3.tf_adv_in1k": {
+    "all": 693,
+    "dpu": 691,
+    "cpu": 2
+  },
+  "timm_inception_v3.tf_in1k": {
+    "all": 693,
+    "dpu": 691,
+    "cpu": 2
+  },
+  "timm_inception_v3.tv_in1k": {
+    "all": 693,
+    "dpu": 691,
+    "cpu": 2
+  },
+  "timm_inception_v4.tf_in1k": {
+    "all": 1087,
+    "dpu": 1085,
+    "cpu": 2
+  },
+  "timm_lambda_resnet26rpt_256.c1_in1k": {
+    "all": 479,
+    "dpu": 37,
+    "cpu": 442
+  },
+  "timm_lambda_resnet26t.c1_in1k": {
+    "all": 491,
+    "dpu": 37,
+    "cpu": 454
+  },
+  "timm_lambda_resnet50ts.a1h_in1k": {
+    "all": 1193,
+    "dpu": 94,
+    "cpu": 1099
+  },
+  "timm_lcnet_050.ra2_in1k": {
+    "all": 424,
+    "dpu": 422,
+    "cpu": 2
+  },
+  "timm_lcnet_075.ra2_in1k": {
+    "all": 424,
+    "dpu": 422,
+    "cpu": 2
+  },
+  "timm_lcnet_100.ra2_in1k": {
+    "all": 424,
+    "dpu": 422,
+    "cpu": 2
+  },
+  "timm_mixer_b16_224.goog_in21k_ft_in1k": {
+    "all": 1877,
+    "dpu": 0,
+    "cpu": 1877
+  },
+  "timm_mixer_b16_224.miil_in21k_ft_in1k": {
+    "all": 1877,
+    "dpu": 0,
+    "cpu": 1877
+  },
+  "timm_mixnet_l.ft_in1k": {
+    "all": 2045,
+    "dpu": 2043,
+    "cpu": 2
+  },
+  "timm_mixnet_m.ft_in1k": {
+    "all": 2045,
+    "dpu": 691,
+    "cpu": 1354
+  },
+  "timm_mixnet_s.ft_in1k": {
+    "all": 1644,
+    "dpu": 1177,
+    "cpu": 467
+  },
+  "timm_mnasnet_100.rmsp_in1k": {
+    "all": 349,
+    "dpu": 347,
+    "cpu": 2
+  },
+  "timm_mnasnet_small.lamb_in1k": {
+    "all": 545,
+    "dpu": 543,
+    "cpu": 2
+  },
+  "timm_mobilenetv2_050.lamb_in1k": {
+    "all": 349,
+    "dpu": 347,
+    "cpu": 2
+  },
+  "timm_mobilenetv2_100.ra_in1k": {
+    "all": 349,
+    "dpu": 347,
+    "cpu": 2
+  },
+  "timm_mobilenetv2_110d.ra_in1k": {
+    "all": 454,
+    "dpu": 452,
+    "cpu": 2
+  },
+  "timm_mobilenetv2_120d.ra_in1k": {
+    "all": 538,
+    "dpu": 536,
+    "cpu": 2
+  },
+  "timm_mobilenetv2_140.ra_in1k": {
+    "all": 349,
+    "dpu": 347,
+    "cpu": 2
+  },
+  "timm_mobilenetv3_large_100.miil_in21k_ft_in1k": {
+    "all": 661,
+    "dpu": 659,
+    "cpu": 2
+  },
+  "timm_mobilenetv3_large_100.ra_in1k": {
+    "all": 661,
+    "dpu": 659,
+    "cpu": 2
+  },
+  "timm_mobilenetv3_rw.rmsp_in1k": {
+    "all": 691,
+    "dpu": 689,
+    "cpu": 2
+  },
+  "timm_mobilenetv3_small_050.lamb_in1k": {
+    "all": 584,
+    "dpu": 582,
+    "cpu": 2
+  },
+  "timm_mobilenetv3_small_075.lamb_in1k": {
+    "all": 580,
+    "dpu": 578,
+    "cpu": 2
+  },
+  "timm_mobilenetv3_small_100.lamb_in1k": {
+    "all": 580,
+    "dpu": 578,
+    "cpu": 2
+  },
+  "timm_nest_tiny_jx.goog_in1k": {
+    "all": 2365,
+    "dpu": 0,
+    "cpu": 2365
+  },
+  "timm_nf_resnet50.ra2_in1k": {
+    "all": 561,
+    "dpu": 559,
+    "cpu": 2
+  },
+  "timm_nfnet_l0.ra2_in1k": {
+    "all": 1197,
+    "dpu": 1195,
+    "cpu": 2
+  },
+  "timm_regnetx_002.pycls_in1k": {
+    "all": 326,
+    "dpu": 324,
+    "cpu": 2
+  },
+  "timm_regnetx_004.pycls_in1k": {
+    "all": 524,
+    "dpu": 522,
+    "cpu": 2
+  },
+  "timm_regnetx_004_tv.tv2_in1k": {
+    "all": 524,
+    "dpu": 522,
+    "cpu": 2
+  },
+  "timm_regnetx_006.pycls_in1k": {
+    "all": 392,
+    "dpu": 390,
+    "cpu": 2
+  },
+  "timm_regnetx_008.pycls_in1k": {
+    "all": 392,
+    "dpu": 390,
+    "cpu": 2
+  },
+  "timm_regnetx_008.tv2_in1k": {
+    "all": 392,
+    "dpu": 390,
+    "cpu": 2
+  },
+  "timm_regnetx_016.pycls_in1k": {
+    "all": 436,
+    "dpu": 434,
+    "cpu": 2
+  },
+  "timm_regnetx_016.tv2_in1k": {
+    "all": 436,
+    "dpu": 434,
+    "cpu": 2
+  },
+  "timm_regnetx_032.pycls_in1k": {
+    "all": 590,
+    "dpu": 588,
+    "cpu": 2
+  },
+  "timm_regnetx_032.tv2_in1k": {
+    "all": 590,
+    "dpu": 588,
+    "cpu": 2
+  },
+  "timm_regnetx_040.pycls_in1k": {
+    "all": 546,
+    "dpu": 544,
+    "cpu": 2
+  },
+  "timm_regnetx_064.pycls_in1k": {
+    "all": 414,
+    "dpu": 412,
+    "cpu": 2
+  },
+  "timm_regnetx_080.pycls_in1k": {
+    "all": 546,
+    "dpu": 544,
+    "cpu": 2
+  },
+  "timm_regnetx_080.tv2_in1k": {
+    "all": 546,
+    "dpu": 544,
+    "cpu": 2
+  },
+  "timm_regnetx_120.pycls_in1k": {
+    "all": 458,
+    "dpu": 456,
+    "cpu": 2
+  },
+  "timm_regnetx_160.pycls_in1k": {
+    "all": 524,
+    "dpu": 522,
+    "cpu": 2
+  },
+  "timm_regnetx_160.tv2_in1k": {
+    "all": 524,
+    "dpu": 522,
+    "cpu": 2
+  },
+  "timm_regnety_002.pycls_in1k": {
+    "all": 631,
+    "dpu": 629,
+    "cpu": 2
+  },
+  "timm_regnety_004.pycls_in1k": {
+    "all": 772,
+    "dpu": 770,
+    "cpu": 2
+  },
+  "timm_regnety_004.tv2_in1k": {
+    "all": 772,
+    "dpu": 770,
+    "cpu": 2
+  },
+  "timm_regnety_006.pycls_in1k": {
+    "all": 727,
+    "dpu": 725,
+    "cpu": 2
+  },
+  "timm_regnety_008.pycls_in1k": {
+    "all": 682,
+    "dpu": 680,
+    "cpu": 2
+  },
+  "timm_regnety_008_tv.tv2_in1k": {
+    "all": 682,
+    "dpu": 680,
+    "cpu": 2
+  },
+  "timm_regnety_016.pycls_in1k": {
+    "all": 1279,
+    "dpu": 1277,
+    "cpu": 2
+  },
+  "timm_regnety_016.tv2_in1k": {
+    "all": 1279,
+    "dpu": 1277,
+    "cpu": 2
+  },
+  "timm_regnety_032.pycls_in1k": {
+    "all": 1006,
+    "dpu": 1004,
+    "cpu": 2
+  },
+  "timm_regnety_032.ra_in1k": {
+    "all": 1006,
+    "dpu": 1004,
+    "cpu": 2
+  },
+  "timm_regnety_032.tv2_in1k": {
+    "all": 1006,
+    "dpu": 1004,
+    "cpu": 2
+  },
+  "timm_regnety_040.pycls_in1k": {
+    "all": 1054,
+    "dpu": 1052,
+    "cpu": 2
+  },
+  "timm_regnety_040.ra3_in1k": {
+    "all": 1054,
+    "dpu": 1052,
+    "cpu": 2
+  },
+  "timm_regnety_064.pycls_in1k": {
+    "all": 1192,
+    "dpu": 1190,
+    "cpu": 2
+  },
+  "timm_regnety_064.ra3_in1k": {
+    "all": 1192,
+    "dpu": 1190,
+    "cpu": 2
+  },
+  "timm_regnety_080.pycls_in1k": {
+    "all": 823,
+    "dpu": 821,
+    "cpu": 2
+  },
+  "timm_regnety_080.ra3_in1k": {
+    "all": 823,
+    "dpu": 821,
+    "cpu": 2
+  },
+  "timm_regnety_080_tv.tv2_in1k": {
+    "all": 823,
+    "dpu": 821,
+    "cpu": 2
+  },
+  "timm_regnety_120.pycls_in1k": {
+    "all": 916,
+    "dpu": 914,
+    "cpu": 2
+  },
+  "timm_regnety_120.sw_in12k_ft_in1k": {
+    "all": 916,
+    "dpu": 914,
+    "cpu": 2
+  },
+  "timm_regnety_160.lion_in12k_ft_in1k": {
+    "all": 868,
+    "dpu": 866,
+    "cpu": 2
+  },
+  "timm_regnety_160.pycls_in1k": {
+    "all": 868,
+    "dpu": 866,
+    "cpu": 2
+  },
+  "timm_regnety_160.sw_in12k_ft_in1k": {
+    "all": 868,
+    "dpu": 866,
+    "cpu": 2
+  },
+  "timm_regnety_160.swag_ft_in1k": {
+    "all": 901,
+    "dpu": 899,
+    "cpu": 2
+  },
+  "timm_regnety_160.swag_lc_in1k": {
+    "all": 868,
+    "dpu": 866,
+    "cpu": 2
+  },
+  "timm_regnety_160.tv2_in1k": {
+    "all": 868,
+    "dpu": 866,
+    "cpu": 2
+  },
+  "timm_regnety_320.seer_ft_in1k": {
+    "all": 997,
+    "dpu": 995,
+    "cpu": 2
+  },
+  "timm_regnety_320.swag_ft_in1k": {
+    "all": 997,
+    "dpu": 995,
+    "cpu": 2
+  },
+  "timm_regnetz_040.ra3_in1k": {
+    "all": 1834,
+    "dpu": 1832,
+    "cpu": 2
+  },
+  "timm_regnetz_040_h.ra3_in1k": {
+    "all": 1839,
+    "dpu": 1837,
+    "cpu": 2
+  },
+  "timm_regnetz_b16.ra3_in1k": {
+    "all": 1324,
+    "dpu": 1322,
+    "cpu": 2
+  },
+  "timm_regnetz_c16.ra3_in1k": {
+    "all": 1301,
+    "dpu": 1299,
+    "cpu": 2
+  },
+  "timm_regnetz_d32.ra3_in1k": {
+    "all": 1448,
+    "dpu": 1446,
+    "cpu": 2
+  },
+  "timm_regnetz_d8.ra3_in1k": {
+    "all": 1448,
+    "dpu": 1446,
+    "cpu": 2
+  },
+  "timm_repvgg_a2.rvgg_in1k": {
+    "all": 497,
+    "dpu": 495,
+    "cpu": 2
+  },
+  "timm_repvgg_b0.rvgg_in1k": {
+    "all": 641,
+    "dpu": 639,
+    "cpu": 2
+  },
+  "timm_repvgg_b1.rvgg_in1k": {
+    "all": 641,
+    "dpu": 639,
+    "cpu": 2
+  },
+  "timm_repvgg_b1g4.rvgg_in1k": {
+    "all": 641,
+    "dpu": 639,
+    "cpu": 2
+  },
+  "timm_repvgg_b2.rvgg_in1k": {
+    "all": 641,
+    "dpu": 639,
+    "cpu": 2
+  },
+  "timm_repvgg_b2g4.rvgg_in1k": {
+    "all": 641,
+    "dpu": 639,
+    "cpu": 2
+  },
+  "timm_repvgg_b3.rvgg_in1k": {
+    "all": 641,
+    "dpu": 639,
+    "cpu": 2
+  },
+  "timm_repvgg_b3g4.rvgg_in1k": {
+    "all": 641,
+    "dpu": 639,
+    "cpu": 2
+  },
+  "timm_res2net50_14w_8s.in1k": {
+    "all": 1819,
+    "dpu": 1787,
+    "cpu": 32
+  },
+  "timm_res2net50_26w_4s.in1k": {
+    "all": 987,
+    "dpu": 985,
+    "cpu": 2
+  },
+  "timm_res2net50_26w_6s.in1k": {
+    "all": 1403,
+    "dpu": 1377,
+    "cpu": 26
+  },
+  "timm_res2net50_26w_8s.in1k": {
+    "all": 1819,
+    "dpu": 1787,
+    "cpu": 32
+  },
+  "timm_res2net50_48w_2s.in1k": {
+    "all": 571,
+    "dpu": 569,
+    "cpu": 2
+  },
+  "timm_res2next50.in1k": {
+    "all": 987,
+    "dpu": 985,
+    "cpu": 2
+  },
+  "timm_resmlp_12_224.fb_distilled_in1k": {
+    "all": 996,
+    "dpu": 0,
+    "cpu": 996
+  },
+  "timm_resmlp_12_224.fb_in1k": {
+    "all": 996,
+    "dpu": 0,
+    "cpu": 996
+  },
+  "timm_resmlp_24_224.fb_distilled_in1k": {
+    "all": 1968,
+    "dpu": 0,
+    "cpu": 1968
+  },
+  "timm_resmlp_24_224.fb_in1k": {
+    "all": 1968,
+    "dpu": 0,
+    "cpu": 1968
+  },
+  "timm_resmlp_big_24_224.fb_distilled_in1k": {
+    "all": 1968,
+    "dpu": 0,
+    "cpu": 1968
+  },
+  "timm_resnest14d.gluon_in1k": {
+    "all": 345,
+    "dpu": 232,
+    "cpu": 113
+  },
+  "timm_resnest26d.gluon_in1k": {
+    "all": 619,
+    "dpu": 403,
+    "cpu": 216
+  },
+  "timm_resnest50d.in1k": {
+    "all": 1166,
+    "dpu": 0,
+    "cpu": 1166
+  },
+  "timm_resnest50d_1s4x24d.in1k": {
+    "all": 865,
+    "dpu": 863,
+    "cpu": 2
+  },
+  "timm_resnest50d_4s2x40d.in1k": {
+    "all": 1171,
+    "dpu": 0,
+    "cpu": 1171
+  },
+  "timm_resnet101.a1h_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnet101.gluon_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnet101.tv_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnet101c.gluon_in1k": {
+    "all": 781,
+    "dpu": 779,
+    "cpu": 2
+  },
+  "timm_resnet101d.gluon_in1k": {
+    "all": 790,
+    "dpu": 788,
+    "cpu": 2
+  },
+  "timm_resnet101d.ra2_in1k": {
+    "all": 789,
+    "dpu": 787,
+    "cpu": 2
+  },
+  "timm_resnet101s.gluon_in1k": {
+    "all": 781,
+    "dpu": 779,
+    "cpu": 2
+  },
+  "timm_resnet10t.c3_in1k": {
+    "all": 123,
+    "dpu": 121,
+    "cpu": 2
+  },
+  "timm_resnet14t.c3_in1k": {
+    "all": 152,
+    "dpu": 150,
+    "cpu": 2
+  },
+  "timm_resnet152.a1h_in1k": {
+    "all": 1143,
+    "dpu": 1141,
+    "cpu": 2
+  },
+  "timm_resnet152.gluon_in1k": {
+    "all": 1143,
+    "dpu": 1141,
+    "cpu": 2
+  },
+  "timm_resnet152.tv_in1k": {
+    "all": 1143,
+    "dpu": 1141,
+    "cpu": 2
+  },
+  "timm_resnet152c.gluon_in1k": {
+    "all": 1155,
+    "dpu": 1153,
+    "cpu": 2
+  },
+  "timm_resnet152d.gluon_in1k": {
+    "all": 1164,
+    "dpu": 1162,
+    "cpu": 2
+  },
+  "timm_resnet152d.ra2_in1k": {
+    "all": 1163,
+    "dpu": 1161,
+    "cpu": 2
+  },
+  "timm_resnet152s.gluon_in1k": {
+    "all": 1155,
+    "dpu": 1153,
+    "cpu": 2
+  },
+  "timm_resnet18.a1_in1k": {
+    "all": 166,
+    "dpu": 164,
+    "cpu": 2
+  },
+  "timm_resnet18.fb_ssl_yfcc100m_ft_in1k": {
+    "all": 166,
+    "dpu": 164,
+    "cpu": 2
+  },
+  "timm_resnet18.fb_swsl_ig1b_ft_in1k": {
+    "all": 166,
+    "dpu": 164,
+    "cpu": 2
+  },
+  "timm_resnet18.gluon_in1k": {
+    "all": 166,
+    "dpu": 164,
+    "cpu": 2
+  },
+  "timm_resnet18d.ra2_in1k": {
+    "all": 187,
+    "dpu": 185,
+    "cpu": 2
+  },
+  "timm_resnet200d.ra2_in1k": {
+    "all": 1515,
+    "dpu": 1513,
+    "cpu": 2
+  },
+  "timm_resnet26.bt_in1k": {
+    "all": 219,
+    "dpu": 217,
+    "cpu": 2
+  },
+  "timm_resnet26d.bt_in1k": {
+    "all": 240,
+    "dpu": 238,
+    "cpu": 2
+  },
+  "timm_resnet26t.ra2_in1k": {
+    "all": 239,
+    "dpu": 237,
+    "cpu": 2
+  },
+  "timm_resnet32ts.ra2_in1k": {
+    "all": 502,
+    "dpu": 500,
+    "cpu": 2
+  },
+  "timm_resnet33ts.ra2_in1k": {
+    "all": 515,
+    "dpu": 513,
+    "cpu": 2
+  },
+  "timm_resnet34.a1_in1k": {
+    "all": 294,
+    "dpu": 292,
+    "cpu": 2
+  },
+  "timm_resnet34.gluon_in1k": {
+    "all": 294,
+    "dpu": 292,
+    "cpu": 2
+  },
+  "timm_resnet34.tv_in1k": {
+    "all": 294,
+    "dpu": 292,
+    "cpu": 2
+  },
+  "timm_resnet34d.ra2_in1k": {
+    "all": 315,
+    "dpu": 313,
+    "cpu": 2
+  },
+  "timm_resnet50.a1_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_resnet50.fb_ssl_yfcc100m_ft_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_resnet50.fb_swsl_ig1b_ft_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_resnet50.gluon_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_resnet50.tv_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_resnet50_gn.a1h_in1k": {
+    "all": 1349,
+    "dpu": 0,
+    "cpu": 1349
+  },
+  "timm_resnet50c.gluon_in1k": {
+    "all": 407,
+    "dpu": 405,
+    "cpu": 2
+  },
+  "timm_resnet50d.gluon_in1k": {
+    "all": 416,
+    "dpu": 414,
+    "cpu": 2
+  },
+  "timm_resnet50d.ra2_in1k": {
+    "all": 416,
+    "dpu": 414,
+    "cpu": 2
+  },
+  "timm_resnet50s.gluon_in1k": {
+    "all": 407,
+    "dpu": 405,
+    "cpu": 2
+  },
+  "timm_resnet51q.ra2_in1k": {
+    "all": 768,
+    "dpu": 766,
+    "cpu": 2
+  },
+  "timm_resnet61q.ra2_in1k": {
+    "all": 912,
+    "dpu": 910,
+    "cpu": 2
+  },
+  "timm_resnetaa50.a1h_in1k": {
+    "all": 404,
+    "dpu": 402,
+    "cpu": 2
+  },
+  "timm_resnetblur50.bt_in1k": {
+    "all": 423,
+    "dpu": 421,
+    "cpu": 2
+  },
+  "timm_resnetrs101.tf_in1k": {
+    "all": 1573,
+    "dpu": 1571,
+    "cpu": 2
+  },
+  "timm_resnetrs50.tf_in1k": {
+    "all": 796,
+    "dpu": 794,
+    "cpu": 2
+  },
+  "timm_resnetv2_101.a1h_in1k": {
+    "all": 899,
+    "dpu": 896,
+    "cpu": 3
+  },
+  "timm_resnetv2_50.a1h_in1k": {
+    "all": 457,
+    "dpu": 454,
+    "cpu": 3
+  },
+  "timm_resnetv2_50d_gn.ah_in1k": {
+    "all": 1328,
+    "dpu": 0,
+    "cpu": 1328
+  },
+  "timm_resnetv2_50x1_bit.goog_distilled_in1k": {
+    "all": 1275,
+    "dpu": 0,
+    "cpu": 1275
+  },
+  "timm_resnetv2_50x1_bit.goog_in21k_ft_in1k": {
+    "all": 1275,
+    "dpu": 0,
+    "cpu": 1275
+  },
+  "timm_resnetv2_50x3_bit.goog_in21k_ft_in1k": {
+    "all": 1275,
+    "dpu": 0,
+    "cpu": 1275
+  },
+  "timm_resnext101_32x4d.fb_ssl_yfcc100m_ft_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnext101_32x4d.fb_swsl_ig1b_ft_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnext101_32x4d.gluon_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnext101_32x8d.fb_ssl_yfcc100m_ft_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnext101_32x8d.fb_swsl_ig1b_ft_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnext101_32x8d.fb_wsl_ig1b_ft_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnext101_64x4d.c1_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnext101_64x4d.gluon_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_resnext26ts.ra2_in1k": {
+    "all": 419,
+    "dpu": 417,
+    "cpu": 2
+  },
+  "timm_resnext50_32x4d.a1h_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_resnext50_32x4d.fb_ssl_yfcc100m_ft_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_resnext50_32x4d.fb_swsl_ig1b_ft_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_resnext50_32x4d.gluon_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_resnext50_32x4d.tv_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_resnext50d_32x4d.bt_in1k": {
+    "all": 416,
+    "dpu": 414,
+    "cpu": 2
+  },
+  "timm_rexnet_100.nav_in1k": {
+    "all": 896,
+    "dpu": 894,
+    "cpu": 2
+  },
+  "timm_rexnet_130.nav_in1k": {
+    "all": 896,
+    "dpu": 894,
+    "cpu": 2
+  },
+  "timm_rexnet_150.nav_in1k": {
+    "all": 896,
+    "dpu": 894,
+    "cpu": 2
+  },
+  "timm_rexnet_200.nav_in1k": {
+    "all": 896,
+    "dpu": 894,
+    "cpu": 2
+  },
+  "timm_rexnet_300.nav_in1k": {
+    "all": 896,
+    "dpu": 894,
+    "cpu": 2
+  },
+  "timm_rexnetr_200.sw_in12k_ft_in1k": {
+    "all": 896,
+    "dpu": 894,
+    "cpu": 2
+  },
+  "timm_rexnetr_300.sw_in12k_ft_in1k": {
+    "all": 896,
+    "dpu": 894,
+    "cpu": 2
+  },
+  "timm_sebotnet33ts_256.a1h_in1k": {
+    "all": 1198,
+    "dpu": 0,
+    "cpu": 1198
+  },
+  "timm_semnasnet_075.rmsp_in1k": {
+    "all": 521,
+    "dpu": 519,
+    "cpu": 2
+  },
+  "timm_semnasnet_100.rmsp_in1k": {
+    "all": 521,
+    "dpu": 519,
+    "cpu": 2
+  },
+  "timm_seresnet33ts.ra2_in1k": {
+    "all": 750,
+    "dpu": 748,
+    "cpu": 2
+  },
+  "timm_seresnet50.a1_in1k": {
+    "all": 784,
+    "dpu": 782,
+    "cpu": 2
+  },
+  "timm_seresnext101_32x4d.gluon_in1k": {
+    "all": 1549,
+    "dpu": 1547,
+    "cpu": 2
+  },
+  "timm_seresnext26d_32x4d.bt_in1k": {
+    "all": 436,
+    "dpu": 434,
+    "cpu": 2
+  },
+  "timm_seresnext26t_32x4d.bt_in1k": {
+    "all": 436,
+    "dpu": 434,
+    "cpu": 2
+  },
+  "timm_seresnext26ts.ch_in1k": {
+    "all": 607,
+    "dpu": 605,
+    "cpu": 2
+  },
+  "timm_seresnext50_32x4d.gluon_in1k": {
+    "all": 784,
+    "dpu": 782,
+    "cpu": 2
+  },
+  "timm_seresnext50_32x4d.racm_in1k": {
+    "all": 784,
+    "dpu": 782,
+    "cpu": 2
+  },
+  "timm_skresnet18.ra_in1k": {
+    "all": 586,
+    "dpu": 322,
+    "cpu": 264
+  },
+  "timm_skresnet34.ra_in1k": {
+    "all": 1133,
+    "dpu": 0,
+    "cpu": 1133
+  },
+  "timm_skresnext50_32x4d.ra_in1k": {
+    "all": 1138,
+    "dpu": 0,
+    "cpu": 1138
+  },
+  "timm_spnasnet_100.rmsp_in1k": {
+    "all": 433,
+    "dpu": 431,
+    "cpu": 2
+  },
+  "timm_tf_efficientnet_el.in1k": {
+    "all": 519,
+    "dpu": 517,
+    "cpu": 2
+  },
+  "timm_tf_efficientnet_em.in1k": {
+    "all": 461,
+    "dpu": 459,
+    "cpu": 2
+  },
+  "timm_tf_efficientnet_es.in1k": {
+    "all": 358,
+    "dpu": 356,
+    "cpu": 2
+  },
+  "timm_tf_efficientnet_lite0.in1k": {
+    "all": 348,
+    "dpu": 346,
+    "cpu": 2
+  },
+  "timm_tf_efficientnet_lite1.in1k": {
+    "all": 452,
+    "dpu": 450,
+    "cpu": 2
+  },
+  "timm_tf_efficientnet_lite2.in1k": {
+    "all": 453,
+    "dpu": 451,
+    "cpu": 2
+  },
+  "timm_tf_efficientnet_lite3.in1k": {
+    "all": 516,
+    "dpu": 514,
+    "cpu": 2
+  },
+  "timm_tf_efficientnet_lite4.in1k": {
+    "all": 642,
+    "dpu": 640,
+    "cpu": 2
+  },
+  "timm_tf_efficientnetv2_b0.in1k": {
+    "all": 1181,
+    "dpu": 1179,
+    "cpu": 2
+  },
+  "timm_tf_efficientnetv2_b1.in1k": {
+    "all": 1437,
+    "dpu": 1435,
+    "cpu": 2
+  },
+  "timm_tf_efficientnetv2_b2.in1k": {
+    "all": 1502,
+    "dpu": 1500,
+    "cpu": 2
+  },
+  "timm_tf_efficientnetv2_b3.in1k": {
+    "all": 1749,
+    "dpu": 1747,
+    "cpu": 2
+  },
+  "timm_tf_efficientnetv2_b3.in21k_ft_in1k": {
+    "all": 1749,
+    "dpu": 1747,
+    "cpu": 2
+  },
+  "timm_tf_mobilenetv3_large_minimal_100.in1k": {
+    "all": 341,
+    "dpu": 339,
+    "cpu": 2
+  },
+  "timm_tf_mobilenetv3_small_075.in1k": {
+    "all": 600,
+    "dpu": 598,
+    "cpu": 2
+  },
+  "timm_tf_mobilenetv3_small_100.in1k": {
+    "all": 600,
+    "dpu": 598,
+    "cpu": 2
+  },
+  "timm_tf_mobilenetv3_small_minimal_100.in1k": {
+    "all": 257,
+    "dpu": 255,
+    "cpu": 2
+  },
+  "timm_tinynet_a.in1k": {
+    "all": 1249,
+    "dpu": 1247,
+    "cpu": 2
+  },
+  "timm_tinynet_d.in1k": {
+    "all": 720,
+    "dpu": 718,
+    "cpu": 2
+  },
+  "timm_vgg11.tv_in1k": {
+    "all": 88,
+    "dpu": 86,
+    "cpu": 2
+  },
+  "timm_vgg11_bn.tv_in1k": {
+    "all": 88,
+    "dpu": 86,
+    "cpu": 2
+  },
+  "timm_vgg13.tv_in1k": {
+    "all": 100,
+    "dpu": 98,
+    "cpu": 2
+  },
+  "timm_vgg13_bn.tv_in1k": {
+    "all": 100,
+    "dpu": 98,
+    "cpu": 2
+  },
+  "timm_vgg16.tv_in1k": {
+    "all": 118,
+    "dpu": 116,
+    "cpu": 2
+  },
+  "timm_vgg16_bn.tv_in1k": {
+    "all": 118,
+    "dpu": 116,
+    "cpu": 2
+  },
+  "timm_vgg19.tv_in1k": {
+    "all": 136,
+    "dpu": 134,
+    "cpu": 2
+  },
+  "timm_vgg19_bn.tv_in1k": {
+    "all": 136,
+    "dpu": 134,
+    "cpu": 2
+  },
+  "timm_wide_resnet101_2.tv_in1k": {
+    "all": 769,
+    "dpu": 767,
+    "cpu": 2
+  },
+  "timm_wide_resnet50_2.racm_in1k": {
+    "all": 395,
+    "dpu": 393,
+    "cpu": 2
+  },
+  "timm_xception41.tf_in1k": {
+    "all": 614,
+    "dpu": 612,
+    "cpu": 2
+  },
+  "timm_xception41p.ra3_in1k": {
+    "all": 527,
+    "dpu": 525,
+    "cpu": 2
+  },
+  "timm_xception65.ra3_in1k": {
+    "all": 958,
+    "dpu": 956,
+    "cpu": 2
+  },
+  "timm_xception65p.ra3_in1k": {
+    "all": 831,
+    "dpu": 829,
+    "cpu": 2
+  },
+  "timm_xception71.tf_in1k": {
+    "all": 1054,
+    "dpu": 1052,
+    "cpu": 2
+  }
+}
