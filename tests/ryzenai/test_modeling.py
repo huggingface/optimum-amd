@@ -46,11 +46,13 @@ def load_model_and_input(model_id, repo_type="model"):
     onnx_model_path = huggingface_hub.hf_hub_download(model_id, file_name)
     model = onnx.load(onnx_model_path)
 
+    input_name = model.graph.input[0].name
     input_shape = model.graph.input[0].type.tensor_type.shape.dim
     input_shape = [dim.dim_value for dim in input_shape]
     input_shape[0] = 1
 
     ort_input = DummyInputGenerator.random_float_tensor(input_shape, framework="np")
+    ort_input = {input_name: ort_input}
 
     return file_name, ort_input
 
