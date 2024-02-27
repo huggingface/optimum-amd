@@ -308,7 +308,7 @@ class Message:
                 "type": "section",
                 "text": {
                     "type": "plain_text",
-                    "text": f"These following {key.lower()} tests had failures.\nIf a failure occurs due to operators' regression (Reg.), the baseline values are provided within parentheses.",
+                    "text": f"The following {key.lower()} tests had failures.\nIf a failure occurs due to operators' regression (Reg.), the baseline values are provided within parentheses.",
                 },
                 "accessory": {
                     "type": "button",
@@ -331,7 +331,7 @@ class Message:
 
         # Save detailed failure report to a file
         model_failures_report = prepare_reports(
-            title=f"These following {key.lower()} tests had failures.\nIf a failure occurs due to operators' regression, the baseline values are provided within parentheses.",
+            title=f"The following {key.lower()} tests had failures.\nIf a failure occurs due to operators' regression(Reg.), the baseline values are provided within parentheses.",
             header=model_header,
             reports=failures_info,
             to_truncate=False,
