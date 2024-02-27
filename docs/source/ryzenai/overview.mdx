@@ -41,33 +41,33 @@ pip install git+https://github.com/huggingface/optimum.git
 RyzenAI provides pre-optimized models for various tasks such as image classification, super-resolution, object-detection, etc. Here's an example to run Resnet for image classification:
 
 ```python
-    from functools import partial
+>>> from functools import partial
 
-    from datasets import load_dataset
+>>> from datasets import load_dataset
 
-    from optimum.amd.ryzenai import RyzenAIModelForImageClassification
-    from transformers import AutoImageProcessor, pipeline
+>>> from optimum.amd.ryzenai import RyzenAIModelForImageClassification
+>>> from transformers import AutoImageProcessor, pipeline
 
 
-    model_id = "amd/resnet50"
+>>> model_id = "amd/resnet50"
 
-    # The path and name of the runtime configuration file. A default version of this runtime configuration
-    # file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
-    vaip_config = ".\\vaip_config.json"
+>>> # The path and name of the runtime configuration file. A default version of this runtime configuration
+>>> # file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
+>>> vaip_config = ".\\vaip_config.json"
 
-    model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config=vaip_config)
-    processor = AutoImageProcessor.from_pretrained(model_id)
+>>> model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config=vaip_config)
+>>> processor = AutoImageProcessor.from_pretrained(model_id)
 
-    # Load image
-    dataset = load_dataset("imagenet-1k", split="validation", streaming=True, trust_remote_code=True)
-    data = next(iter(dataset))
-    image = data["image"]
+>>> # Load image
+>>> dataset = load_dataset("imagenet-1k", split="validation", streaming=True, trust_remote_code=True)
+>>> data = next(iter(dataset))
+>>> image = data["image"]
 
-    cls_pipe = pipeline(
-        "image-classification", model=model, image_processor=partial(processor, data_format="channels_last")
-    )
-    outputs = cls_pipe(image)
-    print(outputs)
+>>> cls_pipe = pipeline(
+...    "image-classification", model=model, image_processor=partial(processor, data_format="channels_last")
+... )
+>>> outputs = cls_pipe(image)
+>>> print(outputs)
 ```
 
 <Tip warning={true}>
@@ -79,40 +79,40 @@ Ryzen pre-optimized models are not compatible with transformer pipelines for inf
 
 ### Pre-requisites
 * Export the model using [Optimum Exporters](https://huggingface.co/docs/optimum/main/en/exporters/onnx/usage_guides/export_a_model)
-* Quantize the ONNX model using the RyzenAI quantization tools. For more information on quantization refer to [Model Quantization guide](https://huggingface.co/docs/optimum/main/en/amd/ryzenai/usage_guides/quantization.mdx).
+* Quantize the ONNX model using the RyzenAI quantization tools. For more information on quantization refer to [Model Quantization guide](https://huggingface.co/docs/optimum/main/en/amd/ryzenai/usage_guides/quantization).
 
 ### Load model with Ryzen AI class
 
 ```python
-    import requests
-    from PIL import Image
+>>> import requests
+>>> from PIL import Image
 
-    from optimum.amd.ryzenai import RyzenAIModelForImageClassification
-    from transformers import PretrainedConfig, pipeline
+>>> from optimum.amd.ryzenai import RyzenAIModelForImageClassification
+>>> from transformers import PretrainedConfig, pipeline
 
-    import timm
-    import torch
+>>> import timm
+>>> import torch
 
-    url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-    image = Image.open(requests.get(url, stream=True).raw)
+>>> url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+>>> image = Image.open(requests.get(url, stream=True).raw)
 
-    #  See [quantize.py](https://huggingface.co/mohitsha/timm-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details on quantization.
-    quantized_model_path = "mohitsha/timm-resnet18-onnx-quantized-ryzen"
+>>> #  See [quantize.py](https://huggingface.co/mohitsha/timm-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details on quantization.
+>>> quantized_model_path = "mohitsha/timm-resnet18-onnx-quantized-ryzen"
 
-    # The path and name of the runtime configuration file. A default version of this runtime configuration
-    # file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
-    vaip_config = ".\\vaip_config.json"
+>>> # The path and name of the runtime configuration file. A default version of this runtime configuration
+>>> # file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
+>>> vaip_config = ".\\vaip_config.json"
 
-    model = RyzenAIModelForImageClassification.from_pretrained(quantized_model_path, vaip_config=vaip_config)
+>>> model = RyzenAIModelForImageClassification.from_pretrained(quantized_model_path, vaip_config=vaip_config)
 
-    config = PretrainedConfig.from_pretrained(quantized_model_path)
+>>> config = PretrainedConfig.from_pretrained(quantized_model_path)
 
-    # preprocess config
-    data_config = timm.data.resolve_data_config(pretrained_cfg=config.pretrained_cfg)
-    transforms = timm.data.create_transform(**data_config, is_training=False)
+>>> # preprocess config
+>>> data_config = timm.data.resolve_data_config(pretrained_cfg=config.pretrained_cfg)
+>>> transforms = timm.data.create_transform(**data_config, is_training=False)
 
-    output = model(transforms(image).unsqueeze(0)).logits  # unsqueeze single image into batch of 1
-    top5_probabilities, top5_class_indices = torch.topk(torch.softmax(output, dim=1) * 100, k=5)
+>>> output = model(transforms(image).unsqueeze(0)).logits  # unsqueeze single image into batch of 1
+>>> top5_probabilities, top5_class_indices = torch.topk(torch.softmax(output, dim=1) * 100, k=5)
 ```
 
 <Tip warning={true}>
@@ -124,7 +124,7 @@ Timm models are not compatible with transformer pipelines for inference.
 
 ### Pre-requisites
 * Export the model using [Optimum Exporters](https://huggingface.co/docs/optimum/main/en/exporters/onnx/usage_guides/export_a_model)
-* Quantize the ONNX model using the RyzenAI quantization tools. For more information on quantization refer to [Model Quantization guide](https://huggingface.co/docs/optimum/main/en/amd/ryzenai/usage_guides/quantization.mdx).
+* Quantize the ONNX model using the RyzenAI quantization tools. For more information on quantization refer to [Model Quantization guide](https://huggingface.co/docs/optimum/main/en/amd/ryzenai/usage_guides/quantization).
 
 ### Load model with Ryzen AI class
 To load a transformers model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class.
@@ -132,28 +132,27 @@ To load a transformers model and run inference with RyzenAI, you can just replac
 See below example for Image classification.
 
 ```python
-    import requests
-    from PIL import Image
+>>> import requests
+>>> from PIL import Image
 
-    from optimum.amd.ryzenai import RyzenAIModelForImageClassification
-    from transformers import AutoFeatureExtractor, pipeline
+>>> from optimum.amd.ryzenai import RyzenAIModelForImageClassification
+>>> from transformers import AutoFeatureExtractor, pipeline
 
+>>> url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+>>> image = Image.open(requests.get(url, stream=True).raw)
+>>> 
+>>> # See [quantize.py](https://huggingface.co/mohitsha/transformers-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details on quantization.
+>>> quantized_model_path = "mohitsha/transformers-resnet18-onnx-quantized-ryzen"
 
-    url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-    image = Image.open(requests.get(url, stream=True).raw)
-    
-    # See [quantize.py](https://huggingface.co/mohitsha/transformers-resnet18-onnx-quantized-ryzen/blob/main/quantize.py) for more details on quantization.
-    quantized_model_path = "mohitsha/transformers-resnet18-onnx-quantized-ryzen"
+>>> # The path and name of the runtime configuration file. A default version of this runtime configuration
+>>> # file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
+>>> vaip_config = ".\\vaip_config.json"
 
-    # The path and name of the runtime configuration file. A default version of this runtime configuration
-    # file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
-    vaip_config = ".\\vaip_config.json"
+>>> model = RyzenAIModelForImageClassification.from_pretrained(quantized_model_path, vaip_config=vaip_config)
+>>> feature_extractor = AutoFeatureExtractor.from_pretrained(quantized_model_path)
 
-    model = RyzenAIModelForImageClassification.from_pretrained(quantized_model_path, vaip_config=vaip_config)
-    feature_extractor = AutoFeatureExtractor.from_pretrained(quantized_model_path)
-
-    cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
-    outputs = cls_pipe(image)
+>>> cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
+>>> outputs = cls_pipe(image)
 ```
 
 <Tip warning={true}>
