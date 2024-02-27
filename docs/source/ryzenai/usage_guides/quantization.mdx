@@ -56,7 +56,7 @@ Below you will find an easy end-to-end example on how to quantize a VGG model fr
 ...     opset=13,
 ...     batch_size=1,
 ...     no_dynamic_axes=True,
->>> )
+... )
 
 >>> # Step 2: Preprocess configuration and data transformations
 >>> config = PretrainedConfig.from_pretrained(export_dir)
@@ -86,14 +86,14 @@ Below you will find an easy end-to-end example on how to quantize a VGG model fr
 ...     dataset_split="train",
 ...     preprocess_batch=False,
 ...     streaming=True,
->>> )
+... )
 
 >>> # Step 6: Run the quantizer with the specified configuration and calibration data
 >>> quantizer.quantize(
 ...     quantization_config=quantization_config,
 ...     dataset=train_calibration_dataset,
 ...     save_dir=quantization_dir
->>> )
+... )
 ```
 
 ## Quantization using BrevitasQuantizer

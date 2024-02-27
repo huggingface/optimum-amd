@@ -65,7 +65,7 @@ RyzenAI provides pre-optimized models for various tasks such as image classifica
 
 >>> cls_pipe = pipeline(
 ...    "image-classification", model=model, image_processor=partial(processor, data_format="channels_last")
->>> )
+... )
 >>> outputs = cls_pipe(image)
 >>> print(outputs)
 ```
