@@ -13,6 +13,7 @@ from datasets import load_dataset
 from parameterized import parameterized
 from testing_utils import (
     DEFAULT_CACHE_DIR,
+    DEFAULT_VAIP_CONFIG,
     PYTORCH_TIMM_MODEL,
     PYTORCH_TIMM_MODEL_SUBSET,
     RyzenAITestCaseMixin,
@@ -112,7 +113,7 @@ class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
         # inference
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_name.replace("/", "_")
-        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        vaip_config = DEFAULT_VAIP_CONFIG
 
         evaluation_set = load_dataset(dataset_name, split="validation", streaming=True, trust_remote_code=True)
         ort_inputs = preprocess_fn(next(iter(evaluation_set)), transforms)["pixel_values"].unsqueeze(0)

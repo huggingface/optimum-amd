@@ -11,6 +11,7 @@ SEED = 42
 
 BASELINE_JSON = ".\\tests\\ryzenai\\operators_baseline.json"
 DEFAULT_CACHE_DIR = "ryzen_cache"
+DEFAULT_VAIP_CONFIG = ".\\tests\\ryzenai\\vaip_config.json"
 
 
 def parse_json(json_path):

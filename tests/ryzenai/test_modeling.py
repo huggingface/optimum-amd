@@ -14,6 +14,7 @@ import pytest
 from parameterized import parameterized
 from testing_utils import (
     DEFAULT_CACHE_DIR,
+    DEFAULT_VAIP_CONFIG,
     RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS,
     RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION,
     RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION,
@@ -65,7 +66,7 @@ class RyzenAIModelIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
         os.environ["XLNX_ENABLE_CACHE"] = "0"
         os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-        model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\tests\\ryzenai\\vaip_config.json")
+        model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=DEFAULT_VAIP_CONFIG)
         self.assertIsInstance(model.model, onnxruntime.InferenceSession)
         self.assertListEqual(model.providers, ["VitisAIExecutionProvider", "CPUExecutionProvider"])
 
@@ -82,7 +83,7 @@ class RyzenAIModelIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
             os.environ["XLNX_ENABLE_CACHE"] = "0"
             os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-            model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\tests\\ryzenai\\vaip_config.json")
+            model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=DEFAULT_VAIP_CONFIG)
             model.save_pretrained(tmpdirname)
             folder_contents = os.listdir(tmpdirname)
             self.assertTrue("ResNet_int.onnx" in folder_contents)
@@ -97,7 +98,7 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
             model_id, RyzenAIModelForImageClassification, ort_input, vaip_config, cache_dir, cache_key, file_name
         )
@@ -123,7 +124,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
             model_id, RyzenAIModelForObjectDetection, ort_input, vaip_config, cache_dir, cache_key, file_name
         )
@@ -147,7 +148,7 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAI
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
             model_id, RyzenAIModelForImageSegmentation, ort_input, vaip_config, cache_dir, cache_key, file_name
         )
@@ -171,7 +172,7 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase, RyzenAITestC
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
             model_id, RyzenAIModelForImageToImage, ort_input, vaip_config, cache_dir, cache_key, file_name
         )
@@ -196,7 +197,7 @@ class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase, RyzenAITestCa
         file_name, ort_input, input_name = load_model_and_input(model_id)
         ort_input = {input_name: ort_input}
 
-        vaip_config = ".\\tests\\ryzenai\\vaip_config.json"
+        vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
             model_id, RyzenAIModelForCustomTasks, ort_input, vaip_config, cache_dir, cache_key, file_name
         )
