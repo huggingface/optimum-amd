@@ -55,7 +55,7 @@ def load_model_and_input(model_id, repo_type="model"):
     return file_name, ort_input
 
 
-class RyzenAIModelIntegrationTest(unittest.TestCase):
+class RyzenAIModelIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.TEST_MODEL_ID = "amd/resnet50"
@@ -137,7 +137,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
         gc.collect()
 
 
-class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase):
+class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION)
     @pytest.mark.prequantized_model_test
     def test_integration(self, model_id):
@@ -161,7 +161,7 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase):
         gc.collect()
 
 
-class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase):
+class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE)
     @pytest.mark.prequantized_model_test
     def test_integration(self, model_id):
@@ -185,7 +185,7 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase):
         gc.collect()
 
 
-class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase):
+class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS)
     @pytest.mark.prequantized_model_test
     def test_integration(self, model_id):
