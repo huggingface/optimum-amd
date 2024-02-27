@@ -29,7 +29,7 @@ sys.path.append(os.path.join(os.getcwd()))
 import tests.ryzenai.testing_utils as tu  # noqa
 
 
-# client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
+client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
 
 
 def infer_model_id(model):
