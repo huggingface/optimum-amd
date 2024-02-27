@@ -329,7 +329,10 @@ class Message:
 
         # Save detailed failure report to a file
         model_failures_report = self.prepare_reports(
-            title="", header=model_header, reports=failures_info, to_truncate=False
+            title=f"These following {key.lower()} tests had failures\n. If a failure occurs due to operators' regression, the baseline values are provided within parentheses.",
+            header=model_header,
+            reports=failures_info,
+            to_truncate=False,
         )
         self.save_failure_report_to_file(key, model_failures_report)
 
