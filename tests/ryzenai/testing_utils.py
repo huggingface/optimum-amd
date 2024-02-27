@@ -9,7 +9,8 @@ from transformers import set_seed
 
 SEED = 42
 
-BASELINE_JSON = ".\\tests\\ryzenai\\operators_baseline.json"
+BASELINE_JSON = ".\\tests\\ryzenai\\operators_baseline.json" # For RyzenSDK 1.0.1
+
 DEFAULT_CACHE_DIR = "ryzen_cache"
 DEFAULT_VAIP_CONFIG = ".\\tests\\ryzenai\\vaip_config.json"
 
