@@ -92,6 +92,9 @@ For more information on quantization refer to [Model Quantization](https://ryzen
 
 To load a model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class. 
 
+The `RyzenAIModelForXxx` requires a runtime configuration file. A default version of this runtime configuration file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
+For more information refer to [runtime-configuration-file](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html#runtime-configuration-file)
+
 ```diff
 import requests
 from PIL import Image
@@ -141,7 +144,7 @@ RUN_SLOW=1 pytest -s -v ./tests/ryzenai/
 
 **Windows Powershell**
 
-For Windows Powershell, use the following command to run tests with slow tests enabled:
+For Windows Powershell, use the following command to run the slow tests:
 
 ```bash
 $env:RUN_SLOW=1; pytest -s -v ./tests/ryzenai/
