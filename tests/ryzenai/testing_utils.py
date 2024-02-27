@@ -55,7 +55,7 @@ class RyzenAITestCaseMixin:
             outputs = model_instance(**ort_input)
         else:
             outputs = model_instance(ort_input)
-        
+
         return outputs
 
     def prepare_outputs(
