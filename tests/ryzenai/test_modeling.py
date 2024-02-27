@@ -111,8 +111,9 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
 
+        current_ops["dpu"] = 1000
         self.assertEqual(baseline_ops["all"], current_ops["all"], f"Total operators do not match! {current_ops}")
-        self.assertEqual(baseline_ops["dpu"], 1000, f"DPU operators do not match! {current_ops}")
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], f"DPU operators do not match! {current_ops}")
 
         gc.collect()
 
@@ -137,7 +138,8 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
 
-        self.assertEqual(baseline_ops["all"], 10, f"Total operators do not match! {current_ops}")
+        current_ops["all"] = 10
+        self.assertEqual(baseline_ops["all"], current_ops["all"], f"Total operators do not match! {current_ops}")
         self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], f"DPU operators do not match! {current_ops}")
 
         gc.collect()

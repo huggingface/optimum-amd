@@ -29,7 +29,7 @@ sys.path.append(os.path.join(os.getcwd()))
 import tests.ryzenai.testing_utils as tu  # noqa
 
 
-client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
+# client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
 
 
 def infer_model_id(model):
@@ -245,13 +245,13 @@ class Message:
                 all_baseline_value = baseline_ops.get("all", 0)
 
                 # Extract and compare values from the failure trace
-                all_value_str, dpu_value_str, cpu_value_str = self.extract_operator_values(
+                all_value_str, dpu_value_str, cpu_value_str, regressed = self.extract_operator_values(
                     trace, all_baseline_value, dpu_baseline_value, cpu_baseline_value
                 )
 
                 # Append information about the failure
                 failures_info.append(
-                    f"{all_value_str.rjust(9)} | {dpu_value_str.rjust(7)} | {cpu_value_str.rjust(7)} | {model_id[:40]}"
+                    f"{all_value_str.rjust(9)} | {dpu_value_str.rjust(7)} | {cpu_value_str.rjust(7)} | {regressed.rjust(9)} | {model_id[:40]}"
                 )
 
             # Prepare model failure sections
@@ -272,7 +272,7 @@ class Message:
 
         raise ValueError("Model id could not be determined!")
 
-    def extract_and_compare_values(self, trace, all_baseline_value, dpu_baseline_value, cpu_baseline_value):
+    def extract_operator_values(self, trace, all_baseline_value, dpu_baseline_value, cpu_baseline_value):
         # Extract values from trace and compare with baseline
         if "DPU operators do not match!" in trace or "Total operators do not match!" in trace:
             match = re.search(r"\{'all': (\d+), 'dpu': (\d+), 'cpu': (\d+)\}", trace)
@@ -288,13 +288,15 @@ class Message:
             cpu_value_str = (
                 f"{cpu_value}({cpu_baseline_value})" if cpu_value != cpu_baseline_value else str(cpu_baseline_value)
             )
+            regressed="Y"
         else:
             # No mismatch, use baseline values
             cpu_value_str = str(cpu_baseline_value)
             dpu_value_str = str(dpu_baseline_value)
             all_value_str = str(all_baseline_value)
+            regressed="N"
 
-        return all_value_str, dpu_value_str, cpu_value_str
+        return all_value_str, dpu_value_str, cpu_value_str, regressed
 
     def prepare_model_failure_sections(self, key, job_link, failures_info):
         # Prepare sections for model failures
@@ -317,8 +319,8 @@ class Message:
         )
 
         # Section for detailed failure reports
-        model_header = "Total Ops | DPU Ops | CPU Ops | Model\n"
-        model_failures_report = self.prepare_reports(title="", header=model_header, reports=failures_info)
+        model_header = "Total Ops | DPU Ops | CPU Ops | Regressed | Model\n"
+        model_failures_report = prepare_reports(title="", header=model_header, reports=failures_info)
 
         model_failure_sections.append(
             {
@@ -328,7 +330,7 @@ class Message:
         )
 
         # Save detailed failure report to a file
-        model_failures_report = self.prepare_reports(
+        model_failures_report = prepare_reports(
             title=f"These following {key.lower()} tests had failures\n. If a failure occurs due to operators' regression, the baseline values are provided within parentheses.",
             header=model_header,
             reports=failures_info,
@@ -420,11 +422,11 @@ class Message:
         print("Sending the following payload")
         print(json.dumps({"blocks": blocks}))
 
-        client.chat_postMessage(
-            channel=os.environ["CI_SLACK_CHANNEL_ID"],
-            text=text,
-            blocks=payload,
-        )
+        # client.chat_postMessage(
+        #     channel=os.environ["CI_SLACK_CHANNEL_ID"],
+        #     text=text,
+        #     blocks=payload,
+        # )
 
     def post(self):
         payload = self.payload
@@ -433,11 +435,11 @@ class Message:
 
         text = f"{self.n_failures} failures out of {self.n_tests} tests," if self.n_failures else "All tests passed."
 
-        self.thread_ts = client.chat_postMessage(
-            channel=os.environ["CI_SLACK_CHANNEL_ID"],
-            blocks=payload,
-            text=text,
-        )
+        # self.thread_ts = client.chat_postMessage(
+        #     channel=os.environ["CI_SLACK_CHANNEL_ID"],
+        #     blocks=payload,
+        #     text=text,
+        # )
 
 
 def retrieve_artifact(artifact_path: str):
