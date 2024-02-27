@@ -265,7 +265,7 @@ class Message:
                 diff = str(current) - str(baseline)
                 diff = f"+{diff}" if diff != "0" and not diff.startswith("-") else diff
                 extracted_models.append(
-                    f"{str(baseline).rjust(9)} | {str(current).rjust(7)} | {diff.rjust(14)} | {model_id}"
+                    f"{str(baseline_ops["all"]).rjust(9)} | {str(current).rjust(7)} | {diff.rjust(14)} | {model_id}"
                 )
 
             model_failure_sections.append(
