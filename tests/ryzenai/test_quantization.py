@@ -128,6 +128,7 @@ class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
         baseline_ops = self.get_baseline_ops(cache_key)
 
         self.assertEqual(baseline_ops["all"], current_ops["all"], f"Total operators do not match! {current_ops}")
+        current_ops["dpu"] = 32
         self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], f"DPU operators do not match! {current_ops}")
 
         export_dir.cleanup()

@@ -225,6 +225,19 @@ class Message:
 
         model_failure_sections = []
 
+        text = (
+            "The following section presents category-wise failures for models, illustrating "
+            "the total number of DPU and CPU operators associated with each failure. If a failure is "
+            "attributed to regression (indicated as 'Reg.' in the table), baseline values are provided"
+            "in parentheses. For other failures, operator values are not displayed. Please refer to the"
+            "port reply for additional details on these failures."
+        )
+        content = {"type": "section", "text": {"type": "mrkdwn", "text": text}}
+        model_failure_sections.append(
+            {"type": "header", "text": {"type": "plain_text", "text": "Category wise failures", "emoji": True}},
+            content,
+        )
+
         for key, result in self.model_results.items():
             failures_info = []
 
@@ -309,7 +322,7 @@ class Message:
                 "type": "section",
                 "text": {
                     "type": "plain_text",
-                    "text": f"The {key.upper()} tests had failures.\nIf due to regression (Reg.), the baseline values are provided in parentheses.",
+                    "text": f"{key.upper()}",
                 },
                 "accessory": {
                     "type": "button",
@@ -332,7 +345,7 @@ class Message:
 
         # Save detailed failure report to a file
         model_failures_report = prepare_reports(
-            title=f"The {key.upper()} tests had failures.\nIf due to regression (Reg.), the baseline values are provided in parentheses.",
+            title=f"{key.upper()}",
             header=model_header,
             reports=failures_info,
             to_truncate=False,
@@ -641,7 +654,7 @@ if __name__ == "__main__":
         exit(0)
 
     test_categories = {
-        "Pre-Quantized": "run_tests_prequantized_models",
+        "Pre-Quantized Model": "run_tests_prequantized_models",
         "Timm Quantization": "run_tests_quantization",
     }
 
