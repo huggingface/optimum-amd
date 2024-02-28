@@ -323,8 +323,8 @@ class Message:
             {
                 "type": "section",
                 "text": {
-                    "type": "plain_text",
-                    "text": f"{key.upper()}",
+                    "type": "mrkdwn",
+                    "text": f"*{idx}. {key}*",
                 },
                 "accessory": {
                     "type": "button",
