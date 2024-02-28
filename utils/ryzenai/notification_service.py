@@ -232,14 +232,14 @@ class Message:
             "in parentheses. For other failures, operator values are not displayed. Please refer to the "
             "post reply for additional details on these failures."
         )
-        
+
         model_failure_sections.append(
             {"type": "header", "text": {"type": "plain_text", "text": "Category wise failures", "emoji": True}},
         )
-        
+
         content = {"type": "section", "text": {"type": "plain_text", "text": text, "emoji": True}}
         model_failure_sections.append(content)
-        
+
         for i, (key, result) in enumerate(self.model_results.items()):
             failures_info = []
 
@@ -271,7 +271,9 @@ class Message:
                 )
 
             # Prepare model failure sections
-            model_failure_sections.extend(self.prepare_model_failure_sections(i, key, result["job_link"], failures_info))
+            model_failure_sections.extend(
+                self.prepare_model_failure_sections(i + 1, key, result["job_link"], failures_info)
+            )
 
         return model_failure_sections
 
