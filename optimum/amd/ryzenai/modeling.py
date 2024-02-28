@@ -640,10 +640,7 @@ class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):
 
 
 class RyzenAIModelForImageSegmentation(RyzenAIModelForObjectDetection):
-    def forward(self, pixel_values):
-        raise ValueError("Fail!")
-
-        return super().forward(pixel_values)
+    pass
 
 
 class RyzenAIModelForImageToImage(RyzenAIModelForObjectDetection):
