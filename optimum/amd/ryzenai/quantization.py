@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Callable, List, Optional, Union
 
 import onnx
-import torch
 from datasets import Dataset, load_dataset
 from onnxruntime.quantization import CalibrationDataReader
 from vai_q_onnx import quantize_static
@@ -57,8 +56,6 @@ class RyzenAICalibrationDataReader(CalibrationDataReader):
             pass
 
         if featurized_samples is not None and len(featurized_samples) > 0:
-            for name in featurized_samples:
-                featurized_samples[name] = torch.stack(featurized_samples[name]).numpy()
             return featurized_samples
         return None
 
