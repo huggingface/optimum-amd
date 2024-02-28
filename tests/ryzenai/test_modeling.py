@@ -38,6 +38,7 @@ from optimum.utils import (
     DummyInputGenerator,
     logging,
 )
+from transformers.testing_utils import slow
 
 
 logger = logging.get_logger()
@@ -135,6 +136,13 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
 
 
 class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
+    PIPELINE_SUPPORTED_MODEL_ARCH = [
+        "yolov3",
+        "yolov5",
+        "yolov8",
+        "yolox",
+    ]
+
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION)
     @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
