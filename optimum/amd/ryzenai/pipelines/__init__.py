@@ -81,9 +81,9 @@ def load_model(
 
 def pipeline(
     task,
-    vaip_config,
+    vaip_config: str,
     model: Optional[Any] = None,
-    model_type: str = None,
+    model_type: Optional[str] = None,
     feature_extractor: Optional[Union[str, "PreTrainedFeatureExtractor"]] = None,
     image_processor: Optional[Union[str, BaseImageProcessor]] = None,
     use_fast: bool = True,
@@ -98,39 +98,30 @@ def pipeline(
     The pipeline includes components such as a image processor and model.
 
     Args:
-        task (str):
+        task (`str`):
             The task defining which pipeline will be returned. Available tasks include:
             - "image-classification"
             - "object-detection"
-
-        vaip_config (str):
+        vaip_config (`str`):
             Runtime configuration file for inference with Ryzen IPU. A default config file can be found in the Ryzen AI VOE package,
             extracted during installation under the name `vaip_config.json`.
-
-        model (Optional[Any], *optional*):
+        model (`Optional[Any]`, defaults to `None`):
             The model that will be used by the pipeline to make predictions. This can be a model identifier or an
             actual instance of a pretrained model. If not provided, the default model for the specified task will be loaded.
-
-        model_type (Optional[str], *optional*):
+        model_type (`Optional[str]`, defaults to `None`):
             Model type for the model
-
-        feature_extractor (Union[str, "PreTrainedFeatureExtractor"], *optional*):
+        feature_extractor (`Union[str, "PreTrainedFeatureExtractor"]`, defaults to `None`):
             The feature extractor that will be used by the pipeline to encode data for the model. This can be a model
             identifier or an actual pretrained feature extractor.
-
-        image_processor (Union[str, BaseImageProcessor], *optional*):
+        image_processor (`Union[str, BaseImageProcessor]`, defaults to `None`):
             The image processor that will be used by the pipeline for image-related tasks.
-
-        use_fast (bool, *optional*, defaults to True):
+        use_fast (`bool`, defaults to `True`):
             Whether or not to use a Fast tokenizer if possible.
-
-        token (Union[str, bool], *optional*):
+        token (`Union[str, bool`], defaults to `None`):
             The token to use as HTTP bearer authorization for remote files. If True, will use the token generated when
             running `huggingface-cli login` (stored in `~/.huggingface`).
-
-        revision (str, *optional*):
+        revision (`str`, defaults to `None`):
             The specific model version to use, specified as a branch name, tag name, or commit id.
-
         **kwargs:
             Additional keyword arguments passed to the underlying pipeline class.
 
@@ -151,12 +142,12 @@ def pipeline(
     if model.config is None:
         if model_type is None:
             raise ValueError(
-                "Could not automatically find model_type for the model, you must pass a " "model_type explictly"
+                "Could not automatically find a `model_type` for the model, you must specify the `model_type` argument explicitly."
             )
 
         if model_type not in pipeline_map:
             raise ValueError(
-                f"Model type: {model_type} is not supported by Ryzen pipelines. Please open a issue / PR to support the same!"
+                f"Model type: {model_type} is not supported by Ryzen pipelines. Please open an issue or submit a PR to add the support."
             )
 
         image_processor = pipeline_map[model_type]["preprocessor"]()
@@ -177,8 +168,7 @@ def pipeline(
                         break
                 if image_processor is None:
                     raise ValueError(
-                        "Could not automatically find image processor for the model, you must pass a "
-                        "image_processor explictly"
+                        "Could not automatically find an image processor for the model, you must specifiy the argument `image_processor` explicitly."
                     )
 
         if task == "image-classification" and library_name == "timm":
