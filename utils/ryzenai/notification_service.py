@@ -213,7 +213,7 @@ class Message:
             category_failures.append((f"{report}"))
 
         header = "Failed | Success | Category \n"
-        category_failures_report = prepare_reports(title="Test results", header=header, reports=category_failures)
+        category_failures_report = prepare_reports(title="*Summary*", header=header, reports=category_failures)
 
         return {"type": "section", "text": {"type": "mrkdwn", "text": category_failures_report}}
 
@@ -228,9 +228,9 @@ class Message:
         text = (
             "The following section presents category-wise failures for models, illustrating "
             "the total number of DPU and CPU operators associated with each failure. If a failure is "
-            "attributed to regression (indicated as 'Reg.' in the table), baseline values are provided"
-            "in parentheses. For other failures, operator values are not displayed. Please refer to the"
-            "port reply for additional details on these failures."
+            "attributed to regression (indicated as 'Reg.' in the table), baseline values are provided "
+            "in parentheses. For other failures, operator values are not displayed. Please refer to the "
+            "post reply for additional details on these failures."
         )
         
         model_failure_sections.append(
@@ -240,7 +240,7 @@ class Message:
         content = {"type": "section", "text": {"type": "plain_text", "text": text, "emoji": True}}
         model_failure_sections.append(content)
         
-        for key, result in self.model_results.items():
+        for i, (key, result) in enumerate(self.model_results.items()):
             failures_info = []
 
             for failure in result["failures"]:
@@ -271,7 +271,7 @@ class Message:
                 )
 
             # Prepare model failure sections
-            model_failure_sections.extend(self.prepare_model_failure_sections(key, result["job_link"], failures_info))
+            model_failure_sections.extend(self.prepare_model_failure_sections(i, key, result["job_link"], failures_info))
 
         return model_failure_sections
 
@@ -314,7 +314,7 @@ class Message:
 
         return all_value_str, dpu_value_str, cpu_value_str, regressed
 
-    def prepare_model_failure_sections(self, key, job_link, failures_info):
+    def prepare_model_failure_sections(self, idx, key, job_link, failures_info):
         # Prepare sections for model failures
         model_failure_sections = []
 
@@ -347,7 +347,7 @@ class Message:
 
         # Save detailed failure report to a file
         model_failures_report = prepare_reports(
-            title=f"{key.upper()}",
+            title=f"{idx}. {key}",
             header=model_header,
             reports=failures_info,
             to_truncate=False,
@@ -555,7 +555,7 @@ def prepare_reports(title, header, reports, to_truncate=True):
         for idx in range(len(reports)):
             _report = header + "\n".join(reports[: idx + 1])
             if title:
-                new_report = f"{title}:\n```\n{_report}\n```\n"
+                new_report = f"{title}\n```\n{_report}\n```\n"
             else:
                 new_report = f"```\n{_report}\n```\n"
 
