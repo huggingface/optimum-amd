@@ -143,7 +143,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
         "yolox",
     ]
 
-    @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION)
+    @parameterized.expand(list(RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION.values()))
     @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
         cache_dir = DEFAULT_CACHE_DIR
