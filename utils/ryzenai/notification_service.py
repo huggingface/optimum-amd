@@ -17,6 +17,7 @@ import math
 import os
 import re
 import sys
+import time
 import traceback
 from typing import Dict
 
@@ -147,8 +148,8 @@ class Message:
         time_spent = [r["time_spent"].split(", ")[0] for r in all_results if len(r["time_spent"])]
         total_secs = 0
 
-        for time in time_spent:
-            time_parts = time.split(":")
+        for t in time_spent:
+            time_parts = t.split(":")
 
             # Time can be formatted as xx:xx:xx, as .xx, or as x.xx if the time spent was less than a minute.
             if len(time_parts) == 1:
@@ -288,13 +289,13 @@ class Message:
             cpu_value_str = (
                 f"{cpu_value}({cpu_baseline_value})" if cpu_value != cpu_baseline_value else str(cpu_baseline_value)
             )
-            regressed="Y"
+            regressed = "Y"
         else:
-            # No mismatch, use baseline values
-            cpu_value_str = str(cpu_baseline_value)
-            dpu_value_str = str(dpu_baseline_value)
-            all_value_str = str(all_baseline_value)
-            regressed="N"
+            # No regression, do not print values
+            cpu_value_str = "-"
+            dpu_value_str = "-"
+            all_value_str = "-"
+            regressed = "N"
 
         return all_value_str, dpu_value_str, cpu_value_str, regressed
 
@@ -308,7 +309,7 @@ class Message:
                 "type": "section",
                 "text": {
                     "type": "plain_text",
-                    "text": f"The following {key.lower()} tests had failures.\nIf a failure occurs due to operators' regression (Reg.), the baseline values are provided within parentheses.",
+                    "text": f"{key.lower()} tests had failures.\nIf due to regression (Reg.), the baseline values are provided in parentheses.",
                 },
                 "accessory": {
                     "type": "button",
@@ -331,7 +332,7 @@ class Message:
 
         # Save detailed failure report to a file
         model_failures_report = prepare_reports(
-            title=f"The following {key.lower()} tests had failures.\nIf a failure occurs due to operators' regression(Reg.), the baseline values are provided within parentheses.",
+            title=f"{key.lower()} tests had failures.\nIf due to regression (Reg.), the baseline values are provided in parentheses.",
             header=model_header,
             reports=failures_info,
             to_truncate=False,
@@ -428,6 +429,33 @@ class Message:
             blocks=payload,
         )
 
+    def get_reply_blocks(self, job_name, failure, text):
+        """
+        failure: A failure of the form {"line": full test name, "trace": error trace}
+        """
+        # `text` must be less than 3001 characters in Slack SDK
+        # keep some room for adding "[Truncated]" when necessary
+        MAX_ERROR_TEXT = 3000 - len("[Truncated]")
+
+        failure_text = ""
+        new_text = failure_text + f'*{failure["line"]}*\n_{failure["trace"]}_\n\n'
+        if len(new_text) > MAX_ERROR_TEXT:
+            # `failure_text` here has length <= 3000
+            failure_text = new_text[:MAX_ERROR_TEXT] + "[Truncated]"
+        else:
+            # `failure_text` here has length <= MAX_ERROR_TEXT
+            failure_text = new_text
+
+        title = job_name
+
+        content = {"type": "section", "text": {"type": "mrkdwn", "text": text}}
+
+        return [
+            {"type": "header", "text": {"type": "plain_text", "text": title.upper(), "emoji": True}},
+            content,
+            {"type": "section", "text": {"type": "mrkdwn", "text": failure_text}},
+        ]
+
     def post(self):
         payload = self.payload
         print("Sending the following payload")
@@ -440,6 +468,26 @@ class Message:
             blocks=payload,
             text=text,
         )
+
+    def post_reply(self):
+        if self.thread_ts is None:
+            raise ValueError("Can only post reply if a post has been made.")
+
+        for key, result in self.model_results.items():
+            for failure in result["failures"]:
+                blocks = self.get_reply_blocks(key, failure, text="test failure")
+
+                print("Sending the following reply")
+                print(json.dumps({"blocks": blocks}))
+
+                client.chat_postMessage(
+                    channel=os.environ["CI_SLACK_CHANNEL_ID"],
+                    text=f"Results for {job}",
+                    blocks=blocks,
+                    thread_ts=self.thread_ts["ts"],
+                )
+
+                time.sleep(1)
 
 
 def retrieve_artifact(artifact_path: str):
@@ -650,3 +698,4 @@ if __name__ == "__main__":
     )
 
     message.post()
+    message.post_reply()
