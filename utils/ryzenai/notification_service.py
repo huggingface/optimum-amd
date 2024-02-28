@@ -175,7 +175,7 @@ class Message:
             "type": "section",
             "text": {
                 "type": "plain_text",
-                "text": f"🌞 There were no failures: all {self.n_tests} tests passed. The suite ran in {self.time}.",
+                "text": f"🌞 There were no failures: all {self.n_tests} tests passed.\nThe suite ran in {self.time}.",
                 "emoji": True,
             },
             "accessory": {
