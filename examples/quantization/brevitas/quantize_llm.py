@@ -29,7 +29,7 @@ def main(args):
         cpu_device_map=args.cpu_device_map,
     )
 
-    quantizer = BrevitasQuantizer.from_pretrained(args.model, device_map=args.device)
+    quantizer = BrevitasQuantizer.from_pretrained(args.model, device_map="cpu")
 
     # Load the data for calibration and evaluation.
     calibration_dataset = get_dataset_for_model(
