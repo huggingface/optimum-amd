@@ -51,9 +51,9 @@ jobs:
           git clone --depth 1 --branch v3.5 https://github.com/Xilinx/Vitis-AI.git && cd Vitis-AI/src/vai_quantizer/vai_q_onnx && sh build.sh && pip install pkgs/*.whl
 
           cd ../../../../optimum-amd
-          pip install .[brevitas]
+          pip install .[brevitas, tests]
 
-          pip install onnxruntime==1.14.0 torchvision opencv-python
+          pip install onnxruntime==1.14.0
           cd ..
 
       - name: Make documentation
