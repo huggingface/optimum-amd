@@ -133,9 +133,12 @@ def get_wikitext2(
                 start_idx = random.randint(0, enc["input_ids"].shape[1] - seqlen)
                 end_idx = start_idx + seqlen - 1
                 attention_mask = torch.ones((1, seqlen), dtype=torch.int64)
-                dataset.append(
-                    {"input_ids": enc["input_ids"][:, start_idx : end_idx + 1], "attention_mask": attention_mask}
-                )
+                input_ids = enc["input_ids"][:, start_idx : end_idx + 1]
+
+                # Add BOS token.
+                input_ids[:, 0] = tokenizer.bos_token_id
+
+                dataset.append({"input_ids": input_ids, "attention_mask": attention_mask})
                 pbar.update(1)
 
     return dataset
@@ -181,9 +184,12 @@ def get_c4(
                 start_idx = random.randint(0, enc["input_ids"].shape[1] - seqlen)
                 end_idx = start_idx + seqlen - 1
                 attention_mask = torch.ones((1, seqlen), dtype=torch.int64)
-                dataset.append(
-                    {"input_ids": enc["input_ids"][:, start_idx : end_idx + 1], "attention_mask": attention_mask}
-                )
+                input_ids = enc["input_ids"][:, start_idx : end_idx + 1]
+
+                # Add BOS token.
+                input_ids[:, 0] = tokenizer.bos_token_id
+
+                dataset.append({"input_ids": input_ids, "attention_mask": attention_mask})
                 pbar.update(1)
 
     return dataset
