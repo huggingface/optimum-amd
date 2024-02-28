@@ -232,12 +232,14 @@ class Message:
             "in parentheses. For other failures, operator values are not displayed. Please refer to the"
             "port reply for additional details on these failures."
         )
-        content = {"type": "section", "text": {"type": "mrkdwn", "text": text}}
+        
         model_failure_sections.append(
             {"type": "header", "text": {"type": "plain_text", "text": "Category wise failures", "emoji": True}},
-            content,
         )
-
+        
+        content = {"type": "section", "text": {"type": "plain_text", "text": text, "emoji": True}}
+        model_failure_sections.append(content)
+        
         for key, result in self.model_results.items():
             failures_info = []
 
