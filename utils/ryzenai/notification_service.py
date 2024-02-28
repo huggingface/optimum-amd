@@ -448,11 +448,8 @@ class Message:
 
         title = job_name
 
-        content = {"type": "section", "text": {"type": "mrkdwn", "text": text}}
-
         return [
             {"type": "header", "text": {"type": "plain_text", "text": title.upper(), "emoji": True}},
-            content,
             {"type": "section", "text": {"type": "mrkdwn", "text": failure_text}},
         ]
 
