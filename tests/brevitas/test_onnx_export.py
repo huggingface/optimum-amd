@@ -7,10 +7,12 @@ import unittest
 from pathlib import Path
 from typing import Dict
 
+import numpy as np
 import onnx
 import torch
 from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
+from onnx import numpy_helper
 from parameterized import parameterized
 from testing_utils import SUPPORTED_MODELS_TINY, VALIDATE_EXPORT_ON_SHAPES, get_quantized_model
 
@@ -158,6 +160,19 @@ class TestOnnxExport(unittest.TestCase):
 
             onnx_model = onnx.load(os.path.join(tmpdir, "model.onnx"))
 
-            for node in onnx_model.graph.node:
-                # Check that we have MatmulInteger, etc.
-                pass
+            if qdq_weights:
+                for node in onnx_model.graph.node:
+                    if node.op_type == "Constant":
+                        for attrib in node.attribute:
+                            new_array = numpy_helper.to_array(attrib.t)
+                            if len(new_array.shape) >= 2 and new_array.dtype in [np.uint8, np.int8]:
+                                break
+                else:
+                    self.assertTrue(False, "Did not found an int8/uint8 serialized weight")
+            else:
+                for node in onnx_model.graph.node:
+                    if node.op_type == "Constant":
+                        for attrib in node.attribute:
+                            new_array = numpy_helper.to_array(attrib.t)
+                            if len(new_array.shape) >= 2 and new_array.dtype in [np.uint8, np.int8]:
+                                self.assertTrue(False, "Found uint8/int8 serialized weights while we should not")

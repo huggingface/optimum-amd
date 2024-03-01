@@ -158,8 +158,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--qdq-weights",
-        type=str,
-        default="llm_quantized_onnx",
+        action="store_true",
+        default=False,
         help="In the ONNX export, save quantized weights as float32 and insert an additional QuantizeLinear node, TensorRT style (default: %(default)s).",
     )
     parser.add_argument(
