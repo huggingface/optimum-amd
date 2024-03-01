@@ -81,7 +81,9 @@ def main(args):
 
     # Export to ONNX through optimum.exporters.
     export_manager = StdQCDQONNXManager
-    export_manager.change_weight_export(export_weight_q_node=True)
+    if args.qdq_weights:
+        export_manager.change_weight_export(export_weight_q_node=True)
+
     with torch.no_grad(), brevitas_proxy_export_mode(quantized_model, export_manager=export_manager):
         onnx_export_from_model(
             quantized_model,
@@ -155,10 +157,16 @@ if __name__ == "__main__":
         help='Device to run the example on (e.q., "cpu", "cuda:0", "auto"). "auto" will automatically select the device using HuggingFace Accelerate (choices: [%(choices)s], default: %(default)s).',
     )
     parser.add_argument(
+        "--qdq-weights",
+        type=str,
+        default="llm_quantized_onnx",
+        help="In the ONNX export, save quantized weights as float32 and insert an additional QuantizeLinear node, TensorRT style (default: %(default)s).",
+    )
+    parser.add_argument(
         "--onnx-output-path",
         type=str,
         default="llm_quantized_onnx",
-        help="Location to store the output ONNX model (default: %(default)s)",
+        help="Location to store the output ONNX model (default: %(default)s).",
     )
 
     args = parser.parse_args()
