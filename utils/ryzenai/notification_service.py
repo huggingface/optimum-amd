@@ -270,10 +270,11 @@ class Message:
                     f"{all_value_str.rjust(9)} | {dpu_value_str.rjust(9)} | {cpu_value_str.rjust(9)} | {regressed.rjust(4)} | {model_id[:40]}"
                 )
 
-            # Prepare model failure sections
-            model_failure_sections.extend(
-                self.prepare_model_failure_sections(i + 1, key, result["job_link"], failures_info)
-            )
+            if len(failures_info):
+                # Prepare model failure sections
+                model_failure_sections.extend(
+                    self.prepare_model_failure_sections(i + 1, key, result["job_link"], failures_info)
+                )
 
         return model_failure_sections
 
