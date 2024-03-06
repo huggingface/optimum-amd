@@ -41,7 +41,7 @@ def infer_model_id(model):
     elif "amd" in model:
         all_model_names = (
             tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION
-            + tu.RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION
+            + list(tu.RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION.values())
             + tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION
             + tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE
             + tu.RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS
