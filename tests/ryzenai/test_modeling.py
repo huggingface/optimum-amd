@@ -114,7 +114,9 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
-        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
+
+        self.assertEqual(baseline_ops["all"], current_ops["all"], f"Total operators do not match! {current_ops}")
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], f"DPU operators do not match! {current_ops}")
 
         gc.collect()
 
@@ -161,7 +163,9 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
-        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
+
+        self.assertEqual(baseline_ops["all"], current_ops["all"], f"Total operators do not match! {current_ops}")
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], f"DPU operators do not match! {current_ops}")
 
         gc.collect()
 
@@ -225,7 +229,9 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAI
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
-        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
+
+        self.assertEqual(baseline_ops["all"], current_ops["all"], f"Total operators do not match! {current_ops}")
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], f"DPU operators do not match! {current_ops}")
 
         gc.collect()
 
@@ -249,7 +255,9 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase, RyzenAITestC
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
-        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
+
+        self.assertEqual(baseline_ops["all"], current_ops["all"], f"Total operators do not match! {current_ops}")
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], f"DPU operators do not match! {current_ops}")
 
         gc.collect()
 
@@ -274,6 +282,8 @@ class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase, RyzenAITestCa
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
-        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], "DPU operators do not match!")
+
+        self.assertEqual(baseline_ops["all"], current_ops["all"], f"Total operators do not match! {current_ops}")
+        self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], f"DPU operators do not match! {current_ops}")
 
         gc.collect()
