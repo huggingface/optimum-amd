@@ -107,14 +107,13 @@ RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION = [
     # "amd/squeezenet",
 ]
 
-
-RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION = [
-    "amd/retinaface",
-    # "amd/yolov3",
-    # "amd/yolov5s",
-    # "amd/yolov8m",
-    # "amd/yolox-s",
-]
+RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION = {
+    "retinaface": "amd/retinaface",
+    # "yolov3": "amd/yolov3",
+    # "yolov5": "amd/yolov5s",
+    # "yolov8": "amd/yolov8m",
+    # "yolox": "amd/yolox-s",
+}
 
 RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION = [
     # "amd/HRNet",

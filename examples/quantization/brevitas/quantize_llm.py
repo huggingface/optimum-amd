@@ -29,7 +29,7 @@ def main(args):
         cpu_device_map=args.cpu_device_map,
     )
 
-    quantizer = BrevitasQuantizer.from_pretrained(args.model, device_map=args.device)
+    quantizer = BrevitasQuantizer.from_pretrained(args.model, device_map="cpu" if use_accelerate else args.device)
 
     # Load the data for calibration and evaluation.
     calibration_dataset = get_dataset_for_model(
@@ -41,6 +41,7 @@ def main(args):
         seqlen=args.seqlen,
         split="train",
         device=args.device if not use_accelerate else None,
+        fuse_sequences=args.fuse_sequences,
     )
 
     validation_dataset = get_dataset_for_model(
@@ -52,6 +53,7 @@ def main(args):
         seqlen=args.seqlen,
         split="validation",
         device=args.device if not use_accelerate else None,
+        fuse_sequences=args.fuse_sequences,
     )
 
     model = quantizer.model
@@ -138,6 +140,12 @@ if __name__ == "__main__":
         type=int,
         default=128,
         help="Number of samples to use during calibration & validation (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--fuse-sequences",
+        action="store_true",
+        default=False,
+        help="Whether to merge the dataset sequences in case they are shorter than the requested number of samples per sequence. This is useful in case you would like to quantize or evaluate on long sequences (default: %(default)s).",
     )
     parser.add_argument(
         "--device",
