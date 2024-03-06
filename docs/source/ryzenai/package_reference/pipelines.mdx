@@ -1,0 +1,59 @@
+<!--Copyright 2023 The HuggingFace Team. All rights reserved.
+Licensed under the MIT License.
+-->
+
+## RyzenAIModel
+
+[[autodoc]] ryzenai.pipelines.pipeline
+
+### Computer vision
+
+[[autodoc]] ryzenai.pipelines.TimmImageClassificationPipeline
+- all
+
+Example usage:
+
+```python
+import requests
+from PIL import Image
+
+from optimum.amd.ryzenai import pipeline
+
+url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+image = Image.open(requests.get(url, stream=True).raw)
+
+model_id = "mohitsha/timm-resnet18-onnx-quantized-ryzen"
+
+pipe = pipeline("image-classification", model=model_id, vaip_config="vaip_config.json")
+print(pipe(image))
+```
+
+[[autodoc]] ryzenai.pipelines.YoloObjectDetectionPipeline
+- all
+
+Supported model types
+* yolox
+* yolov3
+* yolov5
+* yolov8
+
+Example usage:
+
+```python
+import requests
+from PIL import Image
+
+from optimum.amd.ryzenai import pipeline
+
+img = ".\\image.jpg"
+url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+image = Image.open(requests.get(url, stream=True).raw)
+img = ".\\image2.jpg"
+
+image = Image.open(img)
+
+model_id = "amd/yolox-s"
+
+detector = pipeline("object-detection", model=model_id, vaip_config="vaip_config.json", model_type="yolox")
+detector = pipe(image)
+```
