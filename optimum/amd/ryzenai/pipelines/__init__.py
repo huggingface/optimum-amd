@@ -10,9 +10,21 @@ from transformers import pipeline as transformers_pipeline
 from transformers.image_processing_utils import BaseImageProcessor
 from transformers.onnx.utils import get_preprocessor
 
-from ..modeling import RyzenAIModel, RyzenAIModelForImageClassification, RyzenAIModelForObjectDetection
-from ..models import YoloV3ImageProcessor, YoloV5ImageProcessor, YoloV8ImageProcessor, YoloXImageProcessor
+from ..modeling import (
+    RyzenAIModel,
+    RyzenAIModelForImageClassification,
+    RyzenAIModelForObjectDetection,
+    RyzenAIModelForSemanticSegmentation,
+)
+from ..models import (
+    SemanticFPNImageProcessor,
+    YoloV3ImageProcessor,
+    YoloV5ImageProcessor,
+    YoloV8ImageProcessor,
+    YoloXImageProcessor,
+)
 from .image_classification import TimmImageClassificationPipeline
+from .image_segmentation import ImageSegmentationPipeline
 from .object_detection import YoloObjectDetectionPipeline
 
 
@@ -24,6 +36,7 @@ pipeline_map = {
     "yolov5": {"preprocessor": YoloV5ImageProcessor, "impl": YoloObjectDetectionPipeline},
     "yolov3": {"preprocessor": YoloV3ImageProcessor, "impl": YoloObjectDetectionPipeline},
     "yolov8": {"preprocessor": YoloV8ImageProcessor, "impl": YoloObjectDetectionPipeline},
+    "semantic_fpn": {"preprocessor": SemanticFPNImageProcessor, "impl": ImageSegmentationPipeline},
 }
 
 RYZENAI_SUPPORTED_TASKS = {
@@ -39,6 +52,13 @@ RYZENAI_SUPPORTED_TASKS = {
         "default": "amd/yolox-s",
         "type": "image",
         "model_type": "yolox",
+    },
+    "image-segmentation": {
+        "impl": ImageSegmentationPipeline,
+        "class": (RyzenAIModelForSemanticSegmentation,),
+        "default": "amd/SemanticFPN",
+        "type": "image",
+        "model_type": "semantic_fpn",
     },
 }
 
