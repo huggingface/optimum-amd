@@ -305,29 +305,29 @@
     "cpu": 804
   },
   "timm_edgenext_base.usi_in1k": {
-    "all": 2298,
+    "all": 2274,
     "dpu": 0,
-    "cpu": 2298
+    "cpu": 2274
   },
   "timm_edgenext_small.usi_in1k": {
-    "all": 2298,
+    "all": 2274,
     "dpu": 0,
-    "cpu": 2298
+    "cpu": 2274
   },
   "timm_edgenext_small_rw.sw_in1k": {
-    "all": 2159,
+    "all": 2135,
     "dpu": 0,
-    "cpu": 2159
+    "cpu": 2135
   },
   "timm_edgenext_x_small.in1k": {
-    "all": 2278,
+    "all": 2254,
     "dpu": 0,
-    "cpu": 2278
+    "cpu": 2254
   },
   "timm_edgenext_xx_small.in1k": {
-    "all": 1770,
+    "all": 1746,
     "dpu": 0,
-    "cpu": 1770
+    "cpu": 1746
   },
   "timm_efficientnet_b0.ra_in1k": {
     "all": 1054,
