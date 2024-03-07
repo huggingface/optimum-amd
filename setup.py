@@ -24,7 +24,8 @@ TESTS_REQUIRE = [
     "timm",
     "scikit-learn",
     "onnxruntime",
-    "torchvision",
+    "torch==2.2.1",
+    "torchvision==0.17.1",
     "opencv-python",
 ]
 
