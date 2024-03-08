@@ -9,10 +9,10 @@ from transformers import set_seed
 
 SEED = 42
 
-BASELINE_JSON = ".\\tests\\ryzenai\\operators_baseline.json"  # For RyzenSDK 1.0.1
+BASELINE_JSON = os.path.normpath("./tests/ryzenai/operators_baseline.json")  # For RyzenSDK 1.0.1
+DEFAULT_VAIP_CONFIG = os.path.normpath("./tests/ryzenai/vaip_config.json")
 
 DEFAULT_CACHE_DIR = "ryzen_cache"
-DEFAULT_VAIP_CONFIG = ".\\tests\\ryzenai\\vaip_config.json"
 
 
 def parse_json(json_path):
@@ -107,14 +107,13 @@ RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION = [
     "amd/squeezenet",
 ]
 
-
-RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION = [
-    "amd/retinaface",
-    "amd/yolov3",
-    "amd/yolov5s",
-    "amd/yolov8m",
-    "amd/yolox-s",
-]
+RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION = {
+    "retinaface": "amd/retinaface",
+    "yolov3": "amd/yolov3",
+    "yolov5": "amd/yolov5s",
+    "yolov8": "amd/yolov8m",
+    "yolox": "amd/yolox-s",
+}
 
 RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION = [
     "amd/HRNet",

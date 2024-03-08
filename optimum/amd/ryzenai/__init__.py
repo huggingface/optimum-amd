@@ -3,7 +3,7 @@
 
 from typing import TYPE_CHECKING
 
-from transformers.utils import OptionalDependencyNotAvailable, _LazyModule
+from transformers.utils import _LazyModule
 
 
 _import_structure = {
@@ -17,6 +17,7 @@ _import_structure = {
         "RyzenAIModelForObjectDetection",
     ],
     "quantization": ["RyzenAIOnnxQuantizer"],
+    "pipelines": ["pipeline"],
     "version": ["__version__"],
 }
 
@@ -32,6 +33,7 @@ if TYPE_CHECKING:
         RyzenAIModelForImageToImage,
         RyzenAIModelForObjectDetection,
     )
+    from .pipelines import pipeline
     from .quantization import RyzenAIOnnxQuantizer
     from .version import __version__
 else:

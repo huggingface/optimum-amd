@@ -367,6 +367,7 @@ class RyzenAIModel(OptimizedModel):
         cls,
         model_id: str,
         config: PretrainedConfig,
+        vaip_config: Optional[str] = None,
         use_auth_token: Optional[Union[bool, str]] = None,
         revision: Optional[str] = None,
         force_download: bool = False,
@@ -379,7 +380,7 @@ class RyzenAIModel(OptimizedModel):
         provider_options: Optional[Dict[str, Any]] = None,
         task: Optional[str] = None,
     ) -> "RyzenAIModel":
-        return NotImplementedError(
+        raise NotImplementedError(
             "Exporting the model from transformers is not supported. Please follow the documentation to export the model and run the model using the RyzenAIModel!"
         )
 

@@ -11,7 +11,7 @@ The example shows an example on how to quantize a decoder-class LLM model throug
 ## Prerequisites
 
 The examples were tested using:
-- `brevitas>=0.10.2`
+- `brevitas` installed from dev (`pip install git+https://github.com/Xilinx/brevitas.git@dev`)
 - `torch>=2.1.2`
 - `transformers` installed from main (`pip install git+https://github.com/huggingface/transformers.git@4b236aed7618d90546cd2e8797dab5b4a24c5dce`)
 - `optimum>=1.17.0`

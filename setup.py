@@ -17,7 +17,17 @@ except Exception as error:
 INSTALL_REQUIRE = ["optimum", "transformers>=4.38", "onnx", "onnxruntime-extensions"]
 
 # TODO: unpin pytest once https://github.com/huggingface/transformers/pull/29154 is merged & released
-TESTS_REQUIRE = ["pytest<=7.4.4", "parameterized", "evaluate", "timm", "scikit-learn", "onnxruntime"]
+TESTS_REQUIRE = [
+    "pytest<=7.4.4",
+    "parameterized",
+    "evaluate",
+    "timm",
+    "scikit-learn",
+    "onnxruntime",
+    "torch==2.2.1",
+    "torchvision==0.17.1",
+    "opencv-python",
+]
 
 QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]
 
