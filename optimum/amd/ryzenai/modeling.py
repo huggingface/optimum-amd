@@ -646,28 +646,24 @@ class RyzenAIModelForImageClassification(RyzenAIModelForCustomTasks):
         task: Optional[str] = None,
     ) -> "RyzenAIModel":
 
-        if model_id.startswith("timm"):
-            save_dir = TemporaryDirectory()
-            save_dir_path = Path(save_dir.name)
-            main_export(
-                model_name_or_path=model_id,
-                output=save_dir_path,
-                task="image-classification",
-                opset=17,
-                batch_size=1,
-                no_dynamic_axes=True,
-            )
-            config = PretrainedConfig.from_pretrained(save_dir_path)
-            return cls._from_pretrained(
-                save_dir_path,
-                config,
-                model_save_dir=save_dir,
-                provider="CPUExecutionProvider",
-                session_options=session_options,
-                provider_options=provider_options,
-            )
-        raise NotImplementedError(
-            "Exporting the model not from timm is not supported. Please follow the documentation to export the model and run the model using the RyzenAIModel!"
+        save_dir = TemporaryDirectory()
+        save_dir_path = Path(save_dir.name)
+        main_export(
+            model_name_or_path=model_id,
+            output=save_dir_path,
+            task="image-classification",
+            opset=17,
+            batch_size=1,
+            no_dynamic_axes=True,
+        )
+        config = PretrainedConfig.from_pretrained(save_dir_path)
+        return cls._from_pretrained(
+            save_dir_path,
+            config,
+            model_save_dir=save_dir,
+            provider="CPUExecutionProvider",
+            session_options=session_options,
+            provider_options=provider_options,
         )
 
 
