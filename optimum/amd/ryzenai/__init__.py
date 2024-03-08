@@ -7,7 +7,7 @@ from transformers.utils import _LazyModule
 
 
 _import_structure = {
-    "configuration": ["RyzenAIConfig", "QuantizationConfig", "AutoQuantizationConfig"],
+    "configuration": ["RyzenAIConfig", "ExtraOptions", "QuantizationConfig", "AutoQuantizationConfig"],
     "modeling": [
         "RyzenAIModel",
         "RyzenAIModelForCustomTasks",
