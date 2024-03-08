@@ -165,7 +165,7 @@ class ExtraOptions:
     add_qdq_pair_to_weight: bool = False
     op_types_to_exclude_output_quantization: Union[List[str], None] = None
     dedicated_qdq_pair: bool = False
-    qdq_op_type_per_channel_support_to_axis: Dict = field(default_factory=lambda: {})
+    qdq_op_type_per_channel_support_to_axis: Dict = field(default_factory=dict)
     use_qdq_vitis_custom_ops: bool = True
     calib_tensor_range_symmetric: bool = False
     calib_moving_average: bool = False
@@ -226,14 +226,14 @@ class ExtraOptions:
         snake_case_name = self.camel_to_snake.get(name,  re.sub(r'([A-Z])', r'_\1', name).lower().lstrip('_'))
         return getattr(self, snake_case_name)
 
-    def get_non_default_values(self, camel_case=True) -> dict:
+    def to_diff_dict(self, camel_case=False) -> dict:
         non_default_values = {}
         for field in fields(self):
             if camel_case:
                 name = self.snake_to_camel.get(field.name, ''.join(word.capitalize() for word in field.name.split('_')))
             else:
                 name = field.name
-            if getattr(self, field.name) != field.default:
+            if getattr(self, field.name) != field.default and getattr(self, field.name) != {}:
                 non_default_values[name] = getattr(self, field.name)
         return non_default_values
 
@@ -304,7 +304,7 @@ class QuantizationConfig:
             Controls whether to convert the input NCHW model to NHWC model before quantization.
         include_cle (bool, defaults to `False`):
             Flag to optimize models using CrossLayerEqualization; can improve accuracy for some models.
-        extra_options (Dict or None, defaults to an instance of `ExtraOptions` with default values):
+        extra_options (Union[Dict, None, ExtraOptions], defaults to an instance of `ExtraOptions` with default values):
             Contains key-value pairs for various options in different cases.
     """
 
@@ -329,6 +329,39 @@ class QuantizationConfig:
     include_cle: bool = False
     extra_options: ExtraOptions = field(default_factory=ExtraOptions)
 
+    def __post_init__(self):
+        if isinstance(self.extra_options, dict):
+            self.extra_options = ExtraOptions(**self.extra_options)
+
+    def __setattr__(self, name, value):
+        if name == 'extra_options' and isinstance(value, dict):
+            from pdb import set_trace; set_trace()
+            setattr(self, 'extra_options', ExtraOptions(**value))
+        else:
+            super().__setattr__(name, value)
+
+    def to_diff_dict(self) -> dict:
+        non_default_values = {}
+        for field in fields(self):
+            if field.name == 'extra_options':
+                extra_options_dict = getattr(self, field.name).to_diff_dict()
+                if extra_options_dict:
+                    non_default_values[field.name] = extra_options_dict
+            else:
+                value = getattr(self, field.name)
+                if value != field.default and value not in ({}, []):
+                    if field.name == "execution_providers" and value == ["CPUExecutionProvider"]:
+                        continue
+
+                    if isinstance(value, Enum):
+                        value = value.name
+                    elif isinstance(value, list):
+                        value = [elem.name if isinstance(elem, Enum) else elem for elem in value]
+
+                    non_default_values[field.name] = value
+        return non_default_values
+
+
     @staticmethod
     def quantization_type_str(activations_dtype: QuantType, weights_dtype: QuantType) -> str:
         return (
@@ -339,7 +372,10 @@ class QuantizationConfig:
 
     @property
     def use_symmetric_calibration(self) -> bool:
-        return self.extra_options.activation_symmetric and self.extra_options.weight_symmetric
+        if self.extra_options:
+            return self.extra_options.activation_symmetric and self.extra_options.weight_symmetric
+        
+        return ExtraOptions().activation_symmetric and ExtraOptions().weight_symmetric
 
     # def __str__(self):
     #     return (
@@ -451,7 +487,7 @@ class RyzenAIConfig(BaseConfig):
     ):
         super().__init__()
         self.opset = opset
-        self.quantization = self.dataclass_to_dict(quantization)
+        self.quantization = quantization.to_diff_dict() if quantization is not None else None
         self.optimum_version = kwargs.pop("optimum_version", None)
 
     @staticmethod
