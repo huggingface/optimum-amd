@@ -10,6 +10,7 @@ from optimum.amd.ryzenai import (
 def parse_args():
     parser = ArgumentParser("RyzenAIQuantization")
     parser.add_argument("--model_id", type=str, default='timm/resnet50.a1_in1k', help='Model id, default to "timm/resnet50.a1_in1k"')
+    parser.add_argument("--dataset", type=str, default='imagenet-1k', help='Calibration dataset, default to ""imagenet-1k""')
     args, _ = parser.parse_known_args()
     return args
 
@@ -35,7 +36,7 @@ def main(args):
     quantization_config = AutoQuantizationConfig.ipu_cnn_config()
 
     calibration_dataset = quantizer.get_calibration_dataset(
-        "imagenet-1k",
+        args.dataset,
         preprocess_function=partial(preprocess_fn, transforms=transforms),
         num_samples=10,
         dataset_split="train",

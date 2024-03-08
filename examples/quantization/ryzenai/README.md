@@ -25,8 +25,14 @@ quantizer = RyzenAIOnnxQuantizer.from_pretrained("path/to/model")
 ### Running the Example
 The RyzenAIOnnxQuantizer class can be used to quantize statically your ONNX model. When applying post-training static quantization, we need to generate the calibration dataset in order to perform the calibration step.
 
-To quantize a image classification model such as "timm/resnet50.a1_in1k", use: 
+To quantize a image classification model such as "timm/resnet50.a1_in1k", use:
 
 ```bash
 python quantize_image_classification_model.py --model-id timm/resnet50.a1_in1k
+```
+
+For all the options, please check:
+
+```bash
+python quantize_image_classification_model.py --help
 ```
