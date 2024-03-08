@@ -654,31 +654,21 @@ class RyzenAIModelForImageClassification(RyzenAIModelForCustomTasks):
                 output=save_dir_path,
                 task="image-classification",
                 opset=17,
+                batch_size=1,
+                no_dynamic_axes=True,
             )
             config = PretrainedConfig.from_pretrained(save_dir_path)
-            pretrained_cfg = config.pretrained_cfg if hasattr(config, "pretrained_cfg") else config
-            if pretrained_cfg.get("input_size") and pretrained_cfg.get("num_classes"):
-                input_size = [1] + pretrained_cfg["input_size"]
-                output_size = [1, pretrained_cfg["num_classes"]]
-                static_onnx_path = cls.reshape(
-                    Path(save_dir_path) / "model.onnx",
-                    input_shape_dict={"pixel_values": input_size},
-                    output_shape_dict={"logits": output_size},
-                )
-
-                return cls._from_pretrained(
-                    static_onnx_path.parent,
-                    pretrained_cfg,
-                    file_name=static_onnx_path.name,
-                    model_save_dir=save_dir,
-                    provider="CPUExecutionProvider",
-                    session_options=session_options,
-                    provider_options=provider_options,
-                )
+            return cls._from_pretrained(
+                save_dir_path,
+                config,
+                model_save_dir=save_dir,
+                provider="CPUExecutionProvider",
+                session_options=session_options,
+                provider_options=provider_options,
+            )
         raise NotImplementedError(
             "Exporting the model not from timm is not supported. Please follow the documentation to export the model and run the model using the RyzenAIModel!"
         )
-
 
 
 class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):

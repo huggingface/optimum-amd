@@ -123,7 +123,7 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
 
         if isinstance(model_or_path, RyzenAIModel):
             if path is None:
-                path = Path(model_or_path.model._model_path)
+                path = Path(model_or_path.model_path)
         elif os.path.isdir(model_or_path):
             path = Path(model_or_path) / file_name
         else:
