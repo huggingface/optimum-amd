@@ -169,9 +169,11 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
             weight_type=quantization_config.weight_type,
             activation_type=quantization_config.activation_type,
             enable_dpu=quantization_config.enable_dpu,
-            extra_options=quantization_config.extra_options.to_diff_dict(camel_case=True)
-            if quantization_config.extra_options
-            else {},
+            extra_options=(
+                quantization_config.extra_options.to_diff_dict(camel_case=True)
+                if quantization_config.extra_options
+                else {}
+            ),
         )
 
         LOGGER.info(f"Saved quantized model at: {save_dir}")

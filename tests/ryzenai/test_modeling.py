@@ -29,9 +29,9 @@ from optimum.amd.ryzenai import (
     RyzenAIModel,
     RyzenAIModelForCustomTasks,
     RyzenAIModelForImageClassification,
+    RyzenAIModelForImageSegmentation,
     RyzenAIModelForImageToImage,
     RyzenAIModelForObjectDetection,
-    RyzenAIModelForSemanticSegmentation,
     pipeline,
 )
 from optimum.utils import (
@@ -210,7 +210,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
             self.assertGreaterEqual(pred["score"], 0.0)
 
 
-class RyzenAIModelForSemanticSegmentationIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
+class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION)
     @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
@@ -221,7 +221,7 @@ class RyzenAIModelForSemanticSegmentationIntegrationTest(unittest.TestCase, Ryze
 
         vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
-            model_id, RyzenAIModelForSemanticSegmentation, ort_input, vaip_config, cache_dir, cache_key, file_name
+            model_id, RyzenAIModelForImageSegmentation, ort_input, vaip_config, cache_dir, cache_key, file_name
         )
 
         for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):

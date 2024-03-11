@@ -12,7 +12,7 @@ _import_structure = {
         "RyzenAIModel",
         "RyzenAIModelForCustomTasks",
         "RyzenAIModelForImageClassification",
-        "RyzenAIModelForSemanticSegmentation",
+        "RyzenAIModelForImageSegmentation",
         "RyzenAIModelForImageToImage",
         "RyzenAIModelForObjectDetection",
     ],
@@ -29,9 +29,9 @@ if TYPE_CHECKING:
         RyzenAIModel,
         RyzenAIModelForCustomTasks,
         RyzenAIModelForImageClassification,
+        RyzenAIModelForImageSegmentation,
         RyzenAIModelForImageToImage,
         RyzenAIModelForObjectDetection,
-        RyzenAIModelForSemanticSegmentation,
     )
     from .pipelines import pipeline
     from .quantization import RyzenAIOnnxQuantizer
