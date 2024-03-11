@@ -8,7 +8,6 @@ from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 
 import vai_q_onnx
-from onnxruntime.quantization import CalibrationMethod
 
 from optimum.configuration_utils import BaseConfig
 
@@ -227,15 +226,15 @@ class ExtraOptions:
 
     def to_diff_dict(self, camel_case=False) -> dict:
         non_default_values = {}
-        for field in fields(self):
+        for option in fields(self):
             if camel_case:
                 name = self.snake_to_camel.get(
-                    field.name, "".join(word.capitalize() for word in field.name.split("_"))
+                    option.name, "".join(word.capitalize() for word in option.name.split("_"))
                 )
             else:
-                name = field.name
-            if getattr(self, field.name) != field.default and getattr(self, field.name) != {}:
-                non_default_values[name] = getattr(self, field.name)
+                name = option.name
+            if getattr(self, option.name) != option.default and getattr(self, option.name) != {}:
+                non_default_values[name] = getattr(self, option.name)
         return non_default_values
 
 
@@ -343,16 +342,16 @@ class QuantizationConfig:
 
     def to_diff_dict(self) -> dict:
         non_default_values = {}
-        for field in fields(self):
-            if field.name == "extra_options":
-                extra_options_dict = getattr(self, field.name).to_diff_dict()
+        for option in fields(self):
+            if option.name == "extra_options":
+                extra_options_dict = getattr(self, option.name).to_diff_dict()
                 if extra_options_dict:
-                    non_default_values[field.name] = extra_options_dict
+                    non_default_values[option.name] = extra_options_dict
             else:
-                value = getattr(self, field.name)
+                value = getattr(self, option.name)
 
-                if value != field.default and value not in ({}, []):
-                    if field.name == "execution_providers" and value == ["CPUExecutionProvider"]:
+                if value != option.default and value not in ({}, []):
+                    if option.name == "execution_providers" and value == ["CPUExecutionProvider"]:
                         continue
 
                     if isinstance(value, Enum):
@@ -360,7 +359,7 @@ class QuantizationConfig:
                     elif isinstance(value, list):
                         value = [elem.name if isinstance(elem, Enum) else elem for elem in value]
 
-                    non_default_values[field.name] = value
+                    non_default_values[option.name] = value
         return non_default_values
 
     @staticmethod

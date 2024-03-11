@@ -164,10 +164,10 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
             model_input=Path(self.onnx_model_path).as_posix(),
             model_output=quantized_model_path.as_posix(),
             calibration_data_reader=reader,
-            quant_format=quantization_config.format,
-            calibrate_method=quantization_config.calibration_method,
-            weight_type=quantization_config.weight_type,
-            activation_type=quantization_config.activation_type,
+            quant_format=quantization_config.format.value,
+            calibrate_method=quantization_config.calibration_method.value,
+            weight_type=quantization_config.weight_type.value,
+            activation_type=quantization_config.activation_type.value,
             enable_dpu=quantization_config.enable_dpu,
             extra_options=(
                 quantization_config.extra_options.to_diff_dict(camel_case=True)
