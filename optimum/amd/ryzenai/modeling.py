@@ -645,7 +645,6 @@ class RyzenAIModelForImageClassification(RyzenAIModelForCustomTasks):
         use_io_binding: Optional[bool] = None,
         task: Optional[str] = None,
     ) -> "RyzenAIModel":
-
         save_dir = TemporaryDirectory()
         save_dir_path = Path(save_dir.name)
         main_export(

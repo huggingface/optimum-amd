@@ -4,7 +4,7 @@ Optimum-amd provides a tool that enables you to apply quantization on many model
 ## Static quantization
 The quantization process is abstracted via the AutoQuantizationConfig and the RyzenAIOnnxQuantizer classes. The former allows you to specify how quantization should be done, while the latter effectively handles quantization.
 
-You can read the [VAI_Q_ONNX user guide](https://gitenterprise.xilinx.com/VitisAI-CP/vai_q_onnx/blob/dev/README.md) to learn about VAI_Q_ONNX quantization.
+You can read the [Vitis AI Quantizer for ONNX](https://ryzenai.docs.amd.com/en/latest/vai_quant/vai_q_onnx.html) to learn about VAI_Q_ONNX quantization.
 
 ### Creating an AutoQuantizationConfig
 The AutoQuantizationConfig class is used to specify how quantization should be done. The class can be initialized using the ipu_cnn_config() method.

@@ -1,11 +1,14 @@
-from functools import partial
-import timm
 from argparse import ArgumentParser
+from functools import partial
+
+import timm
+
 from optimum.amd.ryzenai import (
     AutoQuantizationConfig,
     RyzenAIModelForImageClassification,
     RyzenAIOnnxQuantizer,
 )
+
 
 def parse_args():
     parser = ArgumentParser("RyzenAIQuantization")
