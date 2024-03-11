@@ -225,6 +225,9 @@ class ExtraOptions:
         return getattr(self, snake_case_name)
 
     def to_diff_dict(self, camel_case=False) -> dict:
+        """
+        Returns a dictionary of non-default values in the configuration.
+        """
         non_default_values = {}
         for option in fields(self):
             if camel_case:
@@ -341,6 +344,9 @@ class QuantizationConfig:
             super().__setattr__(name, value)
 
     def to_diff_dict(self) -> dict:
+        """
+        Returns a dictionary of non-default values in the configuration.
+        """
         non_default_values = {}
         for option in fields(self):
             if option.name == "extra_options":
@@ -377,12 +383,12 @@ class QuantizationConfig:
 
         return ExtraOptions().activation_symmetric and ExtraOptions().weight_symmetric
 
-    # def __str__(self):
-    #     return (
-    #         f"{self.format} ("
-    #         f"schema: {QuantizationConfig.quantization_type_str(self.activation_type, self.weight_type)}, "
-    #         f"enable_dpu: {self.enable_dpu})"
-    #     )
+    def __str__(self):
+        return (
+            f"{self.format} ("
+            f"schema: {QuantizationConfig.quantization_type_str(self.activation_type, self.weight_type)}, "
+            f"enable_dpu: {self.enable_dpu})"
+        )
 
 
 class AutoQuantizationConfig:
