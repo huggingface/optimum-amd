@@ -45,9 +45,9 @@
     "cpu": 5
   },
   "amd_resnet50": {
-    "all": 404,
-    "dpu": 389,
-    "cpu": 15
+    "all": 399,
+    "dpu": 397,
+    "cpu": 2
   },
   "amd_retinaface": {
     "all": 360,
