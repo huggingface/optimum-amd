@@ -208,7 +208,7 @@ class Message:
         }
 
     @property
-    def runner_failure(self) -> Dict:
+    def category_error(self) -> Dict:
         if self.n_failures:
             text = f"There were {self.n_failures} failures out of {self.n_tests} tests from other categories.\n"
         elif self.n_tests > 0:
@@ -417,7 +417,7 @@ class Message:
             blocks.append(self.ci_title_section)
 
         if self.n_category_failures > 0:
-            blocks.append(self.runner_failure)
+            blocks.append(self.category_error)
         else:
             if self.n_failures > 0:
                 blocks.append(self.failures)
