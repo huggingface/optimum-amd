@@ -223,6 +223,7 @@ class Message:
 
         text_category = (
             f"The following category tests failed: {' ,'.join(category_failure).strip(',')}.\n"
+            "CI runners have problems! Tests are not run!\n"
             "Please ensure the communication link is intact, and also investigate other potential causes. Ensure the machine"
             "is running, has a stable network connection, and review your workflow for any actions that might impact the runner process."
         )
