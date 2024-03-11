@@ -2,16 +2,15 @@
 # Licensed under the MIT License.
 """Configuration classes for quantization with RyzenAI."""
 
-from dataclasses import asdict, dataclass
-from enum import Enum
-from typing import Optional
 import re
+from dataclasses import asdict, dataclass, field, fields
+from enum import Enum
+from typing import Dict, List, Optional, Tuple, Union
+
 import vai_q_onnx
 from onnxruntime.quantization import CalibrationMethod
 
 from optimum.configuration_utils import BaseConfig
-from dataclasses import dataclass, field, fields
-from typing import List, Tuple, Dict, Union
 
 
 class CalibrationMethod(Enum):
@@ -206,11 +205,11 @@ class ExtraOptions:
     @property
     def snake_to_camel(self):
         return {
-            'qdq_op_type_per_channel_support_to_axis': 'QDQOpTypePerChannelSupportToAxis',
-            'ipu_limitation_check': 'IPULimitationCheck',
-            'cle_steps': 'CLESteps',
-            'cle_total_layer_diff_threshold': 'CLETotalLayerDiffThreshold',
-            'cle_scale_append_bias': 'CLEScaleAppendBias'
+            "qdq_op_type_per_channel_support_to_axis": "QDQOpTypePerChannelSupportToAxis",
+            "ipu_limitation_check": "IPULimitationCheck",
+            "cle_steps": "CLESteps",
+            "cle_total_layer_diff_threshold": "CLETotalLayerDiffThreshold",
+            "cle_scale_append_bias": "CLEScaleAppendBias",
         }
 
     @property
@@ -218,24 +217,27 @@ class ExtraOptions:
         return {value: key for key, value in self.snake_to_camel.items()}
 
     def __setattr__(self, name, value):
-        snake_case_name = self.camel_to_snake.get(name,  re.sub(r'([A-Z])', r'_\1', name).lower().lstrip('_'))
+        snake_case_name = self.camel_to_snake.get(name, re.sub(r"([A-Z])", r"_\1", name).lower().lstrip("_"))
 
         super().__setattr__(snake_case_name, value)
 
     def __getattr__(self, name):
-        snake_case_name = self.camel_to_snake.get(name,  re.sub(r'([A-Z])', r'_\1', name).lower().lstrip('_'))
+        snake_case_name = self.camel_to_snake.get(name, re.sub(r"([A-Z])", r"_\1", name).lower().lstrip("_"))
         return getattr(self, snake_case_name)
 
     def to_diff_dict(self, camel_case=False) -> dict:
         non_default_values = {}
         for field in fields(self):
             if camel_case:
-                name = self.snake_to_camel.get(field.name, ''.join(word.capitalize() for word in field.name.split('_')))
+                name = self.snake_to_camel.get(
+                    field.name, "".join(word.capitalize() for word in field.name.split("_"))
+                )
             else:
                 name = field.name
             if getattr(self, field.name) != field.default and getattr(self, field.name) != {}:
                 non_default_values[name] = getattr(self, field.name)
         return non_default_values
+
 
 @dataclass
 class QuantizationConfig:
@@ -334,21 +336,21 @@ class QuantizationConfig:
             self.extra_options = ExtraOptions(**self.extra_options)
 
     def __setattr__(self, name, value):
-        if name == 'extra_options' and isinstance(value, dict):
-            from pdb import set_trace; set_trace()
-            setattr(self, 'extra_options', ExtraOptions(**value))
+        if name == "extra_options" and isinstance(value, dict):
+            setattr(self, "extra_options", ExtraOptions(**value))
         else:
             super().__setattr__(name, value)
 
     def to_diff_dict(self) -> dict:
         non_default_values = {}
         for field in fields(self):
-            if field.name == 'extra_options':
+            if field.name == "extra_options":
                 extra_options_dict = getattr(self, field.name).to_diff_dict()
                 if extra_options_dict:
                     non_default_values[field.name] = extra_options_dict
             else:
                 value = getattr(self, field.name)
+
                 if value != field.default and value not in ({}, []):
                     if field.name == "execution_providers" and value == ["CPUExecutionProvider"]:
                         continue
@@ -360,7 +362,6 @@ class QuantizationConfig:
 
                     non_default_values[field.name] = value
         return non_default_values
-
 
     @staticmethod
     def quantization_type_str(activations_dtype: QuantType, weights_dtype: QuantType) -> str:
@@ -374,7 +375,7 @@ class QuantizationConfig:
     def use_symmetric_calibration(self) -> bool:
         if self.extra_options:
             return self.extra_options.activation_symmetric and self.extra_options.weight_symmetric
-        
+
         return ExtraOptions().activation_symmetric and ExtraOptions().weight_symmetric
 
     # def __str__(self):
