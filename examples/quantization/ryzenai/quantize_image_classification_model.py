@@ -12,10 +12,15 @@ from optimum.amd.ryzenai import (
 
 def parse_args():
     parser = ArgumentParser("RyzenAIQuantization")
-    parser.add_argument("--model_id", type=str, default='timm/resnet50.a1_in1k', help='Model id, default to "timm/resnet50.a1_in1k"')
-    parser.add_argument("--dataset", type=str, default='imagenet-1k', help='Calibration dataset, default to ""imagenet-1k""')
+    parser.add_argument(
+        "--model_id", type=str, default="timm/resnet50.a1_in1k", help='Model id, default to "timm/resnet50.a1_in1k"'
+    )
+    parser.add_argument(
+        "--dataset", type=str, default="imagenet-1k", help='Calibration dataset, default to ""imagenet-1k""'
+    )
     args, _ = parser.parse_known_args()
     return args
+
 
 def main(args):
     model_id = args.model_id
@@ -50,6 +55,7 @@ def main(args):
         quantization_config=quantization_config, dataset=calibration_dataset, save_dir="quantized_model"
     )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     args = parse_args()
     main(args)
