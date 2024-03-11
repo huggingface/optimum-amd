@@ -13,6 +13,8 @@ from optimum.configuration_utils import BaseConfig
 
 
 class CalibrationMethod(Enum):
+    """CalibrationMethod is an enumeration of the calibration methods supported by RyzenAI quantization."""
+
     MinMax = vai_q_onnx.CalibrationMethod.MinMax
     Entropy = vai_q_onnx.CalibrationMethod.Entropy
     Percentile = vai_q_onnx.CalibrationMethod.Percentile
@@ -21,6 +23,8 @@ class CalibrationMethod(Enum):
 
 
 class QuantFormat(Enum):
+    """QuantFormat is an enumeration of the quantization formats supported by RyzenAI quantization."""
+
     QOperator = vai_q_onnx.QuantFormat.QOperator
     QDQ = vai_q_onnx.QuantFormat.QDQ
     VitisQuantFormat_QDQ = vai_q_onnx.VitisQuantFormat.QDQ
@@ -28,6 +32,8 @@ class QuantFormat(Enum):
 
 
 class QuantType(Enum):
+    """QuantType is an enumeration of the quantization types supported by RyzenAI quantization."""
+
     QInt8 = vai_q_onnx.QuantType.QInt8
     QUInt8 = vai_q_onnx.QuantType.QUInt8
 
