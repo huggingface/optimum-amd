@@ -42,14 +42,6 @@ logger = logging.getLogger(__name__)
 CONFIG_NAME = "config.json"
 
 
-class classproperty:
-    def __init__(self, getter):
-        self.getter = getter
-
-    def __get__(self, instance, owner):
-        return self.getter(owner)
-
-
 class RyzenAIModel(OptimizedModel):
     """
     Base class for implementing models using ONNX Runtime.
@@ -126,6 +118,7 @@ class RyzenAIModel(OptimizedModel):
 
         self.model_path = Path(model._model_path)
         self.model_name = self.model_path.name
+        self.model_type = config.model_type
         self.vaip_config = Path(vaip_config) if vaip_config else None
 
         self.shared_attributes_init(
@@ -246,6 +239,7 @@ class RyzenAIModel(OptimizedModel):
         session_options: Optional[ort.SessionOptions] = None,
         provider_options: Optional[Dict[str, Any]] = None,
         model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
+        init_cls: Optional["RyzenAIModel"] = None,
         **kwargs,
     ) -> "RyzenAIModel":
         model_path = Path(model_id)
@@ -353,7 +347,10 @@ class RyzenAIModel(OptimizedModel):
         if model_save_dir is None:
             model_save_dir = new_model_save_dir
 
-        return cls(
+        if init_cls is None:
+            init_cls = cls
+
+        return init_cls(
             model=model,
             config=config,
             vaip_config=vaip_config,
