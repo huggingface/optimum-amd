@@ -25,7 +25,9 @@ def parse_args():
 def main(args):
     model_id = args.model_id
 
-    onnx_model = RyzenAIModelForImageClassification.from_pretrained(model_id, export=True)
+    onnx_model = RyzenAIModelForImageClassification.from_pretrained(
+        model_id, export=True, provider="CPUExecutionProvider"
+    )
     # preprocess config
     data_config = timm.data.resolve_data_config(pretrained_cfg=onnx_model.config.to_dict())
     transforms = timm.data.create_transform(**data_config, is_training=False)
