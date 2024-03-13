@@ -7,10 +7,12 @@ import unittest
 from pathlib import Path
 from typing import Dict
 
+import numpy as np
 import onnx
 import torch
 from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
+from onnx import numpy_helper
 from parameterized import parameterized
 from testing_utils import SUPPORTED_MODELS_TINY, VALIDATE_EXPORT_ON_SHAPES, get_quantized_model
 
@@ -49,14 +51,28 @@ def _get_models_to_test(export_models_dict: Dict, library_name: str = "transform
                     library_name=library_name,
                 )
 
-                models_to_test.append((f"{model_type}_{task}", model_type, model_name, task, onnx_config_constructor))
+                models_to_test.append(
+                    (f"{model_type}_{task}_DQ", model_type, model_name, task, onnx_config_constructor, False)
+                )
+                models_to_test.append(
+                    (f"{model_type}_{task}_QDQ", model_type, model_name, task, onnx_config_constructor, True)
+                )
     return sorted(models_to_test)
 
 
 def export_and_validate(
-    model: torch.nn.Module, task: str, export_output_dir: str, onnx_config_class_constructor, shapes_to_validate: Dict
+    model: torch.nn.Module,
+    task: str,
+    export_output_dir: str,
+    onnx_config_class_constructor,
+    shapes_to_validate: Dict,
+    qdq_weights: bool,
 ):
-    with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
+    export_manager = StdQCDQONNXManager
+    if qdq_weights:
+        export_manager.change_weight_export(export_weight_q_node=True)
+
+    with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=export_manager):
         library_name = TasksManager._infer_library_from_model(model)
         framework = "pt"
         dtype = get_parameter_dtype(model) if framework == "pt" else model.dtype
@@ -121,12 +137,7 @@ def export_and_validate(
 class TestOnnxExport(unittest.TestCase):
     @parameterized.expand(_get_models_to_test(SUPPORTED_MODELS_TINY))
     def test_dynamic_quantization(
-        self,
-        test_name,
-        model_type,
-        model_name,
-        task,
-        onnx_config_class_constructor,
+        self, test_name, model_type, model_name, task, onnx_config_class_constructor, qdq_weights: bool
     ):
         model = get_quantized_model(
             model_name,
@@ -144,10 +155,24 @@ class TestOnnxExport(unittest.TestCase):
                 export_output_dir=tmpdir,
                 onnx_config_class_constructor=onnx_config_class_constructor,
                 shapes_to_validate=VALIDATE_EXPORT_ON_SHAPES,
+                qdq_weights=qdq_weights,
             )
 
             onnx_model = onnx.load(os.path.join(tmpdir, "model.onnx"))
 
-            for node in onnx_model.graph.node:
-                # Check that we have MatmulInteger, etc.
-                pass
+            if qdq_weights:
+                for node in onnx_model.graph.node:
+                    if node.op_type == "Constant":
+                        for attrib in node.attribute:
+                            new_array = numpy_helper.to_array(attrib.t)
+                            if len(new_array.shape) >= 2 and new_array.dtype in [np.uint8, np.int8]:
+                                break
+                else:
+                    self.assertTrue(False, "Did not found an int8/uint8 serialized weight")
+            else:
+                for node in onnx_model.graph.node:
+                    if node.op_type == "Constant":
+                        for attrib in node.attribute:
+                            new_array = numpy_helper.to_array(attrib.t)
+                            if len(new_array.shape) >= 2 and new_array.dtype in [np.uint8, np.int8]:
+                                self.assertTrue(False, "Found uint8/int8 serialized weights while we should not")
