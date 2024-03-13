@@ -25,33 +25,6 @@ from transformers.utils import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, Tens
 
 class SemanticFPNImageProcessor(BaseImageProcessor):
     model_input_names = ["pixel_values"]
-# Copyright 2023 The HuggingFace Team. All rights reserved.
-# Licensed under the MIT License.
-
-from typing import Dict, List, Optional, Tuple, Union
-
-import numpy as np
-import torch
-
-from transformers.image_processing_utils import BaseImageProcessor, BatchFeature, get_size_dict
-from transformers.image_transforms import (
-    get_resize_output_image_size,
-    rescale,
-    resize,
-)
-from transformers.image_utils import (
-    ChannelDimension,
-    ImageInput,
-    PILImageResampling,
-    infer_channel_dimension_format,
-    make_list_of_images,
-    to_numpy_array,
-)
-from transformers.utils import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, TensorType
-
-
-class HRNetImageProcessor(BaseImageProcessor):
-    model_input_names = ["pixel_values"]
 
     def __init__(
         self,
