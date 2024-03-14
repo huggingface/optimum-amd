@@ -9,7 +9,6 @@ from optimum.onnx.graph_transformations import check_and_save_model
 
 import pathlib
 
-import gc
 
 
 MatMul = [
