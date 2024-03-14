@@ -14,7 +14,6 @@ from optimum.utils import NormalizedConfigManager, check_if_transformers_greater
 from transformers import (
     AutoModelForCausalLM,
     GenerationConfig,
-    PretrainedConfig,
 )
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
@@ -41,7 +40,7 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
     def __init__(
         self,
         model: ort.InferenceSession,
-        config: PretrainedConfig,
+        config: "PretrainedConfig",
         vaip_config: Union[str, Path] = None,
         model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
         preprocessors: Optional[List] = None,
