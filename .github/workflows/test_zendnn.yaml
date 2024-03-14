@@ -1,0 +1,38 @@
+name: ZenDNN - Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/zendnn/**/*.py"
+      - ".github/workflows/test_zendnn.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/zendnn/**/*.py"
+      - ".github/workflows/test_zendnn.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: [amd-cpu, epyc-cpu, ci]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          pip install .[tests]
+
+      - name: Run tests
+        run: |
+          pytest tests/zendnn -s -v

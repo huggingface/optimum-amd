@@ -1,6 +1,7 @@
 import unittest
 
 import torch
+import torch_zendnn_plugin  # noqa
 from parameterized import parameterized
 
 from optimum.exporters.tasks import TasksManager
@@ -69,7 +70,7 @@ def get_dummy_inputs(model_type: str, model_name: str, task: str):
     return dummy_inputs
 
 
-class TestZenDNN(unittest.TestCase):
+class TestZenDNNPlugin(unittest.TestCase):
     @parameterized.expand(SUPPORTED_MODELS_TINY.keys())
     def test_torch_compile(self, model_type: str):
         for model_id in _get_all_model_ids(model_type):
