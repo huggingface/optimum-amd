@@ -1,7 +1,6 @@
 import unittest
 
 import torch
-import torch_zendnn_plugin
 from parameterized import parameterized
 
 from optimum.exporters.tasks import TasksManager
