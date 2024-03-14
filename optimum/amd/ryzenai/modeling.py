@@ -118,7 +118,6 @@ class RyzenAIModel(OptimizedModel):
 
         self.model_path = Path(model._model_path)
         self.model_name = self.model_path.name
-        self.model_type = config.model_type
         self.vaip_config = Path(vaip_config) if vaip_config else None
 
         self.shared_attributes_init(
@@ -127,6 +126,8 @@ class RyzenAIModel(OptimizedModel):
             preprocessors,
             **kwargs,
         )
+
+        self.model_type = config.model_type
 
         self.inputs_names = {input_key.name: idx for idx, input_key in enumerate(model.get_inputs())}
         self.output_names = {output_key.name: idx for idx, output_key in enumerate(model.get_outputs())}
