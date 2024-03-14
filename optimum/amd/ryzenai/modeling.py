@@ -566,6 +566,12 @@ class RyzenAIModel(OptimizedModel):
 
         return model_path
 
+    def _convert_to_numpy(self, value, use_torch):
+        return value.cpu().detach().numpy() if use_torch else value
+
+    def _convert_to_tensor(self, value, use_torch):
+        return torch.from_numpy(value) if use_torch else torch.from_numpy(value)
+
 
 class RyzenAIModelForCustomTasks(RyzenAIModel):
     def forward(self, **kwargs):
