@@ -7,7 +7,7 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import ort as ort
+import onnxruntime as ort
 import torch
 
 from optimum.utils import NormalizedConfigManager, check_if_transformers_greater
@@ -34,7 +34,7 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
     Runs model with causal language modeling head using ONNX Runtime VITIS-AI EP.
     """
 
-    model_type = "onnx_model"
+    main_input_name = "input_ids"
     auto_model_class = AutoModelForCausalLM
 
     def __init__(
@@ -51,6 +51,12 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
         super().__init__(model, config, vaip_config, model_save_dir, preprocessors, **kwargs)
 
         self._initialize_params(use_cache, generation_config)
+
+        self.device = torch.device("cpu")
+
+        use_cache = True
+
+        self.use_fp16 = False
 
         if use_cache ^ self.use_cache:
             raise ValueError(
@@ -96,7 +102,12 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
             inputs["position_ids"] = self._convert_to_numpy(attention_mask, position_ids)
 
         if self.use_cache:
-            past_key_values = self.prepare_past_key_values(input_ids, past_key_values, use_torch)
+            if past_key_values is None:
+                # Generate dummy past for the first forward
+                batch_size, sequence_length = input_ids.shape
+                past_key_values = self.prepare_past_key_values(batch_size, sequence_length, use_torch)
+            else:
+                past_key_values = self.process_past_key_values(past_key_values)
 
             for input_name, past_key_value in zip(self.key_value_input_names, past_key_values):
                 inputs[input_name] = self._convert_to_numpy(past_key_value, use_torch)
@@ -119,26 +130,15 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
 
         return logits, past_key_values
 
-    def prepare_past_key_values(
-        self,
-        input_ids: Union[None, torch.LongTensor, np.ndarray],
-        past_key_values: Union[None, Tuple[torch.FloatTensor], Tuple[np.ndarray]],
-        use_torch: bool,
-    ):
-        if past_key_values is not None:
-            constructor = torch if use_torch else np
-            dtype = constructor.float16 if self.use_fp16 else constructor.float32
-
-            params = self.get_params_from_normalized_config()
-            params["batch_size"] = input_ids.shape[0]
-            params["sequence_length"] = input_ids.shape[1]
-
-            # Generate dummy past for the first forward
-            past_key_values = self.generate_past_key_values(constructor, params, dtype)
+    def process_past_key_values(self, past_key_values: Tuple[torch.Tensor]):
+        past_key_values = tuple(
+            past_key_value for pkv_per_layer in past_key_values for past_key_value in pkv_per_layer
+        )
 
         return past_key_values
 
-    def get_params_from_normalized_config(self):
+    def get_shape_params_from_normalized_config(self):
+        # Override this method in subclasses to adapt to the specific model's configuration
         num_attention_heads = self.normalized_config.num_attention_heads
         embed_size_per_head = self.normalized_config.hidden_size // self.normalized_config.num_attention_heads
 
@@ -147,18 +147,30 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
             "embed_size_per_head": embed_size_per_head,
         }
 
-    def generate_past_key_values(self, constructor: Any, params: Dict[str, int], dtype: Any):
-        shapes = self.get_params_from_normalized_config()
-        shape = (params["batch_size"], shapes["num_key_value_heads"], 0, shapes["embed_size_per_head"])
+    def prepare_past_key_values(
+        self,
+        batch_size: int,
+        sequence_length: int,
+        use_torch: bool,
+    ):
+        # Override this method in subclasses to adapt to the specific model's configuration
+        params = self.get_shape_params_from_normalized_config()
+        key_or_value_shape = (batch_size, params["num_key_value_heads"], 0, params["embed_size_per_head"])
 
-        key_or_value = constructor.zeros(shape, dtype=dtype)
+        constructor, dtype = self.get_constructor(use_torch)
+        key_or_value = constructor.zeros(key_or_value_shape, dtype=dtype)
+
         past_key_values = tuple(key_or_value for _ in range(len(self.key_value_input_names)))
-
         for _, value in zip(self.key_value_output_names, past_key_values):
             shape = [*value.shape]
-            shape[2] += params["sequence_length"]
+            shape[2] += sequence_length
 
         return past_key_values
+
+    def get_constructor(self, use_torch):
+        constructor = torch if use_torch else np
+        dtype = constructor.float16 if self.use_fp16 else constructor.float32
+        return constructor, dtype
 
     @classmethod
     def _from_pretrained(
@@ -184,7 +196,6 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
             init_cls = model_type_to_class.get(config.model_type, RyzenAIModelForCausalLM)
 
         model = super()._from_pretrained(
-            cls,
             model_id,
             config,
             vaip_config,
@@ -247,7 +258,7 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
 
 
 class RyzenAIMistralForCausalLM(RyzenAIModelForCausalLM):
-    def get_params_from_normalized_config(self):
+    def get_shape_params_from_normalized_config(self):
         num_key_value_heads = self.normalized_config.num_key_value_heads
         embed_size_per_head = self.normalized_config.hidden_size // self.normalized_config.num_attention_heads
         return {
@@ -257,7 +268,7 @@ class RyzenAIMistralForCausalLM(RyzenAIModelForCausalLM):
 
 
 class RyzenAILlamaForCausalLM(RyzenAIModelForCausalLM):
-    def get_params_from_normalized_config(self):
+    def get_shape_params_from_normalized_config(self):
         num_key_value_heads = self.normalized_config.num_key_value_heads
         embed_size_per_head = self.normalized_config.hidden_size // self.normalized_config.num_attention_heads
         return {
@@ -304,16 +315,26 @@ class RyzenAIGPTBigCodeForCausalLM(RyzenAIModelForCausalLM):
 
         return logits, past_key_values
 
-    def generate_past_key_values(self, constructor: Any, params: Dict[str, int], dtype: Any):
+    def process_past_key_values(self, past_key_values: Tuple[torch.Tensor]):
+        return past_key_values
+
+    def prepare_past_key_values(
+        self,
+        batch_size: int,
+        sequence_length: int,
+        use_torch: bool,
+    ):
         # GPT BigCode uses muti-query attention, and has the specificity of putting both key and value in the same cache tensor.
-        shape_key_and_value = (params["batch_size"], 0, params["embed_size_per_head"] * 2)
-        key_and_value = constructor.zeros(shape_key_and_value, dtype=dtype)
+        params = self.get_shape_params_from_normalized_config()
+        key_or_value_shape = (batch_size, 0, params["embed_size_per_head"] * 2)
 
-        past_key_values = tuple(key_and_value for _ in range(len(self.key_value_input_names)))
+        constructor, dtype = self.get_constructor(use_torch)
+        key_or_value = constructor.zeros(key_or_value_shape, dtype=dtype)
 
+        past_key_values = tuple(key_or_value for _ in range(len(self.key_value_input_names)))
         for _, value in zip(self.key_value_output_names, past_key_values):
             shape = [*value.shape]
-            shape[1] += params["sequence_length"]
+            shape[1] += sequence_length
 
         return past_key_values
 

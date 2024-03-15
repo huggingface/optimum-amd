@@ -174,11 +174,11 @@ class RyzenAIModel(OptimizedModel):
         else:
             providers_options = None
 
-        is_dynamic = RyzenAIModel._check_uses_static_shape(path)
-        if is_dynamic and provider == "VitisAIExecutionProvider":
-            raise ValueError(
-                "The model provided has dynamic axes in input/output. Please provide model with static shapes for inference with RyzenAI."
-            )
+        # is_dynamic = RyzenAIModel._check_uses_static_shape(path)
+        # if is_dynamic and provider == "VitisAIExecutionProvider":
+        #     raise ValueError(
+        #         "The model provided has dynamic axes in input/output. Please provide model with static shapes for inference with RyzenAI."
+        #     )
 
         return ort.InferenceSession(
             path,

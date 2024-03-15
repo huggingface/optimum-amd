@@ -17,11 +17,10 @@ _import_structure = {
         "RyzenAIModelForObjectDetection",
     ],
     "modeling_decoder": [
-        "RyzenAIDecoder",
+        "RyzenAIModelForCausalLM",
     ],
     "quantization": ["RyzenAIOnnxQuantizer"],
     "pipelines": ["pipeline"],
-    "version": ["__version__"],
 }
 
 
@@ -36,7 +35,7 @@ if TYPE_CHECKING:
         RyzenAIModelForImageToImage,
         RyzenAIModelForObjectDetection,
     )
-    from .modeling_decoder import RyzenAIDecoder
+    from .modeling_decoder import RyzenAIModelForCausalLM
     from .pipelines import pipeline
     from .quantization import RyzenAIOnnxQuantizer
 else:
