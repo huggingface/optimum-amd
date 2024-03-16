@@ -5,7 +5,6 @@ from optimum.amd.brevitas.accelerate_utils import calc_cpu_device_map, calc_gpu_
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
 from optimum.amd.brevitas.export import onnx_export_from_quantized_model
 from transformers import AutoTokenizer
-from rewriter import rewrite_graph
 
 
 def main(args):

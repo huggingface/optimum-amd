@@ -19,6 +19,7 @@ from onnx_tool.fusion import FusionPattern
 from optimum.onnx.graph_transformations import check_and_save_model
 
 import pathlib
+import os
 
 
 ## Pattern to find and replace with MatMulInteger
@@ -196,7 +197,7 @@ def replace_gemm_to_matmulinteger(compute_graph, found_nodes):
 
 def find_and_insert_matmulinteger(model_path):
     print("Rewriting ONNX Graph with MatMulInteger ")
-
+    model_path = os.path.join(model_path, 'model.onnx')
     cfg={'constant_folding':False,'node_rename':False,'if_fixed_branch':None,'fixed_topk':0,'verbose':True}
     original_output = onnx.load(model_path).graph.output
     model = Model(model_path,cfg)
@@ -225,8 +226,8 @@ def find_and_insert_matmulinteger(model_path):
 
     # onnx_tools might remove the output nodes from the ONNX graph, so we need to restore it.
     for out in original_output:
-        if out not in model.graph.output:
-            model.graph.output.append(out)
+        if out not in model_to_save.graph.output:
+            model_to_save.graph.output.append(out)
 
     model_to_save.ir_version = model.mproto.ir_version
     model_to_save.opset_import.pop()
