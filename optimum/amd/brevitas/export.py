@@ -8,112 +8,105 @@ from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 from optimum.exporters.onnx import onnx_export_from_model
 from optimum.exporters.onnx.base import OnnxConfig
 from transformers.modeling_utils import PreTrainedModel
+import os
 
 import onnx
+import torch
+from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
+from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 from onnx_tool import Model
+from onnx_tool.fusion import FusionPattern
 from onnx_tool.node import create_node
 from onnx_tool.tensor import Tensor
 
-from onnx_tool.fusion import FusionPattern
-
+from optimum.exporters.onnx import onnx_export_from_model
 from optimum.onnx.graph_transformations import check_and_save_model
-
-import pathlib
-import os
 
 
 ## Pattern to find and replace with MatMulInteger
 MatMul = [
     {
-        'name': 'deq_linear_0',
-        'op': 'DequantizeLinear',
-        'attrs': [
-        ],
-        'inport': [],
-        'outport': [[0, 'transpose_0', 0]],
+        "name": "deq_linear_0",
+        "op": "DequantizeLinear",
+        "attrs": [],
+        "inport": [],
+        "outport": [[0, "transpose_0", 0]],
     },
     {
-        'name': 'transpose_0',
-        'op': 'Transpose',
-        'attrs': [
-        ],
-        'inport': [[0, 'deq_linear_0', 0]],
-        'outport': [[0, 'matmul_0', 1]],
+        "name": "transpose_0",
+        "op": "Transpose",
+        "attrs": [],
+        "inport": [[0, "deq_linear_0", 0]],
+        "outport": [[0, "matmul_0", 1]],
     },
     {
-        'name': 'quant_linear_1',
-        'op': 'DynamicQuantizeLinear',
-        'attrs': [
-        ],
-        'inport': [],
-        'outport': [[0, 'deq_linear_1', 0],
-                    [1, 'deq_linear_1', 1],
-                    [2, 'deq_linear_1', 2]
-                    ],
+        "name": "quant_linear_1",
+        "op": "DynamicQuantizeLinear",
+        "attrs": [],
+        "inport": [],
+        "outport": [[0, "deq_linear_1", 0], [1, "deq_linear_1", 1], [2, "deq_linear_1", 2]],
     },
     {
-        'name': 'deq_linear_1',
-        'op': 'DequantizeLinear',
-        'attrs': [
+        "name": "deq_linear_1",
+        "op": "DequantizeLinear",
+        "attrs": [],
+        "inport": [
+            [0, "quant_linear_1", 0],
+            [1, "quant_linear_1", 1],
+            [2, "quant_linear_1", 2],
         ],
-        'inport': [[0, 'quant_linear_1', 0],
-                   [1, 'quant_linear_1', 1],
-                   [2, 'quant_linear_1', 2],],
-        'outport': [[0, 'matmul_0', 0]],
+        "outport": [[0, "matmul_0", 0]],
     },
     {
-        'name': 'matmul_0',
-        'op': 'MatMul',
-        'attrs': [
+        "name": "matmul_0",
+        "op": "MatMul",
+        "attrs": [],
+        "inport": [
+            [0, "deq_linear_1", 0],
+            [1, "transpose_0", 0],
         ],
-        'inport': [[0, 'deq_linear_1', 0],
-                   [1, 'transpose_0', 0],
-                   ],
-        'outport': [],
+        "outport": [],
     },
 ]
 
 GEMM = [
     {
-        'name': 'deq_linear_0',
-        'op': 'DequantizeLinear',
-        'attrs': [
-        ],
-        'inport': [],
-        'outport': [[0, 'gemm_0', 1]],
+        "name": "deq_linear_0",
+        "op": "DequantizeLinear",
+        "attrs": [],
+        "inport": [],
+        "outport": [[0, "gemm_0", 1]],
     },
     {
-        'name': 'quant_linear_1',
-        'op': 'DynamicQuantizeLinear',
-        'attrs': [
-        ],
-        'inport': [],
-        'outport': [[0, 'deq_linear_1', 0],
-                    [1, 'deq_linear_1', 1],
-                    [2, 'deq_linear_1', 2]
-                    ],
+        "name": "quant_linear_1",
+        "op": "DynamicQuantizeLinear",
+        "attrs": [],
+        "inport": [],
+        "outport": [[0, "deq_linear_1", 0], [1, "deq_linear_1", 1], [2, "deq_linear_1", 2]],
     },
     {
-        'name': 'deq_linear_1',
-        'op': 'DequantizeLinear',
-        'attrs': [
+        "name": "deq_linear_1",
+        "op": "DequantizeLinear",
+        "attrs": [],
+        "inport": [
+            [0, "quant_linear_1", 0],
+            [1, "quant_linear_1", 1],
+            [2, "quant_linear_1", 2],
         ],
-        'inport': [[0, 'quant_linear_1', 0],
-                   [1, 'quant_linear_1', 1],
-                   [2, 'quant_linear_1', 2],],
-        'outport': [[0, 'gemm_0', 0]],
+        "outport": [[0, "gemm_0", 0]],
     },
     {
-        'name': 'gemm_0',
-        'op': 'Gemm',
-        'attrs': [
+        "name": "gemm_0",
+        "op": "Gemm",
+        "attrs": [],
+        "inport": [
+            [0, "deq_linear_1", 0],
+            [1, "deq_linear_0", 0],
         ],
-        'inport': [[0, 'deq_linear_1', 0],
-                   [1, 'deq_linear_0', 0],
-                   ],
-        'outport': [],
+        "outport": [],
     },
 ]
+
 
 def create_nodes(graph, op, name, inputs, outputs, intermediate=None, **kwargs):
 
@@ -137,19 +130,19 @@ def create_nodes(graph, op, name, inputs, outputs, intermediate=None, **kwargs):
 
     return graph
 
+
 def replace_matmul_to_matmulinteger(compute_graph, found_nodes):
     for i, found_pattern in enumerate(found_nodes):
         deq_linear = compute_graph.nodemap[found_pattern[0]]
         dyn_q = compute_graph.nodemap[found_pattern[2]]
         dq_weight = deq_linear.prevnodes[0]
-        compute_graph.add_initial(f'dq_weights_0_{i}', dq_weight.value.transpose())
-        compute_graph.add_initial(f'dq_weights_1_{i}', deq_linear.prevnodes[1].value)
-        compute_graph.add_initial(f'dq_weights_2_{i}', deq_linear.prevnodes[2].value)
-
+        compute_graph.add_initial(f"dq_weights_0_{i}", dq_weight.value.transpose())
+        compute_graph.add_initial(f"dq_weights_1_{i}", deq_linear.prevnodes[1].value)
+        compute_graph.add_initial(f"dq_weights_2_{i}", deq_linear.prevnodes[2].value)
 
         matmul = compute_graph.nodemap[found_pattern[-1]]
         for name in found_pattern:
-            if 'DynamicQuantizeLinear' in name:
+            if "DynamicQuantizeLinear" in name:
                 continue
             compute_graph.remove_node(name)
 
@@ -158,10 +151,22 @@ def replace_matmul_to_matmulinteger(compute_graph, found_nodes):
         if deq_linear.prevnodes[2].name in compute_graph.nodemap:
             compute_graph.remove_node(deq_linear.prevnodes[2].name)
 
-        compute_graph=create_nodes(compute_graph, 'MatMulInteger', f'matmul_integer_{i}', [dyn_q.output[0], f'dq_weights_0_{i}', dyn_q.output[2], f'dq_weights_2_{i}'], [f'matmul_integer_{i}'])
-        compute_graph=create_nodes(compute_graph, 'Cast', f'cast_{i}',  [f'matmul_integer_{i}'], [f'cast_{i}'], to=int(1))
-        compute_graph=create_nodes(compute_graph, 'Mul', f'mulscales_{i}', [dyn_q.output[1], f'dq_weights_1_{i}'],   [f'mulscales_{i}'])
-        compute_graph=create_nodes(compute_graph, 'Mul', f'mulvalues_{i}', [f'mulscales_{i}', f'cast_{i}'], [matmul.output[0]])
+        compute_graph = create_nodes(
+            compute_graph,
+            "MatMulInteger",
+            f"matmul_integer_{i}",
+            [dyn_q.output[0], f"dq_weights_0_{i}", dyn_q.output[2], f"dq_weights_2_{i}"],
+            [f"matmul_integer_{i}"],
+        )
+        compute_graph = create_nodes(
+            compute_graph, "Cast", f"cast_{i}", [f"matmul_integer_{i}"], [f"cast_{i}"], to=int(1)
+        )
+        compute_graph = create_nodes(
+            compute_graph, "Mul", f"mulscales_{i}", [dyn_q.output[1], f"dq_weights_1_{i}"], [f"mulscales_{i}"]
+        )
+        compute_graph = create_nodes(
+            compute_graph, "Mul", f"mulvalues_{i}", [f"mulscales_{i}", f"cast_{i}"], [matmul.output[0]]
+        )
     return compute_graph
 
 
@@ -174,13 +179,13 @@ def replace_gemm_to_matmulinteger(compute_graph, found_nodes):
         deq_linear = compute_graph.nodemap[found_pattern[0]]
         dyn_q = compute_graph.nodemap[found_pattern[1]]
         dq_weight = deq_linear.prevnodes[0]
-        compute_graph.add_initial(f'dq_weights_0_{k}', dq_weight.value.transpose())
-        compute_graph.add_initial(f'dq_weights_1_{k}', deq_linear.prevnodes[1].value)
-        compute_graph.add_initial(f'dq_weights_2_{k}', deq_linear.prevnodes[2].value)
-    
+        compute_graph.add_initial(f"dq_weights_0_{k}", dq_weight.value.transpose())
+        compute_graph.add_initial(f"dq_weights_1_{k}", deq_linear.prevnodes[1].value)
+        compute_graph.add_initial(f"dq_weights_2_{k}", deq_linear.prevnodes[2].value)
+
         matmul = compute_graph.nodemap[found_pattern[-1]]
         for name in found_pattern:
-            if 'DynamicQuantizeLinear' in name:
+            if "DynamicQuantizeLinear" in name:
                 continue
             compute_graph.remove_node(name)
         compute_graph.remove_node(deq_linear.prevnodes[0].name)
@@ -188,19 +193,34 @@ def replace_gemm_to_matmulinteger(compute_graph, found_nodes):
         if deq_linear.prevnodes[2].name in compute_graph.nodemap:
             compute_graph.remove_node(deq_linear.prevnodes[2].name)
 
-        compute_graph=create_nodes(compute_graph, 'MatMulInteger', f'matmul_integer_{k}', [dyn_q.output[0], f'dq_weights_0_{k}', dyn_q.output[2], f'dq_weights_2_{k}'], [f'matmul_integer_{k}'])
-        compute_graph=create_nodes(compute_graph, 'Cast', f'cast_{k}',  [f'matmul_integer_{k}'], [f'cast_{k}'], to=int(1))
-        compute_graph=create_nodes(compute_graph, 'Mul', f'mulscales_{k}', [dyn_q.output[1], f'dq_weights_1_{k}'],   [f'mulscales_{k}'])
-        compute_graph=create_nodes(compute_graph, 'Mul', f'mulvalues_{k}', [f'mulscales_{k}', f'cast_{k}'], [f'mulvalues_{k}'])
-        compute_graph=create_nodes(compute_graph, 'Add', f'addbias_{k}', [bias, f'mulvalues_{k}'], [matmul.output[0]])
+        compute_graph = create_nodes(
+            compute_graph,
+            "MatMulInteger",
+            f"matmul_integer_{k}",
+            [dyn_q.output[0], f"dq_weights_0_{k}", dyn_q.output[2], f"dq_weights_2_{k}"],
+            [f"matmul_integer_{k}"],
+        )
+        compute_graph = create_nodes(
+            compute_graph, "Cast", f"cast_{k}", [f"matmul_integer_{k}"], [f"cast_{k}"], to=int(1)
+        )
+        compute_graph = create_nodes(
+            compute_graph, "Mul", f"mulscales_{k}", [dyn_q.output[1], f"dq_weights_1_{k}"], [f"mulscales_{k}"]
+        )
+        compute_graph = create_nodes(
+            compute_graph, "Mul", f"mulvalues_{k}", [f"mulscales_{k}", f"cast_{k}"], [f"mulvalues_{k}"]
+        )
+        compute_graph = create_nodes(
+            compute_graph, "Add", f"addbias_{k}", [bias, f"mulvalues_{k}"], [matmul.output[0]]
+        )
     return compute_graph
+
 
 def find_and_insert_matmulinteger(model_path):
     print("Rewriting ONNX Graph with MatMulInteger ")
-    model_path = os.path.join(model_path, 'model.onnx')
-    cfg={'constant_folding':False,'node_rename':False,'if_fixed_branch':None,'fixed_topk':0,'verbose':True}
+    model_path = os.path.join(model_path, "model.onnx")
+    cfg = {"constant_folding": False, "node_rename": False, "if_fixed_branch": None, "fixed_topk": 0, "verbose": True}
     original_output = onnx.load(model_path).graph.output
-    model = Model(model_path,cfg)
+    model = Model(model_path, cfg)
     graph = model.graph
 
     print("Replacing MatMul with MatMulInteger")
@@ -212,16 +232,17 @@ def find_and_insert_matmulinteger(model_path):
     pattern = FusionPattern(GEMM)
     found_nodes = pattern.search_pattern(graph)
     graph = replace_gemm_to_matmulinteger(graph, found_nodes)
-    
+
     graph.graph_reorder_nodes()
 
     print("Saving the new ONNX model")
-    full_path = pathlib.Path(model_path)
+    full_path = Path(model_path)
 
-    graph = graph.make_graph_onnx(graph.nodemap.keys(), 'graph', graph.input, graph.output,
-                                    with_initializer=True, with_shape_info=False)
+    graph = graph.make_graph_onnx(
+        graph.nodemap.keys(), "graph", graph.input, graph.output, with_initializer=True, with_shape_info=False
+    )
 
-    attr = {'producer_name': 'onnx_tool'}
+    attr = {"producer_name": "onnx_tool"}
     model_to_save = onnx.helper.make_model(graph, **attr)
 
     # onnx_tools might remove the output nodes from the ONNX graph, so we need to restore it.
