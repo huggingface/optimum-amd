@@ -8,6 +8,7 @@ from transformers.utils import _LazyModule
 
 _import_structure = {
     "brevitas.configuration": [
+        "AutoQuantizationConfig",
         "BrevitasQuantizationConfig",
     ],
     "brevitas.quantizer": [
@@ -16,7 +17,7 @@ _import_structure = {
 }
 
 if TYPE_CHECKING:
-    from .brevitas.configuration import BrevitasQuantizationConfig
+    from .brevitas.configuration import AutoQuantizationConfig, BrevitasQuantizationConfig
     from .brevitas.quantizer import BrevitasQuantizer
 else:
     import sys

@@ -4,7 +4,7 @@ import torch
 from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 
-from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
+from optimum.amd import AutoQuantizationConfig, BrevitasQuantizer
 from optimum.amd.brevitas.accelerate_utils import calc_cpu_device_map, calc_gpu_device_map, offload_model, remove_hooks
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
 from optimum.exporters.onnx import onnx_export_from_model
@@ -18,13 +18,10 @@ def main(args):
     use_accelerate = args.device == "auto"
 
     # Prepare the quantizer, specifying its configuration and loading the model.
-    qconfig = BrevitasQuantizationConfig(
+    qconfig = AutoQuantizationConfig.ipu_transformers_config(
         apply_gptq=args.apply_gptq,
         apply_weight_equalization=args.apply_weight_equalization,
         activations_equalization=args.activations_equalization,
-        is_static=args.is_static,
-        weights_symmetric=True,
-        activations_symmetric=args.is_static,  # ONNX export only supports unsigned for dynamic quantization
         gpu_device_map=args.gpu_device_map,
         cpu_device_map=args.cpu_device_map,
     )
