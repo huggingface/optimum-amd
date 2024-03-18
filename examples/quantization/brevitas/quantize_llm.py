@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
 from optimum.amd.brevitas.accelerate_utils import calc_cpu_device_map, calc_gpu_device_map, offload_model, remove_hooks
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
-from optimum.amd.brevitas.export import export_quantized_model
+from optimum.amd.brevitas.export import onnx_export_from_quantized_model
 from transformers import AutoTokenizer
 
 
@@ -76,7 +76,7 @@ def main(args):
     quantized_model = quantized_model.to("cpu")
 
     # Export to ONNX through optimum.exporters.
-    export_quantized_model(quantized_model, args.onnx_output_path)
+    onnx_export_from_quantized_model(quantized_model, args.onnx_output_path)
     return return_val
 
 
