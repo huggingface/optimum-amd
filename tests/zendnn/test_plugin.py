@@ -1,12 +1,11 @@
 import unittest
 
 import torch
-import torch_zendnn_plugin  # noqa
+import torch_zendnn_plugin  # noqa: F401
 from parameterized import parameterized
 
 from optimum.exporters.tasks import TasksManager
 from optimum.utils import logging
-from transformers import AutoConfig
 
 
 logger = logging.get_logger()
@@ -14,86 +13,166 @@ logger = logging.get_logger()
 
 SEED = 42
 SUPPORTED_MODELS_TINY = {
-    "t5": {"hf-internal-testing/tiny-random-t5": ["text2text-generation"]},
-    "bart": {"hf-internal-testing/tiny-random-bart": ["text2text-generation"]},
-    "bert": {"hf-internal-testing/tiny-random-bert": ["fill-mask"]},
-    "roberta": {"hf-internal-testing/tiny-random-roberta": ["fill-mask"]},
-    "distilbert": {"hf-internal-testing/tiny-random-distilbert": ["fill-mask"]},
-    "gpt2": {"hf-internal-testing/tiny-random-GPT2LMHeadModel": ["text-generation"]},
-    "gptj": {"hf-internal-testing/tiny-random-GPTJForCausalLM": ["text-generation"]},
-    "gpt-neo": {"hf-internal-testing/tiny-random-GPTNeoForCausalLM": ["text-generation"]},
-    "gpt-neox": {"hf-internal-testing/tiny-random-GPTNeoXForCausalLM": ["text-generation"]},
+    # text encoder
+    "bert": {"hf-internal-testing/tiny-random-bert": ["text-classification"]},
+    "xlnet": {"hf-internal-testing/tiny-random-xlnet": ["text-classification"]},
+    "roberta": {"hf-internal-testing/tiny-random-roberta": ["text-classification"]},
+    "distilbert": {"hf-internal-testing/tiny-random-distilbert": ["text-classification"]},
+    # image encoder
+    "vit": {"hf-internal-testing/tiny-random-ViTForImageClassification": ["image-classification"]},
+}
+SUPPORTED_MODELS_TINY_TEXT_GENERATION = {
+    # text decoder
+    "gemma": {"fxmarty/tiny-random-GemmaForCausalLM": ["text-generation"]},
+    "phi": {"hf-internal-testing/tiny-random-PhiForCausalLM": ["text-generation"]},
     "opt": {"hf-internal-testing/tiny-random-OPTForCausalLM": ["text-generation"]},
     "mpt": {"hf-internal-testing/tiny-random-MptForCausalLM": ["text-generation"]},
-    "llama": {"hf-internal-testing/tiny-random-LlamaForCausalLM": ["text-generation"]},
-    "phi": {"hf-internal-testing/tiny-random-PhiForCausalLM": ["text-generation"]},
-    "mistral": {"hf-internal-testing/tiny-random-MistralForCausalLM": ["text-generation"]},
+    "gpt2": {"hf-internal-testing/tiny-random-GPT2LMHeadModel": ["text-generation"]},
+    "gptj": {"hf-internal-testing/tiny-random-GPTJForCausalLM": ["text-generation"]},
     "bloom": {"hf-internal-testing/tiny-random-BloomForCausalLM": ["text-generation"]},
+    "llama": {"hf-internal-testing/tiny-random-LlamaForCausalLM": ["text-generation"]},
     "falcon": {"hf-internal-testing/tiny-random-FalconForCausalLM": ["text-generation"]},
+    "mistral": {"hf-internal-testing/tiny-random-MistralForCausalLM": ["text-generation"]},
+    "gpt-neo": {"hf-internal-testing/tiny-random-GPTNeoForCausalLM": ["text-generation"]},
+    "gpt-neox": {"hf-internal-testing/tiny-random-GPTNeoXForCausalLM": ["text-generation"]},
     "gpt-bigcode": {"hf-internal-testing/tiny-random-GPTBigCodeForCausalLM": ["text-generation"]},
-    # "Yi": {"hf-internal-testing/tiny-random-Yi": ["text-generation"]}, # just llama
-    # "vicuna": {"hf-internal-testing/tiny-random-vicuna": ["text-generation"]}, #just llama
-    # "zephyr": {"hf-internal-testing/tiny-random-zephyr": ["text-generation"]}, # just mistral
-    # "SantaCoder": {"hf-internal-testing/tiny-random-SantaCoder": ["text-generation"]}, # just gpt2
-    # "distilgpt2": {"hf-internal-testing/tiny-random-GPT2LMHeadModel": ["text-generation"]}, # just gpt2
-    # "xlnet": {"hf-internal-testing/tiny-random-xlnet": ["fill-mask"]}, # missing onnx config
-    # "gemma": {"fxmarty/tiny-random-GemmaForCausalLM": ["text-generation"]}, # missing onnx config
-    # "blip": {"hf-internal-testing/tiny-random-BlipModel": ["image-to-text"]}, # missing onnx config
-    # "blip2": {"hf-internal-testing/tiny-random-Blip2Model": ["image-to-text"]}, # missing onnx config
+    # "yi": {"hf-internal-testing/tiny-random-Yi": ["text-generation"]},  # just llama
+    # "vicuna": {"hf-internal-testing/tiny-random-vicuna": ["text-generation"]},  # just llama
+    # "zephyr": {"hf-internal-testing/tiny-random-zephyr": ["text-generation"]},  # just mistral
+    # "santacoder": {"hf-internal-testing/tiny-random-SantaCoder": ["text-generation"]},  # just gpt2
+    # "distilgpt2": {"hf-internal-testing/tiny-random-GPT2LMHeadModel": ["text-generation"]},  # just gpt2
     # "starcoder2": {"hf-internal-testing/tiny-random-Starcoder2ForCausalLM": ["text-generation"]}, # next transformers release
+    # text encoder-decoder
+    "t5": {"hf-internal-testing/tiny-random-t5": ["text2text-generation"]},
+    "bart": {"hf-internal-testing/tiny-random-bart": ["text2text-generation"]},
+    # # automatic speech recognition
+    "whisper": {"hf-internal-testing/tiny-random-WhisperForConditionalGeneration": ["automatic-speech-recognition"]},
+}
+
+SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION = {
+    # # stable diffusion
+    "stable-diffusion": {"hf-internal-testing/tiny-stable-diffusion-torch": ["stable-diffusion"]},
 }
 
 
-def _get_all_model_ids(model_type: str):
-    if isinstance(SUPPORTED_MODELS_TINY[model_type], str):
-        return [SUPPORTED_MODELS_TINY[model_type]]
+def load_model_or_pipe(model_name: str, task: str):
+    model_or_pipe = TasksManager.get_model_from_task(task=task, model_name_or_path=model_name, framework="pt")
+    return model_or_pipe
+
+
+def get_dummy_inputs(task: str):
+    if task in ["fill-mask", "text-generation", "text-classification"]:
+        dummy_inputs = {
+            "input_ids": torch.randint(low=0, high=2, size=(2, 10), dtype=torch.long),
+            "attention_mask": torch.ones(2, 10, dtype=torch.long),
+        }
+
+    elif task in ["image-classification"]:
+        dummy_inputs = {
+            "pixel_values": torch.rand(size=(2, 3, 30, 30), dtype=torch.float),
+        }
+
+    elif task in ["text2text-generation"]:
+        dummy_inputs = {
+            "input_ids": torch.randint(low=0, high=2, size=(2, 10), dtype=torch.long),
+            "decoder_input_ids": torch.randint(low=0, high=2, size=(2, 10), dtype=torch.long),
+            "attention_mask": torch.ones(2, 10, dtype=torch.long),
+        }
+
+    elif task in ["automatic-speech-recognition"]:
+        dummy_inputs = {
+            "input_values": torch.rand(size=(2, 10), dtype=torch.float),
+        }
+
+    elif task in ["image-to-text"]:
+        dummy_inputs = {
+            "pixel_values": torch.rand(size=(2, 3, 14, 14), dtype=torch.float),
+            "input_ids": torch.randint(low=0, high=2, size=(2, 10), dtype=torch.long),
+            "attention_mask": torch.ones(2, 10, dtype=torch.long),
+        }
+
+    elif task in ["stable-diffusion"]:
+        dummy_inputs = {
+            "prompt": ["This is test prompt 1", "This is test prompt 2"],
+        }
+
     else:
-        return list(SUPPORTED_MODELS_TINY[model_type].keys())
-
-
-def load_model(model_name: str, task: str):
-    model = TasksManager.get_model_from_task(
-        task=task, model_name_or_path=model_name, framework="pt", library_name="transformers"
-    )
-
-    return model
-
-
-def get_dummy_inputs(model_type: str, model_name: str, task: str):
-    config = AutoConfig.from_pretrained(model_name)
-    onnx_config = TasksManager.get_exporter_config_constructor(
-        exporter="onnx", task=task, model_type=model_type, model_name=model_name, library_name="transformers"
-    )(config)
-
-    dummy_inputs = onnx_config.generate_dummy_inputs()
+        raise ValueError(f"Task {task} not supported")
 
     return dummy_inputs
 
 
+def torch_compile_and_forward(model, inputs, backend):
+    model = torch.compile(model, backend=backend)
+    out_logits = model(**inputs).logits
+
+    return out_logits
+
+
+def torch_compile_and_generate(model, inputs, backend):
+    model = torch.compile(model, backend=backend)
+    out_ids = model.generate(**inputs, min_new_tokens=10, max_new_tokens=10, pad_token_id=0)
+
+    return out_ids
+
+
+def torch_compile_and_diffuse(pipe, inputs, backend):
+    pipe.unet = torch.compile(pipe.unet, backend=backend)
+    pipe.vae.decoder = torch.compile(pipe.vae.decoder, backend=backend)
+    out_images = pipe(**inputs, num_inference_steps=2, output_type="pt").images
+
+    return out_images
+
+
 class TestZenDNNPlugin(unittest.TestCase):
     @parameterized.expand(SUPPORTED_MODELS_TINY.keys())
-    def test_torch_compile(self, model_type: str):
-        for model_id in _get_all_model_ids(model_type):
-            for task in SUPPORTED_MODELS_TINY[model_type][model_id]:
-                model = load_model(model_id, task)
-                torch.compile(model, backend="zentorch")
+    def test_text_classification_model(self, model_type: str):
+        model_id_and_tasks = SUPPORTED_MODELS_TINY[model_type]
 
-    @parameterized.expand(SUPPORTED_MODELS_TINY.keys())
-    def test_model_logits(self, model_type: str):
-        for model_id in _get_all_model_ids(model_type):
-            for task in SUPPORTED_MODELS_TINY[model_type][model_id]:
-                dummy_inputs = get_dummy_inputs(model_type, model_id, task)
-                model = load_model(model_id, task)
-                model.eval()
+        for model_id, tasks in model_id_and_tasks.items():
+            for task in tasks:
+                torch.manual_seed(SEED)
+                inputs = get_dummy_inputs(task)
+                model = load_model_or_pipe(model_id, task)
 
-                torch._dynamo.reset()
-                inductor_model = torch.compile(model, backend="inductor")
-                with torch.inference_mode():
-                    inductor_out = inductor_model(**dummy_inputs)
+                inductor_logits = torch_compile_and_forward(model, inputs, backend="inductor")
+                zentorch_logits = torch_compile_and_forward(model, inputs, backend="zentorch")
+                torch.testing.assert_close(inductor_logits, zentorch_logits, rtol=1e-3, atol=1e-5)
 
-                torch._dynamo.reset()
-                zentorch_model = torch.compile(model, backend="zentorch")
-                with torch.inference_mode():
-                    zentorch_out = zentorch_model(**dummy_inputs)
+                logger.info(f"Model {model_id} for task {task} passed the test.")
 
-                torch.testing.assert_close(inductor_out.logits, zentorch_out.logits, rtol=1e-3, atol=1e-5)
+    @parameterized.expand(SUPPORTED_MODELS_TINY_TEXT_GENERATION.keys())
+    def test_text_generation_model(self, model_type: str):
+        model_id_and_tasks = SUPPORTED_MODELS_TINY_TEXT_GENERATION[model_type]
+
+        for model_id, tasks in model_id_and_tasks.items():
+            for task in tasks:
+                torch.manual_seed(SEED)
+                inputs = get_dummy_inputs(task)
+                model = load_model_or_pipe(model_id, task)
+
+                inductor_logits = torch_compile_and_forward(model, inputs, backend="inductor")
+                zentorch_logits = torch_compile_and_forward(model, inputs, backend="zentorch")
+                torch.testing.assert_close(inductor_logits, zentorch_logits, rtol=1e-3, atol=1e-5)
+
+                inductor_ids = torch_compile_and_generate(model, inputs, backend="inductor")
+                zentorch_ids = torch_compile_and_generate(model, inputs, backend="zentorch")
+                torch.testing.assert_close(inductor_ids, zentorch_ids, rtol=1e-3, atol=1e-5)
+
+                logger.info(f"Model {model_id} for task {task} passed the test.")
+
+    @parameterized.expand(SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION.keys())
+    def test_image_diffusion_pipe(self, model_type: str):
+        model_id_and_tasks = SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION[model_type]
+
+        for model_id, tasks in model_id_and_tasks.items():
+            for task in tasks:
+                torch.manual_seed(SEED)
+                inputs = get_dummy_inputs(task)
+                pipe = load_model_or_pipe(model_id, task)
+
+                inductor_images = torch_compile_and_diffuse(pipe, inputs, backend="inductor")
+                zentorch_images = torch_compile_and_diffuse(pipe, inputs, backend="zentorch")
+                torch.testing.assert_close(inductor_images, zentorch_images, rtol=1e-3, atol=1e-5)
+
+                logger.info(f"Model {model_id} for task {task} passed the test.")
