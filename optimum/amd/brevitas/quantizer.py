@@ -176,11 +176,20 @@ class BrevitasQuantizer(OptimumQuantizer):
         else:
             device = next(model.parameters()).device
 
+        layer_name = []
+        if quantization_config.exclude_last_layer:
+            last_layer = model.get_output_embeddings()
+            # Extract last layer name
+            full_layer_name = [n for (n,m) in model.named_modules() if m == last_layer][0]
+            # Remove the prefix
+            layer_name.append(full_layer_name.split('.')[-1])
+
         # We do not quantize embedding and last fully connected layer
         model = quantize_model(
             model,
             dtype=dtype,
             device=device,
+            name_blacklist=layer_name,
             weight_quant_format="int",
             weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
             weight_bit_width=quantization_config.weights_bitwidth,
