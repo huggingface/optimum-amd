@@ -180,9 +180,9 @@ class BrevitasQuantizer(OptimumQuantizer):
         if quantization_config.exclude_last_layer:
             last_layer = model.get_output_embeddings()
             # Extract last layer name
-            full_layer_name = [n for (n,m) in model.named_modules() if m == last_layer][0]
+            full_layer_name = [n for (n, m) in model.named_modules() if m == last_layer][0]
             # Remove the prefix
-            layer_name.append(full_layer_name.split('.')[-1])
+            layer_name.append(full_layer_name.split(".")[-1])
 
         # We do not quantize embedding and last fully connected layer
         model = quantize_model(
