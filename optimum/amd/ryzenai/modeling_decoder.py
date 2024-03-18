@@ -1,6 +1,6 @@
 # Copyright 2023 The HuggingFace Team. All rights reserved.
 # Licensed under the MIT License.
-"""RyzenAIModelForXXX classes, allowing to run ONNX Models with ONNX Runtime VITIS-AI EP using the same API as Transformers."""
+"""RyzenAIModelForCausalLM classes, allowing to run ONNX Models with ONNX Runtime VITIS-AI EP using the same API as Transformers."""
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -52,18 +52,16 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
 
         self._initialize_params(use_cache, generation_config)
 
-        self.device = torch.device("cpu")
-
-        use_cache = True
-
         self.use_fp16 = False
+        for inp in model.get_inputs():
+            if (
+                inp.name == "past_key_values" or inp.name in self.key_value_input_names
+            ) and inp.type == "tensor(float16)":
+                self.use_fp16 = True
+                break
 
-        if use_cache ^ self.use_cache:
-            raise ValueError(
-                f"`use_cache` was set to `{use_cache}` but the loaded model only supports `use_cache={self.use_cache}`. "
-                f"Please load your current model with `use_cache={self.use_cache}` or export the original model "
-                f"once again with `use_cache={use_cache}` when calling the `from_pretrained` method. "
-            )
+        # need for generate
+        self.device = torch.device("cpu")
 
     def _get_key_value_names(self):
         key_names = [key for key in self.inputs_names if (".key" in key) or (".value" in key)]
@@ -78,6 +76,13 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
         self.key_value_input_names, self.key_value_output_names = self._get_key_value_names()
         self.use_cache = len(self.key_value_input_names) > 0
         self.generation_config = generation_config or GenerationConfig.from_model_config(self.config)
+
+        if use_cache ^ self.use_cache:
+            raise ValueError(
+                f"`use_cache` was set to `{use_cache}` but the loaded model only supports `use_cache={self.use_cache}`. "
+                f"Please load your current model with `use_cache={self.use_cache}` or export the original model "
+                f"once again with `use_cache={use_cache}` when calling the `from_pretrained` method. "
+            )
 
     def forward(self, input_ids, attention_mask=None, position_ids=None, past_key_values=None, **kwargs):
         use_torch = isinstance(input_ids, torch.Tensor)
@@ -107,14 +112,23 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
                 batch_size, sequence_length = input_ids.shape
                 past_key_values = self.prepare_past_key_values(batch_size, sequence_length, use_torch)
             else:
-                past_key_values = self.process_past_key_values(past_key_values)
+                past_key_values = self.process_input_past_key_values(past_key_values)
 
             for input_name, past_key_value in zip(self.key_value_input_names, past_key_values):
                 inputs[input_name] = self._convert_to_numpy(past_key_value, use_torch)
 
         return inputs
 
+    def process_input_past_key_values(self, past_key_values: Tuple[torch.Tensor]):
+        # Override this method in subclasses to adapt to the specific model's configuration
+        past_key_values = tuple(
+            past_key_value for pkv_per_layer in past_key_values for past_key_value in pkv_per_layer
+        )
+
+        return past_key_values
+
     def _process_outputs(self, outputs, use_torch):
+        # Override this method in subclasses to adapt to the specific model's configuration
         logits = self._convert_to_tensor(outputs[self.output_names["logits"]], use_torch)
 
         past_key_values = None
@@ -129,13 +143,6 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
             )
 
         return logits, past_key_values
-
-    def process_past_key_values(self, past_key_values: Tuple[torch.Tensor]):
-        past_key_values = tuple(
-            past_key_value for pkv_per_layer in past_key_values for past_key_value in pkv_per_layer
-        )
-
-        return past_key_values
 
     def get_shape_params_from_normalized_config(self):
         # Override this method in subclasses to adapt to the specific model's configuration
@@ -189,13 +196,12 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
         session_options: Optional[ort.SessionOptions] = None,
         provider_options: Optional[Dict[str, Any]] = None,
         model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
-        init_cls: Optional["RyzenAIModel"] = None,
+        use_cache: bool = True,
         **kwargs,
     ) -> RyzenAIModel:
-        if init_cls is None:
-            init_cls = model_type_to_class.get(config.model_type, RyzenAIModelForCausalLM)
+        init_cls = model_type_to_class.get(config.model_type, RyzenAIModelForCausalLM)
 
-        model = super()._from_pretrained(
+        model, vaip_config, model_save_dir, preprocessors = cls._load_model_and_processors(
             model_id,
             config,
             vaip_config,
@@ -210,11 +216,17 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
             session_options,
             provider_options,
             model_save_dir,
-            init_cls,
             **kwargs,
         )
 
-        return model
+        return init_cls(
+            model,
+            config=config,
+            vaip_config=vaip_config,
+            model_save_dir=model_save_dir,
+            preprocessors=preprocessors,
+            use_cache=use_cache,
+        )
 
     # Adapted from transformers.models.gpt2.modeling_gpt2.GPT2LMHeadModel.prepare_inputs_for_generation
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
@@ -303,6 +315,9 @@ class RyzenAIOPTForCausalLM(RyzenAIModelForCausalLM):
 
 
 class RyzenAIGPTBigCodeForCausalLM(RyzenAIModelForCausalLM):
+    def process_input_past_key_values(self, past_key_values: Tuple[torch.Tensor]):
+        return past_key_values
+
     def _process_outputs(self, outputs, use_torch):
         logits = self._convert_to_tensor(outputs[self.output_names["logits"]], use_torch)
 
@@ -314,9 +329,6 @@ class RyzenAIGPTBigCodeForCausalLM(RyzenAIModelForCausalLM):
             )
 
         return logits, past_key_values
-
-    def process_past_key_values(self, past_key_values: Tuple[torch.Tensor]):
-        return past_key_values
 
     def prepare_past_key_values(
         self,

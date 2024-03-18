@@ -224,7 +224,7 @@ class RyzenAIModel(OptimizedModel):
         return [filename, f"{name}_quantized.{extension}", f"{name}_optimized.{extension}"]
 
     @classmethod
-    def _from_pretrained(
+    def _load_model_and_processors(
         cls,
         model_id: Union[str, Path],
         config: PretrainedConfig,
@@ -240,7 +240,6 @@ class RyzenAIModel(OptimizedModel):
         session_options: Optional[ort.SessionOptions] = None,
         provider_options: Optional[Dict[str, Any]] = None,
         model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
-        init_cls: Optional["RyzenAIModel"] = None,
         **kwargs,
     ) -> "RyzenAIModel":
         model_path = Path(model_id)
@@ -348,10 +347,46 @@ class RyzenAIModel(OptimizedModel):
         if model_save_dir is None:
             model_save_dir = new_model_save_dir
 
-        if init_cls is None:
-            init_cls = cls
+        return model, vaip_config, model_save_dir, preprocessors
 
-        return init_cls(
+    @classmethod
+    def _from_pretrained(
+        cls,
+        model_id: Union[str, Path],
+        config: PretrainedConfig,
+        vaip_config: Optional[str] = None,
+        use_auth_token: Optional[Union[bool, str]] = None,
+        revision: Optional[str] = None,
+        force_download: bool = False,
+        cache_dir: Optional[str] = None,
+        file_name: Optional[str] = None,
+        subfolder: str = "",
+        local_files_only: bool = False,
+        provider: str = "VitisAIExecutionProvider",
+        session_options: Optional[ort.SessionOptions] = None,
+        provider_options: Optional[Dict[str, Any]] = None,
+        model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
+        **kwargs,
+    ) -> "RyzenAIModel":
+        model, vaip_config, model_save_dir, preprocessors = cls._load_model_and_processors(
+            model_id,
+            config,
+            vaip_config,
+            use_auth_token,
+            revision,
+            force_download,
+            cache_dir,
+            file_name,
+            subfolder,
+            local_files_only,
+            provider,
+            session_options,
+            provider_options,
+            model_save_dir,
+            **kwargs,
+        )
+
+        return cls(
             model=model,
             config=config,
             vaip_config=vaip_config,
