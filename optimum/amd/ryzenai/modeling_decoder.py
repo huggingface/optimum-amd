@@ -18,6 +18,7 @@ from transformers import (
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from .modeling import RyzenAIModel
+from .utils import set_builtins, set_environment_variables
 
 
 if TYPE_CHECKING:
@@ -199,6 +200,10 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
         use_cache: bool = True,
         **kwargs,
     ) -> RyzenAIModel:
+        # set environment variables
+        set_environment_variables()
+        set_builtins()
+
         init_cls = model_type_to_class.get(config.model_type, RyzenAIModelForCausalLM)
 
         model, vaip_config, model_save_dir, preprocessors = cls._load_model_and_processors(
