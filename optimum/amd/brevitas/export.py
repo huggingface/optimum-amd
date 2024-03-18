@@ -1,12 +1,13 @@
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Union
+
 import torch
 from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 
 from optimum.exporters.onnx import onnx_export_from_model
-from transformers.modeling_utils import PreTrainedModel
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
-from pathlib import Path
 from optimum.exporters.onnx.base import OnnxConfig
+from transformers.modeling_utils import PreTrainedModel
 
 
 def onnx_export_from_quantized_model(
@@ -24,10 +25,11 @@ def onnx_export_from_quantized_model(
     no_dynamic_axes: bool = False,
     use_subprocess: bool = False,
     do_constant_folding: bool = True,
-    **kwargs_shapes):
+    **kwargs_shapes,
+):
     with torch.no_grad(), brevitas_proxy_export_mode(quantized_model, export_manager=StdQCDQONNXManager):
         onnx_export_from_model(
-            quantized_model, 
+            quantized_model,
             output,
             opset=opset,
             monolith=monolith,
@@ -41,7 +43,8 @@ def onnx_export_from_quantized_model(
             no_dynamic_axes=no_dynamic_axes,
             use_subprocess=use_subprocess,
             do_constant_folding=do_constant_folding,
-            task="text-generation-with-past", 
-            do_validation=False, 
+            task="text-generation-with-past",
+            do_validation=False,
             no_post_process=True,
-            **kwargs_shapes)
+            **kwargs_shapes,
+        )
