@@ -10,7 +10,7 @@ import timm
 import torch
 from datasets import load_dataset
 from parameterized import parameterized
-from testing_models import PYTORCH_TIMM_MODEL_SUBSET, PYTORCH_TIMM_MODELS
+from testing_models import PYTORCH_TIMM_MODEL_SUBSET, PYTORCH_TIMM_MODEL
 from testing_utils import (
     DEFAULT_CACHE_DIR,
     DEFAULT_VAIP_CONFIG,
@@ -114,7 +114,7 @@ class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
     ):
         self._quantize(model_name=model_name)
 
-    @parameterized.expand(get_models_to_test(PYTORCH_TIMM_MODELS, library_name="timm"))
+    @parameterized.expand(get_models_to_test(PYTORCH_TIMM_MODEL, library_name="timm"))
     @pytest.mark.quant_test
     @slow
     def test_timm_quantization(

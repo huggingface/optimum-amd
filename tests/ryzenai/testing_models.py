@@ -40,7 +40,7 @@ PYTORCH_TIMM_MODEL_SUBSET = {
     }
 }
 
-PYTORCH_TIMM_MODELS = {
+PYTORCH_TIMM_MODEL = {
     "default-timm-config": {
         "timm/botnet26t_256.c1_in1k": ["image-classification"],
         "timm/cs3darknet_focus_l.c2ns_in1k": ["image-classification"],
