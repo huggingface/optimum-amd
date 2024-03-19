@@ -74,14 +74,10 @@ Brevitas models can be exported to ONNX using Optimum:
 
 ```python
 import torch
-from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
-from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
+from optimum.amd.brevitas.export import onnx_export_from_quantized_model
 
 # Export to ONNX through optimum.exporters.
-with torch.no_grad(), brevitas_proxy_export_mode(model, export_manager=StdQCDQONNXManager):
-    onnx_export_from_model(
-        model, "llm_quantized_onnx", task="text-generation-with-past", do_validation=False, no_post_process=True
-    )
+onnx_export_from_quantized_model(model, "llm_quantized_onnx")
 ```
 
 ## Complete example
