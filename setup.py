@@ -23,7 +23,6 @@ INSTALL_REQUIRE = [
     "timm",
     "torch",
     "torchvision",
-    "onnx-tool",
 ]
 
 # TODO: unpin pytest once https://github.com/huggingface/transformers/pull/29154 is merged & released
@@ -39,6 +38,7 @@ TESTS_REQUIRE = [
     "datasets>=2.17",
     "onnx",
     "accelerate",
+    "onnx-tool",
 ]
 
 QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]
