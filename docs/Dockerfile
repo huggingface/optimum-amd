@@ -28,4 +28,4 @@ RUN git clone --depth 1 --branch v3.5 https://github.com/Xilinx/Vitis-AI.git && 
 
 RUN git clone $clone_url && cd optimum-amd && git checkout $commit_sha
 RUN python3 -m pip install --no-cache-dir ./optimum-amd[brevitas]
-RUN pip install onnxruntime==1.14.0 torchvision==0.17.1
+RUN pip install onnxruntime==1.14.0 torchvision==0.17.1 opencv-python
