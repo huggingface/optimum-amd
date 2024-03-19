@@ -7,28 +7,29 @@ from diffusers import DiffusionPipeline
 from parameterized import parameterized
 from PIL import Image
 
-from optimum.exporters.tasks import TasksManager
-from optimum.utils import logging
 from transformers import (
     AutoFeatureExtractor,
     AutoImageProcessor,
-    AutoTokenizer,
-    AutoModelForMaskedLM,
     AutoModelForCausalLM,
+    AutoModelForImageClassification,
     AutoModelForSeq2SeqLM,
     AutoModelForSequenceClassification,
-    AutoModelForVision2Seq,
-    AutoModelForImageClassification,
     AutoModelForSpeechSeq2Seq,
+    AutoModelForVision2Seq,
+    AutoTokenizer,
 )
 from transformers.pipelines.audio_utils import ffmpeg_read
 
 
-logger = logging.get_logger()
-
+DRY = False
+DEBUG = False
 
 SEED = 42
-BATCH_SIZE = 4
+BATCH_SIZE = 2
+
+TEXT_GENERATION_KWARGS = {"min_new_tokens": 10, "max_new_tokens": 10}
+IMAGE_DIFFUSION_KWARGS = {"num_inference_steps": 2, "output_type": "pt"}
+
 SUPPORTED_MODELS_TINY = {
     # text encoder
     "bert": {"hf-internal-testing/tiny-random-bert": ["text-classification"]},
@@ -76,36 +77,32 @@ SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION = {
 }
 
 
-def load_transformers_model(name_or_path: str, task: str):
+def load_model_or_pipe(name_or_path: str, task: str):
     torch.manual_seed(SEED)
-    if task == "fill-mask":
-        return AutoModelForMaskedLM.from_pretrained(name_or_path)
+
+    if task == "text-classification":
+        return AutoModelForSequenceClassification.from_pretrained(name_or_path)
+    elif task == "image-classification":
+        return AutoModelForImageClassification.from_pretrained(name_or_path)
     elif task == "text-generation":
         return AutoModelForCausalLM.from_pretrained(name_or_path)
     elif task == "text2text-generation":
         return AutoModelForSeq2SeqLM.from_pretrained(name_or_path)
-    elif task == "text-classification":
-        return AutoModelForSequenceClassification.from_pretrained(name_or_path)
-    elif task == "image-to-text":
-        return AutoModelForVision2Seq.from_pretrained(name_or_path)
-    elif task == "image-classification":
-        return AutoModelForImageClassification.from_pretrained(name_or_path)
     elif task == "automatic-speech-recognition":
         return AutoModelForSpeechSeq2Seq.from_pretrained(name_or_path)
+    elif task == "image-to-text":
+        return AutoModelForVision2Seq.from_pretrained(name_or_path)
+    elif task in ["stable-diffusion", "stable-diffusion-xl"]:
+        return DiffusionPipeline.from_pretrained(name_or_path)
+    else:
+        raise ValueError(f"Task {task} not supported")
 
-    return TasksManager.get_model_from_task(task=task, model_name_or_path=name_or_path, framework="pt")
 
-
-def load_diffusion_pipeline(name_or_path: str):
-    torch.manual_seed(SEED)
-    return DiffusionPipeline.from_pretrained(name_or_path)
-
-
-def get_dummy_inputs(model_type: str, model_id: str, task: str):
-    if task in ["fill-mask", "text-generation", "text2text-generation", "text-classification"]:
+def get_dummy_inputs(model_id: str, task: str):
+    if task in ["text-classification", "text-generation", "text2text-generation"]:
         processor = AutoTokenizer.from_pretrained(model_id)
-        texts = ["This is a test sentence"] * BATCH_SIZE
-        dummy_inputs = processor(texts=texts, return_tensors="pt")
+        text = ["This is a test sentence"] * BATCH_SIZE
+        dummy_inputs = processor(text=text, return_tensors="pt")
 
         if task in ["text2text-generation"]:
             dummy_inputs["decoder_input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
@@ -116,9 +113,7 @@ def get_dummy_inputs(model_type: str, model_id: str, task: str):
         images = [Image.open(requests.get(image_url, stream=True).raw)] * BATCH_SIZE
         dummy_inputs = processor(images=images, return_tensors="pt")
 
-        if task in ["image-to-text"] and model_type == "blip":
-            dummy_inputs["input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
-        else:
+        if task in ["image-to-text"]:
             dummy_inputs["decoder_input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
 
     elif task in ["automatic-speech-recognition"]:
@@ -137,7 +132,7 @@ def get_dummy_inputs(model_type: str, model_id: str, task: str):
 
 
 def load_and_compile_model(model_id, task, backend):
-    model = load_transformers_model(model_id, task)
+    model = load_model_or_pipe(model_id, task)
 
     torch._dynamo.reset()
     model = torch.compile(model, backend=backend)
@@ -145,8 +140,8 @@ def load_and_compile_model(model_id, task, backend):
     return model
 
 
-def load_and_compile_pipeline(model_id, task, backend=None):
-    pipe = load_transformers_model(model_id, task)
+def load_and_compile_pipeline(model_id, task, backend):
+    pipe = load_model_or_pipe(model_id, task)
 
     torch._dynamo.reset()
     pipe.unet = torch.compile(pipe.unet, backend=backend)
@@ -162,17 +157,22 @@ class TestZenDNNPlugin(unittest.TestCase):
 
         for model_id, tasks in model_id_and_tasks.items():
             for task in tasks:
-                inputs = get_dummy_inputs(model_type, model_id, task)
-                model = load_transformers_model(model_id, task)
+                inputs = get_dummy_inputs(model_id, task)
 
-                # sanity check
-                model(**inputs, decoder_input_ids=torch.tensor([[1]] * BATCH_SIZE))
+                if DEBUG:
+                    eager_model = load_and_compile_model(model_id, task, backend="eager")
+                    _ = eager_model(**inputs)
+                    aot_eager_model = load_and_compile_model(model_id, task, backend="aot_eager")
+                    _ = aot_eager_model(**inputs)
+
+                if DRY:
+                    continue
 
                 inductor_model = load_and_compile_model(model_id, task, backend="inductor")
-                zentorch_model = load_and_compile_model(model_id, task, backend="zentorch")
+                inductor_logits = inductor_model(**inputs, return_dict=True).logits
 
-                inductor_logits = inductor_model(**inputs)
-                zentorch_logits = zentorch_model(**inputs)
+                zentorch_model = load_and_compile_model(model_id, task, backend="zentorch")
+                zentorch_logits = zentorch_model(**inputs, return_dict=True).logits
 
                 torch.testing.assert_close(inductor_logits, zentorch_logits, rtol=1e-3, atol=1e-5)
 
@@ -182,30 +182,31 @@ class TestZenDNNPlugin(unittest.TestCase):
 
         for model_id, tasks in model_id_and_tasks.items():
             for task in tasks:
-                inputs = get_dummy_inputs(model_type, model_id, task)
-                model = load_transformers_model(model_id, task)
+                inputs = get_dummy_inputs(model_id, task)
 
                 if model_type == "blip":
-                    model.config.text_config.pad_token_id = 0
-                else:
-                    model.config.pad_token_id = 0
+                    inputs["input_ids"] = inputs.pop("decoder_input_ids")
 
-                # sanity check
-                model(**inputs)
+                if DEBUG:
+                    eager_model = load_and_compile_model(model_id, task, backend="eager")
+                    _ = eager_model(**inputs)
+                    _ = eager_model.generate(**inputs, **TEXT_GENERATION_KWARGS)
+                    aot_eager_model = load_and_compile_model(model_id, task, backend="aot_eager")
+                    _ = aot_eager_model(**inputs)
+                    _ = aot_eager_model.generate(**inputs, **TEXT_GENERATION_KWARGS)
+
+                if DRY:
+                    continue
 
                 inductor_model = load_and_compile_model(model_id, task, backend="inductor")
-                zentorch_model = load_and_compile_model(model_id, task, backend="zentorch")
-
                 inductor_logits = inductor_model(**inputs).logits
+                inductor_ids = inductor_model.generate(**inputs, **TEXT_GENERATION_KWARGS)
+
+                zentorch_model = load_and_compile_model(model_id, task, backend="zentorch")
                 zentorch_logits = zentorch_model(**inputs).logits
+                zentorch_ids = zentorch_model.generate(**inputs, **TEXT_GENERATION_KWARGS)
 
                 torch.testing.assert_close(inductor_logits, zentorch_logits, rtol=1e-3, atol=1e-5)
-
-                model.generate(**inputs, min_new_tokens=10, max_new_tokens=10)
-
-                inductor_ids = inductor_model.generate(**inputs, min_new_tokens=10, max_new_tokens=10)
-                zentorch_ids = zentorch_model.generate(**inputs, min_new_tokens=10, max_new_tokens=10)
-
                 torch.testing.assert_close(inductor_ids, zentorch_ids, rtol=1e-3, atol=1e-5)
 
     @parameterized.expand(SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION.keys())
@@ -214,16 +215,22 @@ class TestZenDNNPlugin(unittest.TestCase):
 
         for model_id, tasks in model_id_and_tasks.items():
             for task in tasks:
-                inputs = get_dummy_inputs(model_type, model_id, task)
-                pipe = load_diffusion_pipeline(model_id)
+                inputs = get_dummy_inputs(model_id, task)
 
-                # sanity check
-                pipe(**inputs, num_inference_steps=2, output_type="pt")
+                if DEBUG:
+                    eager_pipe = load_and_compile_pipeline(model_id, task, backend="eager")
+                    _ = eager_pipe(**inputs, **IMAGE_DIFFUSION_KWARGS)
+                    aot_eager_pipe = load_and_compile_pipeline(model_id, task, backend="aot_eager")
+                    _ = aot_eager_pipe(**inputs, **IMAGE_DIFFUSION_KWARGS)
 
+                if DRY:
+                    continue
+
+                # we get a new instance of the pipe for every backend to avoid any side effects
                 inductor_pipe = load_and_compile_pipeline(model_id, task, backend="inductor")
-                zentorch_pipe = load_and_compile_pipeline(model_id, task, backend="zentorch")
+                inductor_images = inductor_pipe(**inputs, **IMAGE_DIFFUSION_KWARGS).images
 
-                inductor_images = inductor_pipe(**inputs, num_inference_steps=2, output_type="pt").images
-                zentorch_images = zentorch_pipe(**inputs, num_inference_steps=2, output_type="pt").images
+                zentorch_pipe = load_and_compile_pipeline(model_id, task, backend="zentorch")
+                zentorch_images = zentorch_pipe(**inputs, **IMAGE_DIFFUSION_KWARGS).images
 
                 torch.testing.assert_close(inductor_images, zentorch_images, rtol=1e-3, atol=1e-5)
