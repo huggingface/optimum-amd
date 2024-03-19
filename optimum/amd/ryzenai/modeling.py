@@ -18,6 +18,7 @@ from onnx import shape_inference
 from onnx.tools import update_model_dims
 
 from optimum.exporters import TasksManager
+from optimum.exporters.onnx import main_export
 from optimum.modeling_base import FROM_PRETRAINED_START_DOCSTRING, OptimizedModel
 from optimum.onnx.utils import _get_external_data_paths
 from optimum.utils.save_utils import maybe_load_preprocessors
@@ -662,6 +663,60 @@ class RyzenAIModelForImageClassification(RyzenAIModelForCustomTasks):
         outputs = self._prepare_onnx_outputs(onnx_outputs, use_torch=use_torch)
 
         return ImageClassifierOutput(logits=next(iter(outputs.values())))
+
+    @classmethod
+    def _export(
+        cls,
+        model_id: str,
+        config: "PretrainedConfig" = None,
+        revision: Optional[str] = None,
+        cache_dir: Optional[str] = None,
+        force_download: bool = False,
+        use_auth_token: Optional[Union[bool, str]] = None,
+        subfolder: str = "",
+        local_files_only: bool = False,
+        trust_remote_code: bool = False,
+        vaip_config: Optional[str] = None,
+        provider: Optional[Dict[str, Any]] = None,
+        session_options: Optional[ort.SessionOptions] = None,
+        provider_options: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> "RyzenAIModel":
+        save_dir = TemporaryDirectory()
+        save_dir_path = Path(save_dir.name)
+        main_export(
+            model_name_or_path=model_id,
+            output=save_dir_path,
+            task="image-classification",
+            opset=17,
+            batch_size=1,
+            no_dynamic_axes=True,
+            do_validation=False,
+            no_post_process=True,
+            subfolder=subfolder,
+            revision=revision,
+            cache_dir=cache_dir,
+            use_auth_token=use_auth_token,
+            local_files_only=local_files_only,
+            force_download=force_download,
+            trust_remote_code=trust_remote_code,
+        )
+        return cls._from_pretrained(
+            save_dir_path,
+            config,
+            vaip_config=vaip_config,
+            use_auth_token=use_auth_token,
+            revision=revision,
+            force_download=force_download,
+            cache_dir=cache_dir,
+            subfolder=subfolder,
+            local_files_only=local_files_only,
+            provider=provider,
+            session_options=session_options,
+            provider_options=provider_options,
+            model_save_dir=save_dir,
+            **kwargs,
+        )
 
 
 class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):
