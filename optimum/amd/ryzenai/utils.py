@@ -46,6 +46,7 @@ def set_builtins():
     """Set the builtins.impl and builtins.quant_mode environment variables."""
     builtins.impl = os.getenv("BUILTINS_IMPL", DEFAULT_BUILTIN_IMPL)
     builtins.quant_mode = os.getenv("BUILTINS_IMPL", DEFAULT_BUILTIN_QUANT_MODE)
+    print(f"Builtins: impl={builtins.impl}, quant_mode={builtins.quant_mode}")
 
 
 def clone_repository(repo_url: str, repo_path: str):
@@ -68,6 +69,22 @@ def normalize_path(path):
     return os.path.normpath(path)
 
 
+def check_env_path_exists(env_var_name):
+    paths = os.environ.get(env_var_name)
+    if ";" in paths:
+        paths = paths.strip(";").split(";")
+    elif "," in paths:
+        paths = paths.strip(",").split(",")
+    else:
+        paths = [paths]
+
+    for path in paths:
+        if not os.path.exists(path):
+            raise OSError(
+                f"The path '{path}' does not exist. Please ensure that the `{env_var_name}` environment variable is set correctly!"
+            )
+
+
 def set_environment_variables():
     ryzenai_sw_path = os.environ.get("RYZENAI_SW_PATH")
     if not ryzenai_sw_path:
@@ -76,27 +93,37 @@ def set_environment_variables():
         )
         ryzenai_sw_path = normalize_path(os.path.join(os.getcwd(), "RyzenAI-SW"))
         clone_repository("https://github.com/amd/RyzenAI-SW/", ryzenai_sw_path)
+    else:
+        if not os.path.exists(ryzenai_sw_path):
+            raise OSError(
+                f"The path '{ryzenai_sw_path}' does not exist. Please ensure that the `RYZENAI_SW_PATH` environment variable "
+                "is set correctly!"
+            )
 
-    # Set other environment variables
     ryzenai_transformers_path = normalize_path(os.path.join(ryzenai_sw_path, "example/transformers"))
     third_party = normalize_path(os.path.join(ryzenai_transformers_path, "third_party"))
+    device = os.environ.get("DEVICE", DEFAULT_DEVICE)
 
     set_env_var("THIRD_PARTY", third_party)
+    check_env_path_exists("THIRD_PARTY")
+
     set_env_var(
         "TVM_LIBRARY_PATH",
-        f"{normalize_path(os.path.join(third_party, 'lib'))};{normalize_path(os.path.join(third_party, 'bin'))}",
+        normalize_path(os.path.join(third_party, "lib")) + ";" + normalize_path(os.path.join(third_party, "bin")),
     )
-    set_env_var("DEVICE", DEFAULT_DEVICE)
-    set_env_var(
-        "XLNX_VART_FIRMWARE",
-        normalize_path(os.path.join(ryzenai_transformers_path, "xclbin", os.environ.get("DEVICE", DEFAULT_DEVICE))),
-    )
+    check_env_path_exists("TVM_LIBRARY_PATH")
 
-    dll_path = os.path.join(ryzenai_transformers_path, "dll", os.environ.get("DEVICE", DEFAULT_DEVICE))
+    set_env_var("XLNX_VART_FIRMWARE", normalize_path(os.path.join(ryzenai_transformers_path, "xclbin", device)))
+    check_env_path_exists("XLNX_VART_FIRMWARE")
+
+    dll_path = normalize_path(os.path.join(ryzenai_transformers_path, "dll", device))
     tvm_module_paths = []
     for dll_file in DEFAULT_DLL_FILES:
         tvm_module_paths.append(normalize_path(os.path.join(dll_path, dll_file)))
 
     set_env_var("TVM_MODULE_PATH", ",".join(tvm_module_paths) + ",")
+    check_env_path_exists("TVM_MODULE_PATH")
+
+    set_env_var("DEVICE", DEFAULT_DEVICE)
     set_env_var("TVM_GEMM_M", DEFAULT_TVM_GEMM_M)
     set_env_var("TVM_DLL_NUM", DEFAULT_TVM_DLL_NUM)
