@@ -27,5 +27,5 @@ RUN python3 -m pip install --no-cache-dir git+https://github.com/huggingface/doc
 RUN git clone --depth 1 --branch v3.5 https://github.com/Xilinx/Vitis-AI.git && cd Vitis-AI/src/vai_quantizer/vai_q_onnx && sh build.sh && pip install pkgs/*.whl
 
 RUN git clone $clone_url && cd optimum-amd && git checkout $commit_sha
-RUN python3 -m pip install --no-cache-dir ./optimum-amd[brevitas]
-RUN pip install onnxruntime==1.14.0 torchvision==0.17.1
+RUN python3 -m pip install --no-cache-dir ./optimum-amd[brevitas,tests]
+RUN pip install onnxruntime==1.14.0
