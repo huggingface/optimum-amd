@@ -21,8 +21,7 @@ from transformers import (
 from transformers.pipelines.audio_utils import ffmpeg_read
 
 
-DRY = False
-DEBUG = False
+EAGER_DEBUG = False  # for debugging test logic in eager mode
 
 SEED = 42
 BATCH_SIZE = 2
@@ -37,7 +36,9 @@ SUPPORTED_MODELS_TINY = {
     "roberta": {"hf-internal-testing/tiny-random-roberta": ["text-classification"]},
     "distilbert": {"hf-internal-testing/tiny-random-distilbert": ["text-classification"]},
     # image encoder
-    # "vit": {"hf-internal-testing/tiny-random-ViTForImageClassification": ["image-classification"]}, # fails with inductor
+    "vit": {
+        "hf-internal-testing/tiny-random-ViTForImageClassification": ["image-classification"]
+    },  # tested with torch >= 2.2.1
 }
 SUPPORTED_MODELS_TINY_TEXT_GENERATION = {
     # text decoder
@@ -54,26 +55,32 @@ SUPPORTED_MODELS_TINY_TEXT_GENERATION = {
     "gpt-neo": {"hf-internal-testing/tiny-random-GPTNeoForCausalLM": ["text-generation"]},
     "gpt-neox": {"hf-internal-testing/tiny-random-GPTNeoXForCausalLM": ["text-generation"]},
     "gpt-bigcode": {"hf-internal-testing/tiny-random-GPTBigCodeForCausalLM": ["text-generation"]},
-    # "yi": {"hf-internal-testing/tiny-random-Yi": ["text-generation"]},  # just llama
+    # "yi": {"hf-internal-testing/tiny-random-yi": ["text-generation"]},  # just llama
     # "vicuna": {"hf-internal-testing/tiny-random-vicuna": ["text-generation"]},  # just llama
     # "zephyr": {"hf-internal-testing/tiny-random-zephyr": ["text-generation"]},  # just mistral
-    # "santacoder": {"hf-internal-testing/tiny-random-SantaCoder": ["text-generation"]},  # just gpt2
-    # "distilgpt2": {"hf-internal-testing/tiny-random-GPT2LMHeadModel": ["text-generation"]},  # just gpt2
-    # "starcoder2": {"hf-internal-testing/tiny-random-Starcoder2ForCausalLM": ["text-generation"]}, # next transformers release
+    # "santacoder": {"hf-internal-testing/tiny-random-santacoder": ["text-generation"]},  # just gpt2
+    # "distilgpt2": {"hf-internal-testing/tiny-random-distilgpt2": ["text-generation"]},  # just gpt2
+    # "starcoder2": {"hf-internal-testing/tiny-random-starcoder2": ["text-generation"]}, # next transformers release
     # text encoder-decoder
     "t5": {"hf-internal-testing/tiny-random-t5": ["text2text-generation"]},
     "bart": {"hf-internal-testing/tiny-random-bart": ["text2text-generation"]},
     # automatic speech recognition
-    # "whisper": {"openai/whisper-tiny": ["automatic-speech-recognition"]}, # fails with inductor
+    "whisper": {"openai/whisper-tiny": ["automatic-speech-recognition"]},  # tested with torch >= 2.2.1
     # image to text
-    # "blip": {"hf-internal-testing/tiny-random-BlipForConditionalGeneration": ["image-to-text"]}, # fails with inductor
-    # "blip2": {"hf-internal-testing/tiny-random-Blip2ForConditionalGeneration": ["image-to-text"]}, # fails with inductor
+    "blip": {
+        "hf-internal-testing/tiny-random-BlipForConditionalGeneration": ["image-to-text"]
+    },  # transformers side error (error in generate function)
+    "blip2": {
+        "hf-internal-testing/tiny-random-Blip2ForConditionalGeneration": ["image-to-text"]
+    },  # tested with torch >= 2.2.1
 }
 
 SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION = {
     # stable diffusion
     "stable-diffusion": {"hf-internal-testing/tiny-stable-diffusion-torch": ["stable-diffusion"]},
-    # "stable-diffusion-xl": {"hf-internal-testing/tiny-stable-diffusion-xl-pipe": ["stable-diffusion-xl"]}, # fails with inductor
+    "stable-diffusion-xl": {
+        "hf-internal-testing/tiny-stable-diffusion-xl-pipe": ["stable-diffusion-xl"]
+    },  # tested with torch >= 2.2.1
 }
 
 
@@ -98,7 +105,7 @@ def load_model_or_pipe(name_or_path: str, task: str):
         raise ValueError(f"Task {task} not supported")
 
 
-def get_dummy_inputs(model_id: str, task: str):
+def get_dummy_inputs(model_type: str, model_id: str, task: str):
     if task in ["text-classification", "text-generation", "text2text-generation"]:
         processor = AutoTokenizer.from_pretrained(model_id)
         text = ["This is a test sentence"] * BATCH_SIZE
@@ -114,13 +121,19 @@ def get_dummy_inputs(model_id: str, task: str):
         dummy_inputs = processor(images=images, return_tensors="pt")
 
         if task in ["image-to-text"]:
-            dummy_inputs["decoder_input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
+            dummy_inputs["input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
 
-    elif task in ["automatic-speech-recognition"]:
+            if model_type in ["blip2"]:
+                dummy_inputs["decoder_input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
+
+    elif task in ["audio-classification", "automatic-speech-recognition"]:
         processor = AutoFeatureExtractor.from_pretrained(model_id)
         audio_url = "https://huggingface.co/datasets/Narsil/asr_dummy/resolve/main/mlk.flac"
         audios = [ffmpeg_read(requests.get(audio_url).content, processor.sampling_rate)] * BATCH_SIZE
         dummy_inputs = processor(raw_speech=audios, return_tensors="pt")
+
+        if task in ["automatic-speech-recognition"]:
+            dummy_inputs["decoder_input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
 
     elif task in ["stable-diffusion", "stable-diffusion-xl"]:
         dummy_inputs = {"prompt": ["This is test prompt"] * BATCH_SIZE}
@@ -157,15 +170,11 @@ class TestZenDNNPlugin(unittest.TestCase):
 
         for model_id, tasks in model_id_and_tasks.items():
             for task in tasks:
-                inputs = get_dummy_inputs(model_id, task)
+                inputs = get_dummy_inputs(model_type, model_id, task)
 
-                if DEBUG:
-                    eager_model = load_and_compile_model(model_id, task, backend="eager")
-                    _ = eager_model(**inputs)
-                    aot_eager_model = load_and_compile_model(model_id, task, backend="aot_eager")
-                    _ = aot_eager_model(**inputs)
-
-                if DRY:
+                if EAGER_DEBUG:
+                    model = load_model_or_pipe(model_id, task)
+                    model(**inputs)
                     continue
 
                 inductor_model = load_and_compile_model(model_id, task, backend="inductor")
@@ -182,20 +191,12 @@ class TestZenDNNPlugin(unittest.TestCase):
 
         for model_id, tasks in model_id_and_tasks.items():
             for task in tasks:
-                inputs = get_dummy_inputs(model_id, task)
+                inputs = get_dummy_inputs(model_type, model_id, task)
 
-                if model_type == "blip":
-                    inputs["input_ids"] = inputs.pop("decoder_input_ids")
-
-                if DEBUG:
-                    eager_model = load_and_compile_model(model_id, task, backend="eager")
-                    _ = eager_model(**inputs)
-                    _ = eager_model.generate(**inputs, **TEXT_GENERATION_KWARGS)
-                    aot_eager_model = load_and_compile_model(model_id, task, backend="aot_eager")
-                    _ = aot_eager_model(**inputs)
-                    _ = aot_eager_model.generate(**inputs, **TEXT_GENERATION_KWARGS)
-
-                if DRY:
+                if EAGER_DEBUG:
+                    model = load_model_or_pipe(model_id, task)
+                    model(**inputs).logits
+                    model.generate(**inputs, **TEXT_GENERATION_KWARGS)
                     continue
 
                 inductor_model = load_and_compile_model(model_id, task, backend="inductor")
@@ -215,15 +216,11 @@ class TestZenDNNPlugin(unittest.TestCase):
 
         for model_id, tasks in model_id_and_tasks.items():
             for task in tasks:
-                inputs = get_dummy_inputs(model_id, task)
+                inputs = get_dummy_inputs(model_type, model_id, task)
 
-                if DEBUG:
-                    eager_pipe = load_and_compile_pipeline(model_id, task, backend="eager")
-                    _ = eager_pipe(**inputs, **IMAGE_DIFFUSION_KWARGS)
-                    aot_eager_pipe = load_and_compile_pipeline(model_id, task, backend="aot_eager")
-                    _ = aot_eager_pipe(**inputs, **IMAGE_DIFFUSION_KWARGS)
-
-                if DRY:
+                if EAGER_DEBUG:
+                    pipe = load_model_or_pipe(model_id, task)
+                    pipe(**inputs, **IMAGE_DIFFUSION_KWARGS).images
                     continue
 
                 # we get a new instance of the pipe for every backend to avoid any side effects
