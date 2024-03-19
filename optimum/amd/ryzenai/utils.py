@@ -24,6 +24,7 @@ DEFAULT_DLL_FILES = ["qlinear\\libGemmQnnAie_1x2048_2048x2048.dll", "qlinear\\li
 DEFAULT_BUILTIN_IMPL = "v0"
 DEFAULT_BUILTIN_QUANT_MODE = "w8a8"
 
+# The commit hash of the RyzenAI-SW (https://github.com/amd/RyzenAI-SW/) repository to use
 RYZEN_SW_COMMIT_HASH = "82c524a06693a18e167f032dbf5574a98dd24452"
 
 
