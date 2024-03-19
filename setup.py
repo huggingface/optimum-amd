@@ -25,7 +25,7 @@ TESTS_REQUIRE = [
     "scikit-learn",
     "onnxruntime",
     "torch==2.1.2",  # temp for test with zendnn plugin
-    "torchvision==0.17.1",
+    # "torchvision==0.17.1", # temp for test with zendnn plugin
     "opencv-python",
     "diffusers",
 ]
