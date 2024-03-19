@@ -103,7 +103,6 @@ GEMM = [
 
 
 def create_nodes(graph, op, name, inputs, outputs, intermediate=None, **kwargs):
-
     if intermediate is None:
         intermediate = []
     newnode = onnx.helper.make_node(op, inputs + intermediate, outputs, name=name, **kwargs)
