@@ -5,6 +5,7 @@
 import builtins
 import logging
 import os
+import shutil
 import subprocess
 
 import onnxruntime as ort
@@ -22,6 +23,8 @@ DEFAULT_DLL_FILES = ["qlinear\\libGemmQnnAie_1x2048_2048x2048.dll", "qlinear\\li
 
 DEFAULT_BUILTIN_IMPL = "v0"
 DEFAULT_BUILTIN_QUANT_MODE = "w8a8"
+
+RYZEN_SW_COMMIT_HASH = "82c524a06693a18e167f032dbf5574a98dd24452"
 
 
 def validate_provider_availability(provider: str):
@@ -44,9 +47,15 @@ def set_builtins():
     builtins.quant_mode = os.getenv("BUILTINS_IMPL", DEFAULT_BUILTIN_QUANT_MODE)
 
 
-def clone_repository(repo_url, repo_path):
-    if not os.path.exists(repo_path):
-        subprocess.run(["git", "clone", "--depth", "1", "--branch", "main", repo_url, repo_path])
+def clone_repository(repo_url: str, repo_path: str):
+    try:
+        if not os.path.exists(repo_path):
+            subprocess.run(["git", "clone", "--depth", "1", "--branch", "main", repo_url, repo_path], check=True)
+            subprocess.run(["git", "-C", repo_path, "checkout", RYZEN_SW_COMMIT_HASH], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+        if os.path.exists(repo_path):
+            shutil.rmtree(repo_path)
 
 
 def set_env_var(key, value):
