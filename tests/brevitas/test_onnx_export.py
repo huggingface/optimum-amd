@@ -11,6 +11,7 @@ import onnx
 import torch
 from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
+from optimum.amd.brevitas.export import find_and_insert_matmulinteger
 from parameterized import parameterized
 from testing_utils import SUPPORTED_MODELS_TINY, VALIDATE_EXPORT_ON_SHAPES, get_quantized_model
 
@@ -145,9 +146,27 @@ class TestOnnxExport(unittest.TestCase):
                 onnx_config_class_constructor=onnx_config_class_constructor,
                 shapes_to_validate=VALIDATE_EXPORT_ON_SHAPES,
             )
-
+            original_matmul_gemm_counter = 0
             onnx_model = onnx.load(os.path.join(tmpdir, "model.onnx"))
 
             for node in onnx_model.graph.node:
-                # Check that we have MatmulInteger, etc.
-                pass
+                if node.op_type == "Gemm" or node.op_type == "MatMul":
+                    original_matmul_gemm_counter += 1
+
+            find_and_insert_matmulinteger(tmpdir)
+            onnx_model = onnx.load(os.path.join(tmpdir, "model.onnx"))
+
+            matmul_gemm_counter = 0
+            matmulinteger_counter = 0
+            for node in onnx_model.graph.node:
+                if node.op_type == "Gemm" or node.op_type == "MatMul":
+                    matmul_gemm_counter += 1
+                
+                if node.op_type == "MatMulInteger":
+                    matmulinteger_counter += 1
+
+            # The number of Matmul+Gemm has to be less compared to the model pre-transformation
+            # This is not zero since there are matmul that are not linear layers so they are not replaced
+            # and some linears layers can be excluded from quantization
+            assert matmul_gemm_counter <= original_matmul_gemm_counter
+            assert matmulinteger_counter > 1
