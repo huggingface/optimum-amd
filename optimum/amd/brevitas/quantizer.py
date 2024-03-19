@@ -132,6 +132,16 @@ class BrevitasQuantizer(OptimumQuantizer):
         use_accelerate = hasattr(self.model, "hf_device_map")
         dtype = next(iter(self.model.parameters())).dtype
 
+        # We extract last layer name before FX.
+        # Afterwards, `get_output_embeddings` is not available anymore.
+        layer_name_to_exclude = []
+        if quantization_config.exclude_last_layer:
+            last_layer = self.model.get_output_embeddings()
+            # Extract last layer name
+            full_layer_name = [n for (n, m) in self.model.named_modules() if m == last_layer][0]
+            # Remove the prefix
+            layer_name_to_exclude.append(full_layer_name.split(".")[-1])
+
         if quantization_config.requires_fx_graph():
             if use_accelerate:  # Remove hooks if we're converting to a fx.GraphModule
                 remove_hooks(self.model)
@@ -176,20 +186,13 @@ class BrevitasQuantizer(OptimumQuantizer):
         else:
             device = next(model.parameters()).device
 
-        layer_name = []
-        if quantization_config.exclude_last_layer:
-            last_layer = model.get_output_embeddings()
-            # Extract last layer name
-            full_layer_name = [n for (n, m) in model.named_modules() if m == last_layer][0]
-            # Remove the prefix
-            layer_name.append(full_layer_name.split(".")[-1])
-
-        # We do not quantize embedding and last fully connected layer
+        # We do not quantize embedding potentially we exclude also last layer through name_blacklist
         model = quantize_model(
             model,
             dtype=dtype,
             device=device,
-            name_blacklist=layer_name,
+            name_blacklist=layer_name_to_exclude,
+            quantize_embedding=False,
             weight_quant_format="int",
             weight_quant_type="sym" if quantization_config.weights_symmetric else "asym",
             weight_bit_width=quantization_config.weights_bitwidth,
