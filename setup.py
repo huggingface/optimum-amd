@@ -14,24 +14,31 @@ except Exception as error:
     assert False, "Error: Could not open '%s' due %s\n" % (filepath, error)
 
 # ORT 1.16 is not compatible: https://github.com/Xilinx/Vitis-AI/issues/1343
-INSTALL_REQUIRE = ["optimum", "transformers>=4.38", "onnx", "onnxruntime-extensions"]
+INSTALL_REQUIRE = [
+    "optimum",
+    "transformers>=4.38",
+    "onnx",
+    "onnxruntime-extensions",
+    "opencv-python",
+    "timm",
+    "torch",
+    "torchvision",
+    "onnx-tool",
+]
 
 # TODO: unpin pytest once https://github.com/huggingface/transformers/pull/29154 is merged & released
 TESTS_REQUIRE = [
     "pytest<=7.4.4",
     "parameterized",
     "evaluate",
-    "timm",
     "scikit-learn",
     "onnxruntime",
     "torch==2.2.1",
     "torchvision==0.17.1",
-    "opencv-python",
     "brevitas",
     "datasets>=2.17",
     "onnx",
     "accelerate",
-    "onnx-tool",
 ]
 
 QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]

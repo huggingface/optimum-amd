@@ -318,7 +318,8 @@ class RyzenAIModelForCausalLMIntegrationTest(unittest.TestCase, RyzenAITestCaseM
             tasks="text-generation-with-past",
         )
     )
-    @pytest.mark.brevitas_ryzen_test
+    @slow
+    @pytest.mark.brevitas_transformers_test
     def test_model(self, test_name: str, model_type: str, model_id: str, task: str):
         dataset_name = "wikitext2"
         num_calib_samples = 10

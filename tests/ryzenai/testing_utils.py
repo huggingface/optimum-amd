@@ -26,7 +26,7 @@ def get_models_to_test(
         if supported_archs is not None and model_type not in supported_archs:
             continue
 
-        if not isinstance(tasks, list):
+        if tasks is not None and not isinstance(tasks, list):
             tasks = [tasks]
 
         if tasks is None:

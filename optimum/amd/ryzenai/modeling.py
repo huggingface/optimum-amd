@@ -127,7 +127,8 @@ class RyzenAIModel(OptimizedModel):
             **kwargs,
         )
 
-        self.model_type = config.model_type
+        if config:
+            self.model_type = config.model_type
 
         self.inputs_names = {input_key.name: idx for idx, input_key in enumerate(model.get_inputs())}
         self.output_names = {output_key.name: idx for idx, output_key in enumerate(model.get_outputs())}

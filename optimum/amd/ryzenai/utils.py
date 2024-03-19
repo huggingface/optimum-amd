@@ -45,7 +45,7 @@ def set_builtins():
 
 
 def clone_repository(repo_url, repo_path):
-    if repo_path not in os.listdir():
+    if not os.path.exists(repo_path):
         subprocess.run(["git", "clone", "--depth", "1", "--branch", "main", repo_url, repo_path])
 
 
@@ -62,8 +62,7 @@ def set_environment_variables():
     ryzenai_sw_path = os.environ.get("RYZENAI_SW_PATH")
     if not ryzenai_sw_path:
         logger.warning(
-            "RYZENAI_SW_PATH environment variable is not set. "
-            "Attempting to clone RyzenAI-SW repository now...\n"
+            "RYZENAI_SW_PATH environment variable is not set. Attempting to clone RyzenAI-SW repository now...\n"
         )
         ryzenai_sw_path = normalize_path(os.path.join(os.getcwd(), "RyzenAI-SW"))
         clone_repository("https://github.com/amd/RyzenAI-SW/", ryzenai_sw_path)
