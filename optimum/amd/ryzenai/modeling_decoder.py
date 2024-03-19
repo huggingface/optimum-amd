@@ -105,7 +105,7 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
         if "position_ids" in self.inputs_names:
             if position_ids is None:
                 raise ValueError("`position_ids` was not passed but is a required input for this ONNX model.")
-            inputs["position_ids"] = self._convert_to_numpy(attention_mask, position_ids)
+            inputs["position_ids"] = self._convert_to_numpy(position_ids, use_torch)
 
         if self.use_cache:
             if past_key_values is None:

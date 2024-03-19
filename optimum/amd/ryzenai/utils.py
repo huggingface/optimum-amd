@@ -46,7 +46,7 @@ def set_builtins():
 
 def clone_repository(repo_url, repo_path):
     if repo_path not in os.listdir():
-        subprocess.run(["git", "clone", "--depth", "1", "--branch", "main", repo_url])
+        subprocess.run(["git", "clone", "--depth", "1", "--branch", "main", repo_url, repo_path])
 
 
 def set_env_var(key, value):
@@ -66,8 +66,8 @@ def set_environment_variables():
             "Please set it to the path of the RyzenAI-SW repository. "
             "Attempting to clone RyzenAI-SW repository now..."
         )
-        clone_repository("https://github.com/amd/RyzenAI-SW/", "RyzenAI-SW")
         ryzenai_sw_path = normalize_path(os.path.join(os.getcwd(), "RyzenAI-SW"))
+        clone_repository("https://github.com/amd/RyzenAI-SW/", ryzenai_sw_path)
 
     # Set other environment variables
     ryzenai_transformers_path = normalize_path(os.path.join(ryzenai_sw_path, "example/transformers"))

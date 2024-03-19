@@ -294,7 +294,7 @@ class Message:
     def extract_operator_values(self, trace, all_baseline_value, dpu_baseline_value, cpu_baseline_value):
         # Extract values from trace and compare with baseline
         if "DPU operators do not match!" in trace or "Total operators do not match!" in trace:
-            match = re.search(r"\{'all': (\d+), 'dpu': (\d+), 'cpu': (\d+)\}", trace)
+            match = re.search(r"\{'all': (\d+), 'dpu': (\d+), 'cpu': (\d+), 'matmulinteger': (\d+)\}", trace)
             all_value = int(match.group(1))
             dpu_value = int(match.group(2))
             cpu_value = int(match.group(3))

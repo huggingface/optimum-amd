@@ -4,19 +4,18 @@
 import tempfile
 import unittest
 from functools import partial
-from typing import Dict
 
 import pytest
 import timm
 import torch
 from datasets import load_dataset
 from parameterized import parameterized
+from testing_models import PYTORCH_TIMM_MODEL_SUBSET, PYTORCH_TIMM_MODELS
 from testing_utils import (
     DEFAULT_CACHE_DIR,
     DEFAULT_VAIP_CONFIG,
-    PYTORCH_TIMM_MODEL,
-    PYTORCH_TIMM_MODEL_SUBSET,
     RyzenAITestCaseMixin,
+    get_models_to_test,
 )
 
 from optimum.amd.ryzenai import (
@@ -25,36 +24,8 @@ from optimum.amd.ryzenai import (
     RyzenAIOnnxQuantizer,
 )
 from optimum.exporters.onnx import main_export
-from optimum.exporters.tasks import TasksManager
 from transformers import PretrainedConfig
 from transformers.testing_utils import slow
-
-
-def _get_models_to_test(export_models_dict: Dict, library_name: str = "timm"):
-    models_to_test = []
-    for model_type, model_names_tasks in export_models_dict.items():
-        task_config_mapping = TasksManager.get_supported_tasks_for_model_type(
-            model_type, "onnx", library_name=library_name
-        )
-
-        if isinstance(model_names_tasks, str):  # test export of all tasks on the same model
-            tasks = list(task_config_mapping.keys())
-            model_tasks = {model_names_tasks: tasks}
-        else:
-            model_tasks = model_names_tasks  # possibly, test different tasks on different models
-
-        for model_name, tasks in model_tasks.items():
-            for task in tasks:
-                models_to_test.append(
-                    (
-                        f"{model_type}_{task}_{model_name}",
-                        model_type,
-                        model_name,
-                        task,
-                    )
-                )
-
-        return sorted(models_to_test)
 
 
 class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
@@ -133,7 +104,7 @@ class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
         export_dir.cleanup()
         quantization_dir.cleanup()
 
-    @parameterized.expand(_get_models_to_test(PYTORCH_TIMM_MODEL_SUBSET, library_name="timm"))
+    @parameterized.expand(get_models_to_test(PYTORCH_TIMM_MODEL_SUBSET, library_name="timm"))
     def test_timm_quantization_subset(
         self,
         test_name: str,
@@ -143,7 +114,7 @@ class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
     ):
         self._quantize(model_name=model_name)
 
-    @parameterized.expand(_get_models_to_test(PYTORCH_TIMM_MODEL, library_name="timm"))
+    @parameterized.expand(get_models_to_test(PYTORCH_TIMM_MODELS, library_name="timm"))
     @pytest.mark.quant_test
     @slow
     def test_timm_quantization(

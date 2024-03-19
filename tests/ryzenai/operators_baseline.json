@@ -89,6 +89,21 @@
     "dpu": 546,
     "cpu": 13
   },
+  "echarlaix_tiny-random-mistral": {
+    "all": 394,
+    "cpu": 379,
+    "matmulinteger": 15
+  },
+  "fxmarty_tiny-llama-fast-tokenizer": {
+    "all": 342,
+    "cpu": 327,
+    "matmulinteger": 15
+  },
+  "hf-internal-testing_tiny-random-optforcausallm": {
+    "all": 658,
+    "cpu": 627,
+    "matmulinteger": 31
+  },
   "timm_botnet26t_256.c1_in1k": {
     "all": 635,
     "dpu": 0,
