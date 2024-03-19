@@ -27,7 +27,7 @@ from slack_sdk import WebClient
 
 sys.path.append(os.path.join(os.getcwd()))
 
-import tests.ryzenai.testing_utils as tu  # noqa
+import tests.ryzenai.testing_models as tu  # noqa
 
 
 client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
@@ -36,18 +36,15 @@ client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
 def infer_model_id(model):
     model_name_replacement = model.replace(".", "_").replace("-", "_")
 
-    if "timm" in model:
-        all_model_names = list(tu.PYTORCH_TIMM_MODEL["default-timm-config"].keys())
-    elif "amd" in model:
-        all_model_names = (
-            tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION
-            + list(tu.RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION.values())
-            + tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION
-            + tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE
-            + tu.RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS
-        )
-    else:
-        return model
+    all_model_names = (
+        list(tu.PYTORCH_TIMM_MODEL["default-timm-config"].keys())
+        + tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION
+        + list(tu.RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION.values())
+        + tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION
+        + tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE
+        + tu.RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS
+        + list(tu.PYTORCH_MODELS.values())
+    )
 
     for model_name in all_model_names:
         if model_name.replace(".", "_").replace("-", "_") == model_name_replacement:
@@ -259,15 +256,22 @@ class Message:
                 cpu_baseline_value = baseline_ops.get("cpu", 0)
                 dpu_baseline_value = baseline_ops.get("dpu", 0)
                 all_baseline_value = baseline_ops.get("all", 0)
+                matmulinteger_baseline_value = baseline_ops.get("matmulinteger", 0)
 
                 # Extract and compare values from the failure trace
-                all_value_str, dpu_value_str, cpu_value_str, regressed = self.extract_operator_values(
-                    trace, all_baseline_value, dpu_baseline_value, cpu_baseline_value
+                (
+                    all_value_str,
+                    dpu_value_str,
+                    cpu_value_str,
+                    matmulinteger_value_str,
+                    regressed,
+                ) = self.extract_operator_values(
+                    trace, all_baseline_value, dpu_baseline_value, cpu_baseline_value, matmulinteger_baseline_value
                 )
 
                 # Append information about the failure
                 failures_info.append(
-                    f"{all_value_str.rjust(9)} | {dpu_value_str.rjust(9)} | {cpu_value_str.rjust(9)} | {regressed.rjust(4)} | {model_id[:40]}"
+                    f"{all_value_str.rjust(9)} | {dpu_value_str.rjust(9)} | {cpu_value_str.rjust(9)} | {matmulinteger_value_str.rjust(13)} | {regressed.rjust(4)} | {model_id[:40]}"
                 )
 
             if len(failures_info):
@@ -288,16 +292,27 @@ class Message:
             match = re.search(r"default_timm_config_image_classification_timm_(\w+)", line)
             if match:
                 return "timm/" + match.group(1)
+        else:
+            match = re.search(r"text_generation_with_past_(\w+)", line)
+            if match:
+                return match.group(1)
 
         raise ValueError("Model id could not be determined!")
 
-    def extract_operator_values(self, trace, all_baseline_value, dpu_baseline_value, cpu_baseline_value):
+    def extract_operator_values(
+        self, trace, all_baseline_value, dpu_baseline_value, cpu_baseline_value, matmulinteger_baseline_value
+    ):
         # Extract values from trace and compare with baseline
-        if "DPU operators do not match!" in trace or "Total operators do not match!" in trace:
+        if (
+            "DPU operators do not match!" in trace
+            or "Total operators do not match!" in trace
+            or "MATMULINTEGERs do not match!" in trace
+        ):
             match = re.search(r"\{'all': (\d+), 'dpu': (\d+), 'cpu': (\d+), 'matmulinteger': (\d+)\}", trace)
             all_value = int(match.group(1))
             dpu_value = int(match.group(2))
             cpu_value = int(match.group(3))
+            matmulinteger_value = int(match.group(4))
 
             # Process values and compare with baseline
             all_value_str = f"{all_value}({all_baseline_value})" if "Total" in trace else str(all_value)
@@ -307,15 +322,23 @@ class Message:
             cpu_value_str = (
                 f"{cpu_value}({cpu_baseline_value})" if cpu_value != cpu_baseline_value else str(cpu_baseline_value)
             )
+            matmulinteger_value_str = (
+                f"{matmulinteger_value}({matmulinteger_baseline_value})"
+                if matmulinteger_value != matmulinteger_baseline_value
+                else str(matmulinteger_baseline_value)
+            )
+            if matmulinteger_baseline_value:
+                dpu_value_str = "-"
             regressed = "Y"
         else:
             # No regression, do not print values
             cpu_value_str = "-"
             dpu_value_str = "-"
             all_value_str = "-"
+            matmulinteger_value_str = "-"
             regressed = "N"
 
-        return all_value_str, dpu_value_str, cpu_value_str, regressed
+        return all_value_str, dpu_value_str, cpu_value_str, matmulinteger_value_str, regressed
 
     def prepare_model_failure_sections(self, idx, key, job_link, failures_info):
         # Prepare sections for model failures
@@ -338,7 +361,7 @@ class Message:
         )
 
         # Section for detailed failure reports
-        model_header = "Total Ops |   DPU Ops |   CPU Ops | Reg. | Model\n"
+        model_header = "Total Ops |   DPU Ops |   CPU Ops | MatMulInt Ops | Reg. | Model\n"
         model_failures_report = prepare_reports(title="", header=model_header, reports=failures_info)
 
         model_failure_sections.append(
@@ -661,6 +684,7 @@ if __name__ == "__main__":
     test_categories = {
         "Pre-Quantized Model": "run_tests_prequantized_models",
         "Timm Quantization": "run_tests_quantization",
+        "Brevitas Quantized Decoder LLMs": "run_tests_brevitas_quantized_decoder_llms",
     }
 
     results = {

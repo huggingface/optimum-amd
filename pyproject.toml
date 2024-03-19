@@ -18,7 +18,7 @@ known-first-party = ["transformers"]
 
 [tool.pytest.ini_options]
 markers = [
-    "brevitas_transformers_test",
+    "brevitas_quantized_decoder_llms_test",
     "prequantized_model_test",
     "quant_test",
 ]
