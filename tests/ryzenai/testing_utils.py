@@ -18,6 +18,44 @@ DEFAULT_VAIP_CONFIG_TRANSFORMERS = os.path.normpath("./tests/ryzenai/vaip_config
 DEFAULT_CACHE_DIR = "ryzen_cache"
 
 
+def get_models_to_test(
+    export_models_dict: Dict, library_name: str = "timm", supported_archs: list = None, tasks: list = None
+):
+    models_to_test = []
+    for model_type, model_names_tasks in export_models_dict.items():
+        if supported_archs is not None and model_type not in supported_archs:
+            continue
+
+        if not isinstance(tasks, list):
+            tasks = [tasks]
+
+        if tasks is None:
+            task_config_mapping = TasksManager.get_supported_tasks_for_model_type(
+                model_type, "onnx", library_name=library_name
+            )
+
+            if isinstance(model_names_tasks, str):  # test export of all tasks on the same model
+                tasks = list(task_config_mapping.keys())
+                model_tasks = {model_names_tasks: tasks}
+            else:
+                model_tasks = model_names_tasks  # possibly, test different tasks on different models
+        else:
+            model_tasks = {model_names_tasks: tasks}
+
+        for model_name, tasks in model_tasks.items():
+            for task in tasks:
+                models_to_test.append(
+                    (
+                        f"{model_type}_{task}_{model_name}",
+                        model_type,
+                        model_name,
+                        task,
+                    )
+                )
+
+    return sorted(models_to_test)
+
+
 def parse_json(json_path):
     with open(json_path, "r") as json_file:
         data = json.load(json_file)
@@ -98,41 +136,3 @@ class RyzenAITestCaseMixin:
         with open(BASELINE_JSON, "r") as json_file:
             data = json.load(json_file)
             return data[key]
-
-
-def get_models_to_test(
-    export_models_dict: Dict, library_name: str = "timm", supported_archs: list = None, tasks: list = None
-):
-    models_to_test = []
-    for model_type, model_names_tasks in export_models_dict.items():
-        if model_type not in supported_archs:
-            continue
-
-        if not isinstance(tasks, list):
-            tasks = [tasks]
-
-        if tasks is None:
-            task_config_mapping = TasksManager.get_supported_tasks_for_model_type(
-                model_type, "onnx", library_name=library_name
-            )
-
-            if isinstance(model_names_tasks, str):  # test export of all tasks on the same model
-                tasks = list(task_config_mapping.keys())
-                model_tasks = {model_names_tasks: tasks}
-            else:
-                model_tasks = model_names_tasks  # possibly, test different tasks on different models
-        else:
-            model_tasks = {model_names_tasks: tasks}
-
-        for model_name, tasks in model_tasks.items():
-            for task in tasks:
-                models_to_test.append(
-                    (
-                        f"{model_type}_{task}_{model_name}",
-                        model_type,
-                        model_name,
-                        task,
-                    )
-                )
-
-    return sorted(models_to_test)

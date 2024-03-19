@@ -63,8 +63,7 @@ def set_environment_variables():
     if not ryzenai_sw_path:
         logger.warning(
             "RYZENAI_SW_PATH environment variable is not set. "
-            "Please set it to the path of the RyzenAI-SW repository. "
-            "Attempting to clone RyzenAI-SW repository now..."
+            "Attempting to clone RyzenAI-SW repository now...\n"
         )
         ryzenai_sw_path = normalize_path(os.path.join(os.getcwd(), "RyzenAI-SW"))
         clone_repository("https://github.com/amd/RyzenAI-SW/", ryzenai_sw_path)
