@@ -141,7 +141,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             last_layer = self.model.get_output_embeddings()
             # Extract last layer name
             full_layer_name = [n for (n, m) in self.model.named_modules() if m == last_layer]
-            if full_layer_name > 0:
+            if len(full_layer_name) > 0:
                 full_layer_name = full_layer_name[0]
                 # Remove the prefix
                 layer_name_to_exclude.append(full_layer_name.split(".")[-1])
