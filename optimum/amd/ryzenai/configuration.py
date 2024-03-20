@@ -5,7 +5,7 @@
 import re
 from dataclasses import asdict, dataclass, field, fields
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import vai_q_onnx
 
@@ -36,6 +36,12 @@ class QuantType(Enum):
 
     QInt8 = vai_q_onnx.QuantType.QInt8
     QUInt8 = vai_q_onnx.QuantType.QUInt8
+    QUInt16 = vai_q_onnx.VitisQuantType.QUInt16
+    QInt16 = vai_q_onnx.VitisQuantType.QInt16
+    QUInt32 = vai_q_onnx.VitisQuantType.QUInt32
+    QInt32 = vai_q_onnx.VitisQuantType.QInt32
+    QFloat16 = vai_q_onnx.VitisQuantType.QFloat16
+    QBFloat16 = vai_q_onnx.VitisQuantType.QBFloat16
 
 
 @dataclass
@@ -318,16 +324,16 @@ class QuantizationConfig:
             Contains key-value pairs for various options in different cases.
     """
 
-    format: QuantFormat = QuantFormat.QDQ
-    calibration_method: Union[CalibrationMethod, str] = CalibrationMethod.MinMSE
+    format: Literal["qdq", "qop", "vitisqdq"] = "qdq"
+    calibration_method: Literal["nonoverflow", "mse", "minmax", "entropy", "percentile"] = "mse"
     input_nodes: List[str] = field(default_factory=list)
     output_nodes: List[str] = field(default_factory=list)
     op_types_to_quantize: List[str] = field(default_factory=list)
     random_data_reader_input_shape: Union[List[int], Tuple[int], Dict[str, List[int]]] = field(default_factory=list)
     per_channel: bool = False
     reduce_range: bool = False
-    activation_type: QuantType = QuantType.QInt8
-    weight_type: QuantType = QuantType.QInt8
+    activations_dtype: Literal["uint8", "int8", "uint16", "int16", "uint32", "int32", "bfloat16", "float16"] = "uint8"
+    weights_dtype: Literal["uint8", "int8", "uint16", "int16", "uint32", "int32", "bfloat16", "float16"] = "int8"
     nodes_to_quantize: List[str] = field(default_factory=list)
     nodes_to_exclude: List[str] = field(default_factory=list)
     optimize_model: bool = True
@@ -342,6 +348,9 @@ class QuantizationConfig:
     def __post_init__(self):
         if isinstance(self.extra_options, dict):
             self.extra_options = ExtraOptions(**self.extra_options)
+        self.format = self._map_format(self.format)
+        self.calibration_method = self._map_calibration_method(self.calibration_method)
+        self.activations_dtype, self.weights_dtype = self._map_dtypes(self.activations_dtype, self.weights_dtype)
 
     def __setattr__(self, name, value):
         if name == "extra_options" and isinstance(value, dict):
@@ -375,12 +384,66 @@ class QuantizationConfig:
         return non_default_values
 
     @staticmethod
-    def quantization_type_str(activations_dtype: QuantType, weights_dtype: QuantType) -> str:
-        return (
-            f"{'s8' if activations_dtype == QuantType.QInt8 else 'u8'}"
-            f"/"
-            f"{'s8' if weights_dtype == QuantType.QInt8 else 'u8'}"
-        )
+    def _map_format(format_str):
+        mapping = {
+            "qdq": QuantFormat.QDQ,
+            "qop": QuantFormat.QOperator,
+            "vitisqdq": QuantFormat.VitisQuantFormat_QDQ,
+        }
+        return QuantizationConfig._map_value(mapping, format_str, "format")
+
+    @staticmethod
+    def _map_calibration_method(method_str):
+        mapping = {
+            "nonoverflow": CalibrationMethod.NonOverflow,
+            "mse": CalibrationMethod.MinMSE,
+            "minmax": CalibrationMethod.MinMax,
+            "entropy": CalibrationMethod.Entropy,
+            "percentile": CalibrationMethod.Percentile,
+        }
+        return QuantizationConfig._map_value(mapping, method_str, "calibration method")
+
+    @staticmethod
+    def _map_dtypes(activations_dtype_str, weights_dtype_str):
+        mapping = {
+            "uint8": QuantType.QUInt8,
+            "int8": QuantType.QInt8,
+            "uint16": QuantType.QUInt16,
+            "int16": QuantType.QInt16,
+            "uint32": QuantType.QUInt32,
+            "int32": QuantType.QInt32,
+            "float16": QuantType.QFloat16,
+            "bfloat16": QuantType.QBFloat16,
+        }
+        activations_dtype = QuantizationConfig._map_value(mapping, activations_dtype_str, "activations dtype")
+        weights_dtype = QuantizationConfig._map_value(mapping, weights_dtype_str, "weights dtype")
+        return activations_dtype, weights_dtype
+
+    @staticmethod
+    def _map_value(mapping, value, name):
+        try:
+            return mapping[value]
+        except KeyError:
+            valid_values = ", ".join(f'"{v}"' for v in mapping.keys())
+            raise ValueError(f'{name} only supports the following values: {valid_values}. Received "{value}".')
+
+    @staticmethod
+    def quantization_type_str(activations_dtype, weights_dtype) -> str:
+        str_mapping = {
+            QuantType.QUInt8: "u8",
+            QuantType.QInt8: "s8",
+            QuantType.QUInt16: "u16",
+            QuantType.QInt16: "s16",
+            QuantType.QUInt32: "u32",
+            QuantType.QInt32: "s32",
+            QuantType.QFloat16: "f16",
+            QuantType.QBFloat16: "bf16",
+        }
+        activations_str = str_mapping.get(activations_dtype)
+        weights_str = str_mapping.get(weights_dtype)
+        if activations_str is None or weights_str is None:
+            raise ValueError("Unsupported quantization type")
+        return f"{activations_str}/{weights_str}"
 
     @property
     def use_symmetric_calibration(self) -> bool:
@@ -400,7 +463,7 @@ class QuantizationConfig:
 class AutoQuantizationConfig:
     @staticmethod
     def ipu_cnn_config(
-        calibrate_method: CalibrationMethod = CalibrationMethod.MinMSE,
+        calibrate_method: Literal["nonoverflow", "mse", "minmax", "entropy", "percentile"] = "mse",
         nodes_to_quantize: Optional[List[str]] = None,
         nodes_to_exclude: Optional[List[str]] = None,
         op_types_to_quantize: Optional[List[str]] = None,
@@ -414,10 +477,10 @@ class AutoQuantizationConfig:
         extra_options_dict["activation_symmetric"] = extra_options_dict.get("activation_symmetric", True)
 
         return QuantizationConfig(
-            format=QuantFormat.QDQ,
+            format="qdq",
             calibration_method=calibrate_method,
-            activation_type=QuantType.QUInt8,
-            weight_type=QuantType.QInt8,
+            activations_dtype="uint8",
+            weights_dtype="int8",
             enable_dpu=True,
             op_types_to_quantize=op_types_to_quantize,
             nodes_to_quantize=nodes_to_quantize or [],
@@ -427,7 +490,7 @@ class AutoQuantizationConfig:
 
     @staticmethod
     def ipu_transformer_config(
-        calibrate_method: CalibrationMethod = CalibrationMethod.MinMax,
+        calibrate_method: Literal["nonoverflow", "mse", "minmax", "entropy", "percentile"] = "minmax",
         nodes_to_quantize: Optional[List[str]] = None,
         nodes_to_exclude: Optional[List[str]] = None,
         op_types_to_quantize: Optional[List[str]] = None,
@@ -441,10 +504,10 @@ class AutoQuantizationConfig:
         extra_options_dict["activation_symmetric"] = extra_options_dict.get("activation_symmetric", True)
 
         return QuantizationConfig(
-            format=QuantFormat.QDQ,
+            format="qdq",
             calibration_method=calibrate_method,
-            activation_type=QuantType.QInt8,
-            weight_type=QuantType.QInt8,
+            activations_dtype="int8",
+            weights_dtype="int8",
             op_types_to_quantize=op_types_to_quantize,
             nodes_to_quantize=nodes_to_quantize or [],
             nodes_to_exclude=nodes_to_exclude or [],
@@ -453,7 +516,7 @@ class AutoQuantizationConfig:
 
     @staticmethod
     def cpu_cnn_config(
-        calibrate_method: CalibrationMethod = CalibrationMethod.MinMax,
+        calibrate_method: Literal["nonoverflow", "mse", "minmax", "entropy", "percentile"] = "minmax",
         nodes_to_quantize: Optional[List[str]] = None,
         nodes_to_exclude: Optional[List[str]] = None,
         op_types_to_quantize: Optional[List[str]] = None,
@@ -465,10 +528,10 @@ class AutoQuantizationConfig:
             extra_options_dict = extra_options or {}
 
         return QuantizationConfig(
-            format=QuantFormat.QDQ,
+            format="qdq",
             calibration_method=calibrate_method,
-            activation_type=QuantType.QUInt8,
-            weight_type=QuantType.QInt8,
+            activations_dtype="uint8",
+            weights_dtype="int8",
             op_types_to_quantize=op_types_to_quantize,
             nodes_to_quantize=nodes_to_quantize or [],
             nodes_to_exclude=nodes_to_exclude or [],
