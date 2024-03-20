@@ -31,7 +31,7 @@
   },
   "amd_movenet": {
     "all": 492,
-    "dpu": 283,
+    "dpu": 483,
     "cpu": 9
   },
   "amd_pan": {
