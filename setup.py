@@ -37,7 +37,7 @@ EXTRAS_REQUIRE = {
     "quality": QUALITY_REQUIRE,
     "tests": TESTS_REQUIRE,
     "zentorch": ["zentorch"],
-    "brevitas": ["brevitas", "datasets>=2.17", "onnx", "onnxruntime", "accelerate"],
+    "brevitas": ["brevitas", "torch>=2.2", "datasets>=2.17", "onnx", "onnxruntime", "accelerate"],
 }
 
 setup(

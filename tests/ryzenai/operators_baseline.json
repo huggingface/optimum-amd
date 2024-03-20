@@ -11,8 +11,8 @@
   },
   "amd_hrnet": {
     "all": 2604,
-    "dpu": 2554,
-    "cpu": 50
+    "dpu": 2557,
+    "cpu": 47
   },
   "amd_inception_v4": {
     "all": 1109,
@@ -31,8 +31,8 @@
   },
   "amd_movenet": {
     "all": 492,
-    "dpu": 477,
-    "cpu": 15
+    "dpu": 483,
+    "cpu": 9
   },
   "amd_pan": {
     "all": 798,
@@ -41,8 +41,8 @@
   },
   "amd_rcan": {
     "all": 79,
-    "dpu": 74,
-    "cpu": 5
+    "dpu": 77,
+    "cpu": 2
   },
   "amd_resnet50": {
     "all": 399,
@@ -56,13 +56,13 @@
   },
   "amd_semanticfpn": {
     "all": 291,
-    "dpu": 286,
-    "cpu": 5
+    "dpu": 289,
+    "cpu": 2
   },
   "amd_sesr": {
     "all": 94,
-    "dpu": 89,
-    "cpu": 5
+    "dpu": 92,
+    "cpu": 2
   },
   "amd_squeezenet": {
     "all": 178,
@@ -71,23 +71,23 @@
   },
   "amd_yolov3": {
     "all": 565,
-    "dpu": 552,
-    "cpu": 13
+    "dpu": 561,
+    "cpu": 4
   },
   "amd_yolov5s": {
     "all": 914,
-    "dpu": 901,
-    "cpu": 13
+    "dpu": 910,
+    "cpu": 4
   },
   "amd_yolov8m": {
     "all": 1253,
-    "dpu": 1240,
-    "cpu": 13
+    "dpu": 1249,
+    "cpu": 4
   },
   "amd_yolox-s": {
     "all": 559,
-    "dpu": 546,
-    "cpu": 13
+    "dpu": 555,
+    "cpu": 4
   },
   "timm_botnet26t_256.c1_in1k": {
     "all": 635,
