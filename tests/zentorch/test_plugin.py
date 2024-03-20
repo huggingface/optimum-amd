@@ -1,8 +1,9 @@
+import os
 import unittest
 
 import requests
 import torch
-import torch_zendnn_plugin  # noqa: F401
+import zentorch  # noqa: F401
 from diffusers import DiffusionPipeline
 from parameterized import parameterized
 from PIL import Image
@@ -21,11 +22,10 @@ from transformers import (
 from transformers.pipelines.audio_utils import ffmpeg_read
 
 
-EAGER_DEBUG = False  # for debugging test logic in eager mode
+EAGER_DEBUG = os.environ.get("EAGER_DEBUG", "0") == "1"  # set to 1 to run the model in eager mode
 
 SEED = 42
 BATCH_SIZE = 2
-
 TEXT_GENERATION_KWARGS = {"min_new_tokens": 10, "max_new_tokens": 10}
 IMAGE_DIFFUSION_KWARGS = {"num_inference_steps": 2, "output_type": "pt"}
 
@@ -36,9 +36,7 @@ SUPPORTED_MODELS_TINY = {
     "roberta": {"hf-internal-testing/tiny-random-roberta": ["text-classification"]},
     "distilbert": {"hf-internal-testing/tiny-random-distilbert": ["text-classification"]},
     # image encoder
-    "vit": {
-        "hf-internal-testing/tiny-random-ViTForImageClassification": ["image-classification"]
-    },  # tested with torch >= 2.2.1
+    "vit": {"hf-internal-testing/tiny-random-ViTForImageClassification": ["image-classification"]},
 }
 SUPPORTED_MODELS_TINY_TEXT_GENERATION = {
     # text decoder
@@ -68,17 +66,13 @@ SUPPORTED_MODELS_TINY_TEXT_GENERATION = {
     "whisper": {"openai/whisper-tiny": ["automatic-speech-recognition"]},  # tested with torch >= 2.2.1
     # image to text
     "blip": {"hf-internal-testing/tiny-random-BlipForConditionalGeneration": ["image-to-text"]},
-    "blip2": {
-        "hf-internal-testing/tiny-random-Blip2ForConditionalGeneration": ["image-to-text"]
-    },  # tested with torch >= 2.2.1
+    "blip2": {"hf-internal-testing/tiny-random-Blip2ForConditionalGeneration": ["image-to-text"]},
 }
 
 SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION = {
     # stable diffusion
     "stable-diffusion": {"hf-internal-testing/tiny-stable-diffusion-torch": ["stable-diffusion"]},
-    "stable-diffusion-xl": {
-        "hf-internal-testing/tiny-stable-diffusion-xl-pipe": ["stable-diffusion-xl"]
-    },  # tested with torch >= 2.2.1
+    "stable-diffusion-xl": {"hf-internal-testing/tiny-stable-diffusion-xl-pipe": ["stable-diffusion-xl"]},
 }
 
 
@@ -122,6 +116,7 @@ def get_dummy_inputs(model_type: str, model_id: str, task: str):
             if model_type in ["blip"]:
                 dummy_inputs["input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
             elif model_type in ["blip2"]:
+                dummy_inputs["input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
                 dummy_inputs["decoder_input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
 
     elif task in ["audio-classification", "automatic-speech-recognition"]:
@@ -161,7 +156,7 @@ def load_and_compile_pipeline(model_id, task, backend):
     return pipe
 
 
-class TestZenDNNPlugin(unittest.TestCase):
+class TestZenTorchPlugin(unittest.TestCase):
     @parameterized.expand(SUPPORTED_MODELS_TINY.keys())
     def test_text_classification_model(self, model_type: str):
         model_id_and_tasks = SUPPORTED_MODELS_TINY[model_type]

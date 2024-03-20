@@ -24,9 +24,10 @@ TESTS_REQUIRE = [
     "timm",
     "scikit-learn",
     "onnxruntime",
-    "torch==2.1.2",  # temp for test with zendnn plugin
-    # "torchvision==0.17.1", # temp for test with zendnn plugin
+    "torch==2.2.1",
+    "torchvision==0.17.1",
     "opencv-python",
+    "pytest-xdist",
     "diffusers",
 ]
 
@@ -35,7 +36,7 @@ QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]
 EXTRAS_REQUIRE = {
     "quality": QUALITY_REQUIRE,
     "tests": TESTS_REQUIRE,
-    "zendnn": ["torch_zendnn_plugin"],
+    "zentorch": ["zentorch"],
     "brevitas": ["brevitas", "datasets>=2.17", "onnx", "onnxruntime", "accelerate"],
 }
 

@@ -1,17 +1,17 @@
-name: ZenDNN - Test
+name: ZenTorch Plugin - Test
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - "tests/zendnn/**/*.py"
-      - ".github/workflows/test_zendnn.yaml"
+      - "tests/zentorch/**/*.py"
+      - ".github/workflows/test_zentorch_plugin.yaml"
   pull_request:
     branches: [main]
     paths:
-      - "tests/zendnn/**/*.py"
-      - ".github/workflows/test_zendnn.yaml"
+      - "tests/zentorch/**/*.py"
+      - ".github/workflows/test_zentorch_plugin.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -24,15 +24,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Python ${{ matrix.python-version }}
+      - name: Setup Python 3.8
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
 
       - name: Install dependencies
         run: |
-          pip install .[zendnn,tests]
+          pip install .[zentorch,tests]
 
       - name: Run tests
         run: |
-          pytest tests/zendnn -s -v
+          pytest tests/zentorch -s -v -n auto
