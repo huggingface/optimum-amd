@@ -12,7 +12,7 @@ _import_structure = {
         "RyzenAIModel",
         "RyzenAIModelForCustomTasks",
         "RyzenAIModelForImageClassification",
-        "RyzenAIModelForImageSegmentation",
+        "RyzenAIModelForSemanticSegmentation",
         "RyzenAIModelForImageToImage",
         "RyzenAIModelForObjectDetection",
     ],
@@ -31,9 +31,9 @@ if TYPE_CHECKING:
         RyzenAIModel,
         RyzenAIModelForCustomTasks,
         RyzenAIModelForImageClassification,
-        RyzenAIModelForImageSegmentation,
         RyzenAIModelForImageToImage,
         RyzenAIModelForObjectDetection,
+        RyzenAIModelForSemanticSegmentation,
     )
     from .modeling_decoder import RyzenAIModelForCausalLM
     from .pipelines import pipeline

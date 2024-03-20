@@ -739,5 +739,9 @@ class RyzenAIModelForImageSegmentation(RyzenAIModelForObjectDetection):
     pass
 
 
+class RyzenAIModelForSemanticSegmentation(RyzenAIModelForObjectDetection):
+    pass
+
+
 class RyzenAIModelForImageToImage(RyzenAIModelForObjectDetection):
     pass

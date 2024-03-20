@@ -11,11 +11,15 @@ _import_structure = {
     "yolov5": ["YoloV5ImageProcessor"],
     "yolov8": ["YoloV8ImageProcessor"],
     "yolox": ["YoloXImageProcessor"],
+    "semanticfpn": ["SemanticFPNImageProcessor"],
+    "hrnet": ["HRNetImageProcessor"],
 }
 
 
 # Direct imports for type-checking
 if TYPE_CHECKING:
+    from .hrnet import HRNetImageProcessor
+    from .semanticfpn import SemanticFPNImageProcessor
     from .yolov3 import YoloV3ImageProcessor
     from .yolov5 import YoloV5ImageProcessor
     from .yolov8 import YoloV3ImageProcessor

@@ -11,7 +11,7 @@ from transformers import set_seed
 
 SEED = 42
 
-BASELINE_JSON = os.path.normpath("./tests/ryzenai/operators_baseline.json")  # For RyzenSDK 1.0.1
+BASELINE_JSON = os.path.normpath("./tests/ryzenai/operators_baseline.json")  # For RyzenSDK 1.1
 DEFAULT_VAIP_CONFIG = os.path.normpath("./tests/ryzenai/vaip_config.json")
 DEFAULT_VAIP_CONFIG_TRANSFORMERS = os.path.normpath("./tests/ryzenai/vaip_config_transformers.json")
 

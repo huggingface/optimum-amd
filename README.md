@@ -150,6 +150,6 @@ For Windows Powershell, use the following command to run the slow tests:
 $env:RUN_SLOW=1; pytest -s -v ./tests/ryzenai/
 ```
 
-Note: The current [operators baseline](tests/ryzenai/operators_baseline.json) is generated using the Ryzen Software 1.0.1. To generate for your SDK version follow the steps in [README.md](utils/ryzenai/README.md)
+Note: The current [operators baseline](tests/ryzenai/operators_baseline.json) is generated using the Ryzen Software 1.1. To generate for your SDK version follow the steps in [README.md](utils/ryzenai/README.md)
 
 If you find any issue while using those, please open an issue or a pull request.
