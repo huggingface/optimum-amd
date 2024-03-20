@@ -160,7 +160,12 @@ def replace_matmul_to_matmulinteger(graph: Graph, found_nodes: List[List[str]], 
             [f"matmul_integer_{node_count}"],
         )
         graph = create_nodes(
-            graph, "Cast", f"cast_{node_count}", [f"matmul_integer_{node_count}"], [f"cast_{node_count}"], to=ONNX_FLOAT32_IDENTIFIER
+            graph,
+            "Cast",
+            f"cast_{node_count}",
+            [f"matmul_integer_{node_count}"],
+            [f"cast_{node_count}"],
+            to=ONNX_FLOAT32_IDENTIFIER,
         )
         graph = create_nodes(
             graph,
@@ -210,7 +215,12 @@ def replace_gemm_to_matmulinteger(graph: Graph, found_nodes: List[List[str]], no
             [f"matmul_integer_{node_count}"],
         )
         graph = create_nodes(
-            graph, "Cast", f"cast_{node_count}", [f"matmul_integer_{node_count}"], [f"cast_{node_count}"], to=ONNX_FLOAT32_IDENTIFIER
+            graph,
+            "Cast",
+            f"cast_{node_count}",
+            [f"matmul_integer_{node_count}"],
+            [f"cast_{node_count}"],
+            to=ONNX_FLOAT32_IDENTIFIER,
         )
         graph = create_nodes(
             graph,
@@ -233,7 +243,6 @@ def replace_gemm_to_matmulinteger(graph: Graph, found_nodes: List[List[str]], no
 
 
 def find_and_insert_matmulinteger(model_path: str):
-
     # onnx_tool requires python 3.9+
     if sys.version_info[0] == 3 and sys.version_info[1] <= 8:
         raise RuntimeError("onnx_tool requires Python 3.9 or higher")
