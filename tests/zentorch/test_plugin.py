@@ -4,8 +4,7 @@ import unittest
 import torch
 import zentorch  # noqa: F401
 from parameterized import parameterized  # type: ignore
-
-from .testing_utils import (
+from testing_utils import (
     IMAGE_DIFFUSION_KWARGS,
     SUPPORTED_MODELS_TINY,
     SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION,
@@ -20,6 +19,17 @@ from .testing_utils import (
 
 # set to 1 to run the model in eager mode
 EAGER_DEBUG = os.environ.get("EAGER_DEBUG", "0") == "1"
+
+CPU_COUNT = os.cpu_count()
+LD_PRELOAD = "/usr/lib/x86_64-linux-gnu/libjemalloc.so"
+MALLOC_CONF = "oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:-1,muzzy_decay_ms:-1"
+os.environ["OMP_NUM_THREADS "] = f"{CPU_COUNT}"
+os.environ["OMP_DYNAMIC"] = "False"
+os.environ["OMP_WAIT_POLICY"] = "ACTIVE"
+os.environ["ZENDNN_GEMM_ALGO"] = "4"
+os.environ["GOMP_CPU_AFFINITY"] = f"0-{CPU_COUNT - 1}"
+os.environ["LD_PRELOAD"] = LD_PRELOAD
+os.environ["MALLOC_CONF"] = MALLOC_CONF
 
 
 class TestZenTorchPlugin(unittest.TestCase):
