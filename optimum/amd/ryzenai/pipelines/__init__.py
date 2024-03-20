@@ -17,6 +17,7 @@ from ..modeling import (
     RyzenAIModelForSemanticSegmentation,
 )
 from ..models import (
+    HRNetImageProcessor,
     SemanticFPNImageProcessor,
     YoloV3ImageProcessor,
     YoloV5ImageProcessor,
@@ -37,6 +38,7 @@ pipeline_map = {
     "yolov3": {"preprocessor": YoloV3ImageProcessor, "impl": YoloObjectDetectionPipeline},
     "yolov8": {"preprocessor": YoloV8ImageProcessor, "impl": YoloObjectDetectionPipeline},
     "semantic_fpn": {"preprocessor": SemanticFPNImageProcessor, "impl": ImageSegmentationPipeline},
+    "hrnet": {"preprocessor": HRNetImageProcessor, "impl": ImageSegmentationPipeline},
 }
 
 RYZENAI_SUPPORTED_TASKS = {
