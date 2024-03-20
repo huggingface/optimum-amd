@@ -26,7 +26,14 @@ EAGER_DEBUG = os.environ.get("EAGER_DEBUG", "0") == "1"  # set to 1 to run the m
 
 SEED = 42
 BATCH_SIZE = 2
-TEXT_GENERATION_KWARGS = {"min_new_tokens": 10, "max_new_tokens": 10}
+TEXT_GENERATION_KWARGS = {
+    "min_new_tokens": 10,
+    "max_new_tokens": 10,
+    # use output_logits in transformers next release
+    # https://github.com/huggingface/transformers/issues/14498#issuecomment-1953014058
+    "output_scores": True,
+    "return_dict_in_generate": True,
+}
 IMAGE_DIFFUSION_KWARGS = {"num_inference_steps": 2, "output_type": "pt"}
 
 SUPPORTED_MODELS_TINY = {
@@ -63,7 +70,7 @@ SUPPORTED_MODELS_TINY_TEXT_GENERATION = {
     "t5": {"hf-internal-testing/tiny-random-t5": ["text2text-generation"]},
     "bart": {"hf-internal-testing/tiny-random-bart": ["text2text-generation"]},
     # automatic speech recognition
-    "whisper": {"openai/whisper-tiny": ["automatic-speech-recognition"]},  # tested with torch >= 2.2.1
+    "whisper": {"openai/whisper-tiny": ["automatic-speech-recognition"]},
     # image to text
     "blip": {"hf-internal-testing/tiny-random-BlipForConditionalGeneration": ["image-to-text"]},
     "blip2": {"hf-internal-testing/tiny-random-Blip2ForConditionalGeneration": ["image-to-text"]},
@@ -103,30 +110,17 @@ def get_dummy_inputs(model_type: str, model_id: str, task: str):
         text = ["This is a test sentence"] * BATCH_SIZE
         dummy_inputs = processor(text=text, return_tensors="pt")
 
-        if task in ["text2text-generation"]:
-            dummy_inputs["decoder_input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
-
     elif task in ["image-to-text", "image-classification"]:
         processor = AutoImageProcessor.from_pretrained(model_id)
         image_url = "http://images.cocodataset.org/val2017/000000039769.jpg"
         images = [Image.open(requests.get(image_url, stream=True).raw)] * BATCH_SIZE
         dummy_inputs = processor(images=images, return_tensors="pt")
 
-        if task in ["image-to-text"]:
-            if model_type in ["blip"]:
-                dummy_inputs["input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
-            elif model_type in ["blip2"]:
-                dummy_inputs["input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
-                dummy_inputs["decoder_input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
-
     elif task in ["audio-classification", "automatic-speech-recognition"]:
         processor = AutoFeatureExtractor.from_pretrained(model_id)
         audio_url = "https://huggingface.co/datasets/Narsil/asr_dummy/resolve/main/mlk.flac"
         audios = [ffmpeg_read(requests.get(audio_url).content, processor.sampling_rate)] * BATCH_SIZE
         dummy_inputs = processor(raw_speech=audios, return_tensors="pt")
-
-        if task in ["automatic-speech-recognition"]:
-            dummy_inputs["decoder_input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
 
     elif task in ["stable-diffusion", "stable-diffusion-xl"]:
         dummy_inputs = {"prompt": ["This is test prompt"] * BATCH_SIZE}
@@ -167,14 +161,14 @@ class TestZenTorchPlugin(unittest.TestCase):
 
                 if EAGER_DEBUG:
                     model = load_model_or_pipe(model_id, task)
-                    model(**inputs)
+                    _ = model(**inputs).logits
                     continue
 
                 inductor_model = load_and_compile_model(model_id, task, backend="inductor")
-                inductor_logits = inductor_model(**inputs, return_dict=True).logits
+                inductor_logits = inductor_model(**inputs).logits
 
                 zentorch_model = load_and_compile_model(model_id, task, backend="zentorch")
-                zentorch_logits = zentorch_model(**inputs, return_dict=True).logits
+                zentorch_logits = zentorch_model(**inputs).logits
 
                 torch.testing.assert_close(inductor_logits, zentorch_logits, rtol=1e-3, atol=1e-5)
 
@@ -188,20 +182,22 @@ class TestZenTorchPlugin(unittest.TestCase):
 
                 if EAGER_DEBUG:
                     model = load_model_or_pipe(model_id, task)
-                    model(**inputs).logits
-                    model.generate(**inputs, **TEXT_GENERATION_KWARGS)
+                    _ = model.generate(**inputs, **TEXT_GENERATION_KWARGS)
                     continue
 
                 inductor_model = load_and_compile_model(model_id, task, backend="inductor")
-                inductor_logits = inductor_model(**inputs).logits
-                inductor_ids = inductor_model.generate(**inputs, **TEXT_GENERATION_KWARGS)
+                # use logits in transformers next release
+                # https://github.com/huggingface/transformers/issues/14498#issuecomment-1953014058
+                inductor_scores = inductor_model.generate(**inputs, **TEXT_GENERATION_KWARGS).scores
+                inductor_scores = torch.concat(inductor_scores)
 
                 zentorch_model = load_and_compile_model(model_id, task, backend="zentorch")
-                zentorch_logits = zentorch_model(**inputs).logits
-                zentorch_ids = zentorch_model.generate(**inputs, **TEXT_GENERATION_KWARGS)
+                # use logits in transformers next release
+                # https://github.com/huggingface/transformers/issues/14498#issuecomment-1953014058
+                zentorch_scores = zentorch_model.generate(**inputs, **TEXT_GENERATION_KWARGS).scores
+                zentorch_scores = torch.concat(zentorch_scores)
 
-                torch.testing.assert_close(inductor_logits, zentorch_logits, rtol=1e-3, atol=1e-5)
-                torch.testing.assert_close(inductor_ids, zentorch_ids, rtol=1e-3, atol=1e-5)
+                torch.testing.assert_close(inductor_scores, zentorch_scores, rtol=1e-3, atol=1e-5)
 
     @parameterized.expand(SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION.keys())
     def test_image_diffusion_pipe(self, model_type: str):
