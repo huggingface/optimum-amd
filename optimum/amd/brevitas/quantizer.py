@@ -135,12 +135,20 @@ class BrevitasQuantizer(OptimumQuantizer):
         # We extract last layer name before FX.
         # Afterwards, `get_output_embeddings` is not available anymore.
         layer_name_to_exclude = []
-        if quantization_config.exclude_last_layer:
+        # If layers_to_exclude is None, we default to excluding the last linear layer
+        if quantization_config.layers_to_exclude is None:
+            logger.info("Identifying last linear layer and excluding it from quantization")
             last_layer = self.model.get_output_embeddings()
             # Extract last layer name
-            full_layer_name = [n for (n, m) in self.model.named_modules() if m == last_layer][0]
-            # Remove the prefix
-            layer_name_to_exclude.append(full_layer_name.split(".")[-1])
+            full_layer_name = [n for (n, m) in self.model.named_modules() if m == last_layer]
+            if full_layer_name > 0:
+                full_layer_name = full_layer_name[0]
+                # Remove the prefix
+                layer_name_to_exclude.append(full_layer_name.split(".")[-1])
+            else:
+                logger.info("Last linear layer was not found. All layers will be quantized")
+        else:
+            layer_name_to_exclude = quantization_config.layers_to_exclude
 
         if quantization_config.requires_fx_graph():
             if use_accelerate:  # Remove hooks if we're converting to a fx.GraphModule

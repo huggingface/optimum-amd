@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 from dataclasses import dataclass
-from typing import Dict, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 
 @dataclass
@@ -59,8 +59,9 @@ class BrevitasQuantizationConfig:
             Whether to apply GPTQ algorithm for quantizing the weights.
         gptq_act_order (`Optional[bool]`, defaults to `None`):
             Whether to use activations reordering (act-order, also known as desc-act) when `apply_gptq=True`. If `apply_gptq=True`, defaults to `False`.
-        exclude_last_layer ('bool', defaults to True):
-            Whether to exclude the last layer from quantization and leave it in its original precision.
+        layers_to_exclude:(`Optional[List]`, defaults to None):
+            Specify the names of the layers that should not be quantized. This should only be the last part of the layer name. If the same name is repated across multiple layers, they will all be excluded.
+            If left to None, the last linear layer is automatically identified and excluded.
     """
 
     weights_bitwidth: int = 8
@@ -83,7 +84,7 @@ class BrevitasQuantizationConfig:
     apply_gptq: bool = False
     gptq_act_order: Optional[bool] = None
     device: str = "auto"
-    exclude_last_layer: bool = True
+    layers_to_exclude: Optional[List] = None
     gpu_device_map: Optional[Dict[int, float]] = None
     cpu_device_map: Optional[Dict[str, float]] = None
 
