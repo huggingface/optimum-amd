@@ -9,11 +9,12 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # Install python and g++ compiler
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     ffmpeg \
     python3.8 \
+    python3-pip \
     python3.8-dev \
-    python3-pip && \
+    build-essential \
+    libjemalloc-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
