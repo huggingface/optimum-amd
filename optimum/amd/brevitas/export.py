@@ -23,6 +23,7 @@ from transformers.modeling_utils import PreTrainedModel
 
 LOGGER = logging.getLogger(__name__)
 
+ONNX_FLOAT32_IDENTIFIER = int(1)
 
 ## Pattern to find and replace with MatMulInteger
 MATMUL = [
@@ -130,8 +131,9 @@ def create_nodes(graph: Graph, op: str, name: str, inputs: List[str], outputs: L
 
 
 def replace_matmul_to_matmulinteger(graph: Graph, found_nodes: List[List[str]], node_count: int = 0):
-    for i, found_pattern in enumerate(found_nodes):
-        node_count += i
+    for found_pattern in found_nodes:
+        node_count += 1
+
         deq_linear = graph.nodemap[found_pattern[0]]
         dyn_q = graph.nodemap[found_pattern[2]]
         dq_weight = deq_linear.prevnodes[0]
@@ -158,7 +160,7 @@ def replace_matmul_to_matmulinteger(graph: Graph, found_nodes: List[List[str]], 
             [f"matmul_integer_{node_count}"],
         )
         graph = create_nodes(
-            graph, "Cast", f"cast_{node_count}", [f"matmul_integer_{node_count}"], [f"cast_{node_count}"], to=int(1)
+            graph, "Cast", f"cast_{node_count}", [f"matmul_integer_{node_count}"], [f"cast_{node_count}"], to=ONNX_FLOAT32_IDENTIFIER
         )
         graph = create_nodes(
             graph,
@@ -178,8 +180,9 @@ def replace_matmul_to_matmulinteger(graph: Graph, found_nodes: List[List[str]], 
 
 
 def replace_gemm_to_matmulinteger(graph: Graph, found_nodes: List[List[str]], node_count: int = 0):
-    for i, found_pattern in enumerate(found_nodes):
+    for found_pattern in found_nodes:
         node_count += 1
+
         gemm = graph.nodemap[found_pattern[-1]]
         bias = gemm.input[-1]
         deq_linear = graph.nodemap[found_pattern[0]]
@@ -207,7 +210,7 @@ def replace_gemm_to_matmulinteger(graph: Graph, found_nodes: List[List[str]], no
             [f"matmul_integer_{node_count}"],
         )
         graph = create_nodes(
-            graph, "Cast", f"cast_{node_count}", [f"matmul_integer_{node_count}"], [f"cast_{node_count}"], to=int(1)
+            graph, "Cast", f"cast_{node_count}", [f"matmul_integer_{node_count}"], [f"cast_{node_count}"], to=ONNX_FLOAT32_IDENTIFIER
         )
         graph = create_nodes(
             graph,
