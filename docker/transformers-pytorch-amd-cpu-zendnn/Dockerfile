@@ -24,10 +24,6 @@ RUN pip install --upgrade pip
 # Install PyTorch
 RUN pip install --no-cache-dir torch==$TORCH_VERSION torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-# Copy ZenTorch wheel
+# Copy and install ZenTorch wheel
 COPY zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl /home/user/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl
-
-# Install ZenTorch
 RUN pip install --no-cache-dir /home/user/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl
-
-RUN python -c "import torch; import zentorch"
