@@ -67,9 +67,7 @@ SUPPORTED_MODELS_TINY_TEXT_GENERATION = {
     # automatic speech recognition
     "whisper": {"openai/whisper-tiny": ["automatic-speech-recognition"]},  # tested with torch >= 2.2.1
     # image to text
-    "blip": {
-        "hf-internal-testing/tiny-random-BlipForConditionalGeneration": ["image-to-text"]
-    },  # transformers side error (error in generate function)
+    "blip": {"hf-internal-testing/tiny-random-BlipForConditionalGeneration": ["image-to-text"]},
     "blip2": {
         "hf-internal-testing/tiny-random-Blip2ForConditionalGeneration": ["image-to-text"]
     },  # tested with torch >= 2.2.1
@@ -112,7 +110,7 @@ def get_dummy_inputs(model_type: str, model_id: str, task: str):
         dummy_inputs = processor(text=text, return_tensors="pt")
 
         if task in ["text2text-generation"]:
-            dummy_inputs["decoder_input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
+            dummy_inputs["decoder_input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
 
     elif task in ["image-to-text", "image-classification"]:
         processor = AutoImageProcessor.from_pretrained(model_id)
@@ -121,10 +119,10 @@ def get_dummy_inputs(model_type: str, model_id: str, task: str):
         dummy_inputs = processor(images=images, return_tensors="pt")
 
         if task in ["image-to-text"]:
-            dummy_inputs["input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
-
-            if model_type in ["blip2"]:
-                dummy_inputs["decoder_input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
+            if model_type in ["blip"]:
+                dummy_inputs["input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
+            elif model_type in ["blip2"]:
+                dummy_inputs["decoder_input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
 
     elif task in ["audio-classification", "automatic-speech-recognition"]:
         processor = AutoFeatureExtractor.from_pretrained(model_id)
@@ -133,7 +131,7 @@ def get_dummy_inputs(model_type: str, model_id: str, task: str):
         dummy_inputs = processor(raw_speech=audios, return_tensors="pt")
 
         if task in ["automatic-speech-recognition"]:
-            dummy_inputs["decoder_input_ids"] = torch.tensor([[1]] * BATCH_SIZE)
+            dummy_inputs["decoder_input_ids"] = torch.tensor([[1, 2]] * BATCH_SIZE)
 
     elif task in ["stable-diffusion", "stable-diffusion-xl"]:
         dummy_inputs = {"prompt": ["This is test prompt"] * BATCH_SIZE}
