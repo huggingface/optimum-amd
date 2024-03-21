@@ -89,7 +89,7 @@ def load_model(
         ort_model_class = SUPPORTED_TASKS[task]["class"][0]
 
         model = ort_model_class.from_pretrained(
-            model_id, vaip_config=vaip_config, use_auth_token=token, revision=revision, provider="CPUExecutionProvider"
+            model_id, vaip_config=vaip_config, use_auth_token=token, revision=revision
         )
     elif isinstance(model, RyzenAIModel):
         model_id = None
@@ -103,8 +103,8 @@ def load_model(
 
 def pipeline(
     task,
-    vaip_config: str,
     model: Optional[Any] = None,
+    vaip_config: Optional[str] = None,
     model_type: Optional[str] = None,
     feature_extractor: Optional[Union[str, "PreTrainedFeatureExtractor"]] = None,
     image_processor: Optional[Union[str, BaseImageProcessor]] = None,
@@ -124,12 +124,12 @@ def pipeline(
             The task defining which pipeline will be returned. Available tasks include:
             - "image-classification"
             - "object-detection"
-        vaip_config (`str`):
-            Runtime configuration file for inference with Ryzen IPU. A default config file can be found in the Ryzen AI VOE package,
-            extracted during installation under the name `vaip_config.json`.
         model (`Optional[Any]`, defaults to `None`):
             The model that will be used by the pipeline to make predictions. This can be a model identifier or an
             actual instance of a pretrained model. If not provided, the default model for the specified task will be loaded.
+        vaip_config (`Optional[str]`, defaults to `None`):
+            Runtime configuration file for inference with Ryzen IPU. A default config file can be found in the Ryzen AI VOE package,
+            extracted during installation under the name `vaip_config.json`.
         model_type (`Optional[str]`, defaults to `None`):
             Model type for the model
         feature_extractor (`Union[str, "PreTrainedFeatureExtractor"]`, defaults to `None`):
