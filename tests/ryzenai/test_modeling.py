@@ -118,7 +118,7 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
         ["mohitsha/timm-resnet18-onnx-quantized-ryzen", "mohitsha/transformers-resnet18-onnx-quantized-ryzen"]
     )
     @slow
-    def test_pipeline_model(self, model_id):
+    def test_pipeline(self, model_id):
         os.environ["XLNX_ENABLE_CACHE"] = "0"
         os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
