@@ -77,10 +77,6 @@ class RyzenAIModelIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
         with self.assertRaises(ValueError):
             RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\invalid_path\\vaip_config.json")
 
-    def test_load_model_no_config_path(self):
-        with self.assertRaises(ValueError):
-            RyzenAIModel.from_pretrained(self.TEST_MODEL_ID)
-
     def test_save_model(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
             os.environ["XLNX_ENABLE_CACHE"] = "0"

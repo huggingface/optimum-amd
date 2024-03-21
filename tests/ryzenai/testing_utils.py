@@ -46,9 +46,7 @@ class RyzenAITestCaseMixin:
         if cache_key:
             provider_options["cacheKey"] = cache_key
 
-        model_instance = model_class.from_pretrained(
-            model_id, file_name=file_name, provider_options=provider_options
-        )
+        model_instance = model_class.from_pretrained(model_id, file_name=file_name, provider_options=provider_options)
 
         if isinstance(ort_input, dict):
             outputs = model_instance(**ort_input)
@@ -57,9 +55,7 @@ class RyzenAITestCaseMixin:
 
         return outputs
 
-    def prepare_outputs(
-        self, model_id, model_class, ort_input, cache_dir=None, cache_key=None, file_name=None
-    ):
+    def prepare_outputs(self, model_id, model_class, ort_input, cache_dir=None, cache_key=None, file_name=None):
         set_seed(SEED)
         output_ipu = self.run_model(
             model_class,
