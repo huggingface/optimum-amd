@@ -138,11 +138,11 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
         ["mohitsha/timm-resnet18-onnx-quantized-ryzen", "mohitsha/transformers-resnet18-onnx-quantized-ryzen"]
     )
     @slow
-    def test_pipeline_model(self, model_id):
+    def test_pipeline(self, model_id):
         os.environ["XLNX_ENABLE_CACHE"] = "0"
         os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-        pipe = pipeline("image-classification", model=model_id, vaip_config=self.VAIP_CONFIG)
+        pipe = pipeline("image-classification", model=model_id, vaip_config=DEFAULT_VAIP_CONFIG)
 
         url = "http://images.cocodataset.org/val2017/000000039769.jpg"
         image = Image.open(requests.get(url, stream=True).raw)
@@ -190,7 +190,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
         os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
         model_id = RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION[model_arch]
-        pipe = pipeline("object-detection", model=model_id, vaip_config=self.VAIP_CONFIG, model_type=model_arch)
+        pipe = pipeline("object-detection", model=model_id, vaip_config=DEFAULT_VAIP_CONFIG, model_type=model_arch)
 
         url = "http://images.cocodataset.org/val2017/000000039769.jpg"
         image = Image.open(requests.get(url, stream=True).raw)
@@ -209,7 +209,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
         os.environ["XLNX_ENABLE_CACHE"] = "0"
         os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-        pipe = pipeline("object-detection", vaip_config=self.VAIP_CONFIG)
+        pipe = pipeline("object-detection", vaip_config=DEFAULT_VAIP_CONFIG)
 
         url = "http://images.cocodataset.org/val2017/000000039769.jpg"
         image = Image.open(requests.get(url, stream=True).raw)
