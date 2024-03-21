@@ -18,7 +18,7 @@ _import_structure = {
     ],
     "quantization": ["RyzenAIOnnxQuantizer"],
     "pipelines": ["pipeline"],
-    "utils": ["DEFAULT_VAIP_CONFIG", "DEFAULT_VAIP_CONFIG_MATMUL"],
+    "utils": ["DEFAULT_VAIP_CONFIG"],
 }
 
 
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     )
     from .pipelines import pipeline
     from .quantization import RyzenAIOnnxQuantizer
-    from .utils import DEFAULT_VAIP_CONFIG, DEFAULT_VAIP_CONFIG_MATMUL
+    from .utils import DEFAULT_VAIP_CONFIG
 else:
     import sys
 
