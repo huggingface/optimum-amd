@@ -13,11 +13,8 @@ import onnxruntime
 import pytest
 import requests
 import torch
-from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
-from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 from parameterized import parameterized
 from PIL import Image
-from rewriter import find_and_insert_matmulinteger
 from testing_models import (
     PYTORCH_MODELS,
     RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS,
@@ -36,6 +33,7 @@ from testing_utils import (
 
 from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
 from optimum.amd.brevitas.data_utils import get_dataset_for_model
+from optimum.amd.brevitas.export import onnx_export_from_quantized_model
 from optimum.amd.ryzenai import (
     RyzenAIModel,
     RyzenAIModelForCausalLM,
@@ -46,7 +44,6 @@ from optimum.amd.ryzenai import (
     RyzenAIModelForSemanticSegmentation,
     pipeline,
 )
-from optimum.exporters.onnx import onnx_export_from_model
 from optimum.utils import (
     DummyInputGenerator,
     logging,
@@ -327,7 +324,6 @@ class RyzenAIModelForCausalLMIntegrationTest(unittest.TestCase, RyzenAITestCaseM
 
         tokenizer = AutoTokenizer.from_pretrained(model_id)
 
-        # TODO: Replace with the new method in brevitas
         quantization_config = BrevitasQuantizationConfig(
             apply_gptq=False,
             apply_weight_equalization=False,
@@ -356,18 +352,7 @@ class RyzenAIModelForCausalLMIntegrationTest(unittest.TestCase, RyzenAITestCaseM
         quantized_model = quantizer.quantize(quantization_config, calibration_dataset)
 
         # export model
-        # TODO: Replace with the new method in brevitas
-        export_manager = StdQCDQONNXManager
-        with torch.no_grad(), brevitas_proxy_export_mode(quantized_model, export_manager=export_manager):
-            onnx_export_from_model(
-                quantized_model,
-                quantization_dir.name,
-                task="text-generation-with-past",
-                do_validation=False,
-                no_post_process=True,
-            )
-
-            find_and_insert_matmulinteger(os.path.join(quantization_dir.name, "model.onnx"))
+        onnx_export_from_quantized_model(quantized_model, quantization_dir.name)
 
         # inference
         cache_dir = DEFAULT_CACHE_DIR
