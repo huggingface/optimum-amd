@@ -168,5 +168,5 @@ class TestOnnxExport(unittest.TestCase):
             # The number of Matmul+Gemm has to be less compared to the model pre-transformation
             # This is not zero since there are matmul that are not linear layers so they are not replaced
             # and some linears layers can be excluded from quantization
-            assert matmul_gemm_counter <= original_matmul_gemm_counter
-            assert matmulinteger_counter > 1
+            self.assertTrue(matmul_gemm_counter <= original_matmul_gemm_counter)
+            self.assertTrue(matmulinteger_counter > 1)
