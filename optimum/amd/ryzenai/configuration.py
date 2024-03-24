@@ -352,6 +352,26 @@ class QuantizationConfig:
         self.calibration_method = self._map_calibration_method(self.calibration_method)
         self.activations_dtype, self.weights_dtype = self._map_dtypes(self.activations_dtype, self.weights_dtype)
 
+        self.check_dtype_and_format(self.activations_dtype, "activations_dtype", self.format)
+        self.check_dtype_and_format(self.weights_dtype, "weights_dtype", self.format)
+
+        # TODO : change enable_dpu to enable_ipu_cnn
+        if self.enable_dpu:
+            if self.format not in ["qdq"]:
+                raise ValueError('ipu cnn configuration only support format "qdq".')
+            if self.calibration_method not in ["nonoverflow", "mse"]:
+                raise ValueError('ipu cnn configuration only support calibration_method "nonoverflow" and "mse".')
+            if not (self.extra_options.activation_symmetric and self.extra_options.weight_symmetric):
+                raise ValueError(
+                    "ipu cnn configuration requires setting activation_symmetric and weight_symmetric to true."
+                )
+            if self.activations_dtype not in ["uint8", "int8"]:
+                raise ValueError('ipu cnn configuration only support activations_dtype "uint8" and "int8".')
+            if self.weights_dtype not in ["int8"]:
+                raise ValueError('ipu cnn configuration only support weights_dtype "int8".')
+            if self.per_channel:
+                raise ValueError("ipu cnn configuration only supports per tensor.")
+
     def __setattr__(self, name, value):
         if name == "extra_options" and isinstance(value, dict):
             setattr(self, "extra_options", ExtraOptions(**value))
@@ -382,6 +402,11 @@ class QuantizationConfig:
 
                     non_default_values[option.name] = value
         return non_default_values
+
+    @staticmethod
+    def check_dtype_and_format(dtype, dtype_name, format):
+        if dtype not in ["uint8", "int8"] and format not in ["vitisqdq"]:
+            raise ValueError(f'{dtype_name} is: "{dtype}", vitisqdq must be "vitisqdq".')
 
     @staticmethod
     def _map_format(format_str):
