@@ -406,7 +406,7 @@ class QuantizationConfig:
     @staticmethod
     def check_dtype_and_format(dtype, dtype_name, format):
         if dtype not in ["uint8", "int8"] and format not in ["vitisqdq"]:
-            raise ValueError(f'{dtype_name} is: "{dtype}", vitisqdq must be "vitisqdq".')
+            raise ValueError(f'{dtype_name} is: "{dtype}", format must be "vitisqdq".')
 
     @staticmethod
     def _map_format(format_str):
