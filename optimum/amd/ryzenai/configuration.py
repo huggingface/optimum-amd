@@ -101,23 +101,23 @@ class ExtraOptions:
             By default, minmse is calculated using all calibration data. Alternatively, you can set the mode to "MostCommon",
             where minmse is calculated for each batch separately and take the most common value.
         convert_bn_to_conv (`bool`, defaults to `True`):
-            If True, the BatchNormalization operation will be converted to Conv operation when enable_dpu is True.
+            If True, the BatchNormalization operation will be converted to Conv operation when enable_ipu_cnn is True.
         convert_reduce_mean_to_global_avg_pool (`bool`, defaults to `True`):
-            If True, the Reduce Mean operation will be converted to Global Average Pooling operation when enable_dpu is True.
+            If True, the Reduce Mean operation will be converted to Global Average Pooling operation when enable_ipu_cnn is True.
         split_large_kernel_pool (`bool`, defaults to `True`):
             If True, the large kernel Global Average Pooling operation will be split into multiple Average Pooling operation when
-            enable_dpu is True.
+            enable_ipu_cnn is True.
         convert_split_to_slice (`bool`, defaults to `True`):
-            If True, the Split operation will be converted to Slice operation when enable_dpu is True.
+            If True, the Split operation will be converted to Slice operation when enable_ipu_cnn is True.
         fuse_instance_norm (`bool`, defaults to `False`):
-            If True, the split instance norm operation will be fused to InstanceNorm operation when enable_dpu is True.
+            If True, the split instance norm operation will be fused to InstanceNorm operation when enable_ipu_cnn is True.
         fuse_l2_norm (`bool`, defaults to `False`):
-            If True, a set of L2norm operations will be fused to L2Norm operation when enable_dpu is True.
+            If True, a set of L2norm operations will be fused to L2Norm operation when enable_ipu_cnn is True.
         convert_clip_to_relu (`bool`, defaults to `False`):
             If True, the Clip operations that have a min value of 0 will be converted to ReLU operations.
         simulate_dpu (`bool`, defaults to `True`):
             If True, a simulation transformation that replaces some operations with an approximate implementation will be applied
-            for DPU when enable_dpu is True.
+            for DPU when enable_ipu_cnn is True.
         convert_leaky_relu_to_dpu_version (`bool`, defaults to `True`):
             If True, the Leaky Relu operation will be converted to DPU version when SimulateDPU is True.
         convert_sigmoid_to_hard_sigmoid (`bool`, defaults to `True`):
@@ -159,9 +159,9 @@ class ExtraOptions:
         cle_scale_append_bias (`bool`, defaults to `True`):
             Whether the bias be included when calculating the scale of the weights.
         remove_qdq_conv_leaky_relu (`bool`, defaults to `False`):
-            If True, the QDQ between Conv and LeakyRelu will be removed for DPU when enable_dpu is True.
+            If True, the QDQ between Conv and LeakyRelu will be removed for DPU when enable_ipu_cnn is True.
         remove_qdq_conv_prelu (`bool`, defaults to `False`):
-            If True, the QDQ between Conv and PRelu will be removed for DPU when enable_dpu is True.
+            If True, the QDQ between Conv and PRelu will be removed for DPU when enable_ipu_cnn is True.
     """
 
     activation_symmetric: bool = False
@@ -284,7 +284,7 @@ class QuantizationConfig:
             The quantization data type to use for the activations.
         weights_dtype (QuantType, defaults to `QuantType.QInt8`):
             The quantization data type to use for the weights.
-        enable_dpu (bool, defaults to `True`):
+        enable_ipu_cnn (bool, defaults to `True`):
             Flag to generate a quantized model suitable for DPU/NPU computations. If True, the quantization process will
             consider specific limitations and requirements of DPU/NPU, optimizing the model accordingly.
         input_nodes (List[str], defaults to an empty list `[]`):
@@ -339,7 +339,7 @@ class QuantizationConfig:
     optimize_model: bool = True
     use_external_data_format: bool = False
     execution_providers: List[str] = field(default_factory=lambda: ["CPUExecutionProvider"])
-    enable_dpu: bool = False
+    enable_ipu_cnn: bool = False
     convert_fp16_to_fp32: bool = False
     convert_nchw_to_nhwc: bool = False
     include_cle: bool = False
@@ -355,8 +355,7 @@ class QuantizationConfig:
         self.check_dtype_and_format(self.activations_dtype, "activations_dtype", self.format)
         self.check_dtype_and_format(self.weights_dtype, "weights_dtype", self.format)
 
-        # TODO : change enable_dpu to enable_ipu_cnn
-        if self.enable_dpu:
+        if self.enable_ipu_cnn:
             if self.format not in ["qdq"]:
                 raise ValueError('ipu cnn configuration only support format "qdq".')
             if self.calibration_method not in ["nonoverflow", "mse"]:
@@ -481,7 +480,7 @@ class QuantizationConfig:
         return (
             f"{self.format} ("
             f"schema: {QuantizationConfig.quantization_type_str(self.activation_type, self.weight_type)}, "
-            f"enable_dpu: {self.enable_dpu})"
+            f"enable_ipu_cnn: {self.enable_ipu_cnn})"
         )
 
 
@@ -506,7 +505,7 @@ class AutoQuantizationConfig:
             calibration_method=calibrate_method,
             activations_dtype="uint8",
             weights_dtype="int8",
-            enable_dpu=True,
+            enable_ipu_cnn=True,
             op_types_to_quantize=op_types_to_quantize,
             nodes_to_quantize=nodes_to_quantize or [],
             nodes_to_exclude=nodes_to_exclude or [],
