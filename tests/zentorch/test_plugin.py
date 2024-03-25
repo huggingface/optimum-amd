@@ -28,9 +28,11 @@ os.environ["GOMP_CPU_AFFINITY"] = f"0-{CPU_COUNT - 1}"
 os.environ["LD_PRELOAD"] = LD_PRELOAD
 os.environ["MALLOC_CONF"] = MALLOC_CONF
 
+# to avoid fast tokenizers warnings
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 # set to 1 to see if anything is wrong in eager mode
 EAGER_DEBUG = os.environ.get("EAGER_DEBUG", "0") == "1"
-
 
 class TestZenTorchPlugin(unittest.TestCase):
     @parameterized.expand(SUPPORTED_MODELS_TINY.keys())
