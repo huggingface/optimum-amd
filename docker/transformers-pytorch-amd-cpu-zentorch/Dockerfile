@@ -9,6 +9,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # Install python and g++ compiler
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
     ffmpeg \
     python3.8 \
     python3-pip \
