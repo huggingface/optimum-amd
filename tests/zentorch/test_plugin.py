@@ -10,15 +10,12 @@ from testing_utils import (
     SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION,
     SUPPORTED_MODELS_TINY_TEXT_GENERATION,
     TEXT_GENERATION_KWARGS,
-    get_model_or_pipe_inputs,
+    get_inputs,
     load_and_compile_model,
     load_and_compile_pipeline,
-    load_model_or_pipe,
+    load_model_or_pipeline,
 )
 
-
-# set to 1 to run the model in eager mode
-EAGER_DEBUG = os.environ.get("EAGER_DEBUG", "0") == "1"
 
 CPU_COUNT = os.cpu_count()
 LD_PRELOAD = "/usr/lib/x86_64-linux-gnu/libjemalloc.so"
@@ -31,26 +28,29 @@ os.environ["GOMP_CPU_AFFINITY"] = f"0-{CPU_COUNT - 1}"
 os.environ["LD_PRELOAD"] = LD_PRELOAD
 os.environ["MALLOC_CONF"] = MALLOC_CONF
 
+# set to 1 to see if anything is wrong in eager mode
+EAGER_DEBUG = os.environ.get("EAGER_DEBUG", "0") == "1"
+
 
 class TestZenTorchPlugin(unittest.TestCase):
     @parameterized.expand(SUPPORTED_MODELS_TINY.keys())
-    def test_text_classification_model(self, model_type: str):
+    def test_simple_model(self, model_type: str):
         model_id_and_tasks = SUPPORTED_MODELS_TINY[model_type]
 
         for model_id, tasks in model_id_and_tasks.items():
             for task in tasks:
-                inputs = get_model_or_pipe_inputs(model_id, task)
+                inputs = get_inputs(model_id, task)
 
                 if EAGER_DEBUG:
-                    model = load_model_or_pipe(model_id, task)
+                    model = load_model_or_pipeline(model_id, task)
                     _ = model(**inputs).logits
                     continue
 
                 inductor_model = load_and_compile_model(model_id, task, backend="inductor")
-                inductor_logits = inductor_model(**inputs).logits
+                inductor_logits = inductor_model.forward(**inputs).logits
 
                 zentorch_model = load_and_compile_model(model_id, task, backend="zentorch")
-                zentorch_logits = zentorch_model(**inputs).logits
+                zentorch_logits = zentorch_model.forward(**inputs).logits
 
                 torch.testing.assert_close(inductor_logits, zentorch_logits, rtol=1e-3, atol=1e-5)
 
@@ -60,26 +60,22 @@ class TestZenTorchPlugin(unittest.TestCase):
 
         for model_id, tasks in model_id_and_tasks.items():
             for task in tasks:
-                inputs = get_model_or_pipe_inputs(model_id, task)
+                inputs = get_inputs(model_id, task)
 
                 if EAGER_DEBUG:
-                    model = load_model_or_pipe(model_id, task)
-                    _ = model.generate(**inputs, **TEXT_GENERATION_KWARGS).scores
+                    model = load_model_or_pipeline(model_id, task)
+                    _ = model.generate(**inputs, **TEXT_GENERATION_KWARGS).logits
                     continue
 
                 inductor_model = load_and_compile_model(model_id, task, backend="inductor")
-                # use logits in transformers next release
-                # https://github.com/huggingface/transformers/issues/14498#issuecomment-1953014058
-                inductor_scores = inductor_model.generate(**inputs, **TEXT_GENERATION_KWARGS).scores
-                inductor_scores = torch.concat(inductor_scores)
+                inductor_logits = inductor_model.generate(**inputs, **TEXT_GENERATION_KWARGS).logits
+                inductor_logits = torch.stack(inductor_logits, dim=1)
 
                 zentorch_model = load_and_compile_model(model_id, task, backend="zentorch")
-                # use logits in transformers next release
-                # https://github.com/huggingface/transformers/issues/14498#issuecomment-1953014058
-                zentorch_scores = zentorch_model.generate(**inputs, **TEXT_GENERATION_KWARGS).scores
-                zentorch_scores = torch.concat(zentorch_scores)
+                zentorch_logits = zentorch_model.generate(**inputs, **TEXT_GENERATION_KWARGS).logits
+                zentorch_logits = torch.stack(zentorch_logits, dim=1)
 
-                torch.testing.assert_close(inductor_scores, zentorch_scores, rtol=1e-3, atol=1e-5)
+                torch.testing.assert_close(inductor_logits, zentorch_logits, rtol=1e-3, atol=1e-5)
 
     @parameterized.expand(SUPPORTED_MODELS_TINY_IMAGE_DIFFUSION.keys())
     def test_image_diffusion_pipe(self, model_type: str):
@@ -87,10 +83,10 @@ class TestZenTorchPlugin(unittest.TestCase):
 
         for model_id, tasks in model_id_and_tasks.items():
             for task in tasks:
-                inputs = get_model_or_pipe_inputs(model_id, task)
+                inputs = get_inputs(model_id, task)
 
                 if EAGER_DEBUG:
-                    pipe = load_model_or_pipe(model_id, task)
+                    pipe = load_model_or_pipeline(model_id, task)
                     _ = pipe(**inputs, **IMAGE_DIFFUSION_KWARGS).images
                     continue
 
