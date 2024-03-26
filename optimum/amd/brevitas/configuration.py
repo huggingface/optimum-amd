@@ -59,8 +59,8 @@ class BrevitasQuantizationConfig:
             Whether to apply GPTQ algorithm for quantizing the weights.
         gptq_act_order (`Optional[bool]`, defaults to `None`):
             Whether to use activations reordering (act-order, also known as desc-act) when `apply_gptq=True`. If `apply_gptq=True`, defaults to `False`.
-        layers_to_exclude:(`Optional[List]`, defaults to None):
-            Specify the names of the layers that should not be quantized. This should only be the last part of the layer name. If the same name is repated across multiple layers, they will all be excluded.
+        layers_to_exclude (`Optional[List]`, defaults to `None`):
+            Specify the names of the layers that should not be quantized. This should only be the last part of the layer name. If the same name is repeated across multiple layers, they will all be excluded.
             If left to None, the last linear layer is automatically identified and excluded.
     """
 
