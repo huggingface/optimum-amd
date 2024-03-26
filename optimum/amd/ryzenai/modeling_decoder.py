@@ -82,7 +82,7 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
             raise ValueError(
                 f"`use_cache` was set to `{use_cache}` but the loaded model only supports `use_cache={self.use_cache}`. "
                 f"Please load your current model with `use_cache={self.use_cache}` or export the original model "
-                f"once again with `use_cache={use_cache}` when calling the `from_pretrained` method. "
+                f"once again with past-key-values."
             )
 
     def forward(self, input_ids, attention_mask=None, position_ids=None, past_key_values=None, **kwargs):
