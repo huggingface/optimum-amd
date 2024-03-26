@@ -144,7 +144,8 @@ class BrevitasQuantizer(OptimumQuantizer):
             if len(full_layer_name) > 0:
                 full_layer_name = full_layer_name[0]
                 # Remove the prefix
-                layer_name_to_exclude.append(full_layer_name.split(".")[-1])
+                layer_name_suffix = full_layer_name.split(".")[-1]
+                layer_name_to_exclude.append(layer_name_suffix)
             else:
                 logger.info("Last linear layer was not found. All layers will be quantized")
         else:
