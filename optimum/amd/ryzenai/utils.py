@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 
-import os.path as osp
+import os
 
 import onnxruntime as ort
 
@@ -10,7 +10,7 @@ import onnxruntime as ort
 ONNX_WEIGHTS_NAME = "model.onnx"
 ONNX_WEIGHTS_NAME_STATIC = "model_static.onnx"
 
-DEFAULT_VAIP_CONFIG = osp.normpath(osp.join(osp.dirname(__file__), "./configs/vaip_config.json"))
+DEFAULT_VAIP_CONFIG = os.path.normpath(os.path.join(os.path.dirname(__file__), "./configs/vaip_config.json"))
 
 
 def validate_provider_availability(provider: str):

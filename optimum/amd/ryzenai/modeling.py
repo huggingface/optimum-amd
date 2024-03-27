@@ -276,9 +276,11 @@ class RyzenAIModel(OptimizedModel):
 
         if provider == "VitisAIExecutionProvider":
             if vaip_config is None and "config_file" not in (provider_options or {}):
-                logger.warning(f"No config file provided. Using default config: {cls.default_vaip_config}.\n")
+                logger.warning(
+                    f"No Ryzen AI configuration file was provided. Using default: {cls.default_vaip_config}.\n"
+                )
                 vaip_config = cls.default_vaip_config
-            elif vaip_config and provider_options and "config_file" in provider_options:
+            elif vaip_config is not None and provider_options is not None and "config_file" in provider_options:
                 raise ValueError(
                     "Configuration file paths were found in both `vaip_config` and `provider_options`."
                     "To avoid conflicts, please specify the configuration file path in either `vaip_config`"
