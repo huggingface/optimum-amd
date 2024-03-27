@@ -346,6 +346,10 @@ class RyzenAIModel(OptimizedModel):
 
         return model, vaip_config, model_save_dir, preprocessors
 
+    @staticmethod
+    def validate_static_shape_compatibility(path: Union[str, Path], provider: str):
+        return True
+
     @classmethod
     def _from_pretrained(
         cls,
@@ -618,10 +622,6 @@ class RyzenAIModel(OptimizedModel):
             return static_model_path
 
         return model_path
-
-    @staticmethod
-    def validate_static_shape_compatibility(path: Union[str, Path], provider: str):
-        raise True
 
     def _convert_to_numpy(self, value, use_torch):
         return value.cpu().detach().numpy() if use_torch else value
