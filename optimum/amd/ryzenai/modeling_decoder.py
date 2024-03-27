@@ -10,11 +10,12 @@ import numpy as np
 import onnxruntime as ort
 import torch
 
-from optimum.utils import NormalizedConfigManager, check_if_transformers_greater
+from optimum.utils import NormalizedConfigManager
 from transformers import (
     AutoModelForCausalLM,
     GenerationConfig,
 )
+from transformers.generation import GenerationMixin
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from .modeling import RyzenAIModel
@@ -23,11 +24,6 @@ from .utils import set_builtins, set_environment_variables
 
 if TYPE_CHECKING:
     from transformers import PretrainedConfig
-
-if check_if_transformers_greater("4.25.0"):
-    from transformers.generation import GenerationMixin
-else:
-    from transformers.generation_utils import GenerationMixin
 
 
 class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
@@ -53,14 +49,6 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
 
         self._initialize_params(use_cache, generation_config)
 
-        self.use_fp16 = False
-        for inp in model.get_inputs():
-            if (
-                inp.name == "past_key_values" or inp.name in self.key_value_input_names
-            ) and inp.type == "tensor(float16)":
-                self.use_fp16 = True
-                break
-
         # need for generate
         self.device = torch.device("cpu")
 
@@ -70,6 +58,9 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
         return key_names, value_names
 
     def _initialize_params(self, use_cache, generation_config):
+        if self.config is None:
+            raise ValueError("The model config must be provided to instantiate the model.")
+
         self.num_pkv = 2
         self.normalized_config = NormalizedConfigManager.get_normalized_config_class(self.config.model_type)(
             self.config
@@ -177,8 +168,7 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
 
     def get_constructor(self, use_torch):
         constructor = torch if use_torch else np
-        dtype = constructor.float16 if self.use_fp16 else constructor.float32
-        return constructor, dtype
+        return constructor, constructor.float32
 
     @classmethod
     def _from_pretrained(

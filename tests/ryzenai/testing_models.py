@@ -360,6 +360,7 @@ PYTORCH_TIMM_MODEL = {
 
 
 PYTORCH_MODELS = {
+    "gpt_bigcode": "hf-internal-testing/tiny-random-GPTBigCodeModel",
     "llama": "fxmarty/tiny-llama-fast-tokenizer",
     "mistral": "echarlaix/tiny-random-mistral",
     "opt": "hf-internal-testing/tiny-random-OPTForCausalLM",

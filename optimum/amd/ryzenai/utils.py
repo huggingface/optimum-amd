@@ -46,7 +46,7 @@ def set_builtins():
     """Set the builtins.impl and builtins.quant_mode environment variables."""
     builtins.impl = os.getenv("BUILTINS_IMPL", DEFAULT_BUILTIN_IMPL)
     builtins.quant_mode = os.getenv("BUILTINS_IMPL", DEFAULT_BUILTIN_QUANT_MODE)
-    print(f"Builtins: impl={builtins.impl}, quant_mode={builtins.quant_mode}")
+    logger.info(f"Builtins: impl={builtins.impl}, quant_mode={builtins.quant_mode}")
 
 
 def clone_repository(repo_url: str, repo_path: str):
@@ -55,7 +55,7 @@ def clone_repository(repo_url: str, repo_path: str):
             subprocess.run(["git", "clone", "--depth", "1", "--branch", "main", repo_url, repo_path], check=True)
             subprocess.run(["git", "-C", repo_path, "checkout", RYZEN_SW_COMMIT_HASH], check=True)
     except subprocess.CalledProcessError as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         if os.path.exists(repo_path):
             shutil.rmtree(repo_path)
 

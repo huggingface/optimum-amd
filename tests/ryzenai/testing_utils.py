@@ -11,7 +11,7 @@ from transformers import set_seed
 
 SEED = 42
 
-BASELINE_JSON = os.path.normpath("./tests/ryzenai/operators_baseline.json")  # For RyzenSDK 1.1
+BASELINE_OPERATORS_JSON = os.path.normpath("./tests/ryzenai/operators_baseline.json")  # For RyzenSDK 1.1
 DEFAULT_VAIP_CONFIG = os.path.normpath("./tests/ryzenai/vaip_config.json")
 DEFAULT_VAIP_CONFIG_TRANSFORMERS = os.path.normpath("./tests/ryzenai/vaip_config_transformers.json")
 
@@ -133,6 +133,6 @@ class RyzenAITestCaseMixin:
         return result
 
     def get_baseline_ops(self, key):
-        with open(BASELINE_JSON, "r") as json_file:
+        with open(BASELINE_OPERATORS_JSON, "r") as json_file:
             data = json.load(json_file)
             return data[key]

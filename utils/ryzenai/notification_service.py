@@ -27,7 +27,16 @@ from slack_sdk import WebClient
 
 sys.path.append(os.path.join(os.getcwd()))
 
-import tests.ryzenai.testing_models as tu  # noqa
+from tests.ryzenai.testing_models import (  # noqa
+    PYTORCH_MODELS,
+    PYTORCH_TIMM_MODEL,
+    RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS,
+    RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION,
+    RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION,
+    RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE,
+    RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION,
+)
+from tests.ryzenai.testing_utils import BASELINE_OPERATORS_JSON  # noqa
 
 
 client = WebClient(token=os.environ["CI_SLACK_BOT_TOKEN"])
@@ -37,13 +46,13 @@ def infer_model_id(model):
     model_name_replacement = model.replace(".", "_").replace("-", "_")
 
     all_model_names = (
-        list(tu.PYTORCH_TIMM_MODEL["default-timm-config"].keys())
-        + tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION
-        + list(tu.RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION.values())
-        + tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION
-        + tu.RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE
-        + tu.RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS
-        + list(tu.PYTORCH_MODELS.values())
+        list(PYTORCH_TIMM_MODEL["default-timm-config"].keys())
+        + RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION
+        + list(RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION.values())
+        + RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION
+        + RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE
+        + RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS
+        + list(PYTORCH_MODELS.values())
     )
 
     for model_name in all_model_names:
@@ -217,7 +226,7 @@ class Message:
     @property
     def model_failures(self):
         # Load baseline data from a JSON file
-        with open(tu.BASELINE_JSON, "r") as json_file:
+        with open(BASELINE_OPERATORS_JSON, "r") as json_file:
             baseline_data = json.load(json_file)
 
         model_failure_sections = []
