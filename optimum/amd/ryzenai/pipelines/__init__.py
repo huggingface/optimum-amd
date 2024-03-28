@@ -2,10 +2,17 @@
 # Licensed under the MIT License.
 
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Union
 
 from optimum.exporters import TasksManager
-from transformers import ImageClassificationPipeline, Pipeline, PretrainedConfig
+from transformers import (
+    ImageClassificationPipeline,
+    Pipeline,
+    PretrainedConfig,
+    PreTrainedTokenizer,
+    PreTrainedTokenizerFast,
+    TextGenerationPipeline,
+)
 from transformers import pipeline as transformers_pipeline
 from transformers.image_processing_utils import BaseImageProcessor
 from transformers.onnx.utils import get_preprocessor
@@ -16,6 +23,7 @@ from ..modeling import (
     RyzenAIModelForObjectDetection,
     RyzenAIModelForSemanticSegmentation,
 )
+from ..modeling_decoder import RyzenAIModelForCausalLM
 from ..models import (
     HRNetImageProcessor,
     SemanticFPNImageProcessor,
@@ -48,19 +56,24 @@ RYZENAI_SUPPORTED_TASKS = {
         "default": "amd/resnet50",
         "type": "image",
     },
-    "object-detection": {
-        "impl": YoloObjectDetectionPipeline,
-        "class": (RyzenAIModelForObjectDetection,),
-        "default": "amd/yolox-s",
-        "type": "image",
-        "model_type": "yolox",
-    },
     "image-segmentation": {
         "impl": ImageSegmentationPipeline,
         "class": (RyzenAIModelForSemanticSegmentation,),
         "default": "amd/SemanticFPN",
         "type": "image",
         "model_type": "semantic_fpn",
+    },
+    "text-generation": {
+        "impl": TextGenerationPipeline,
+        "class": (RyzenAIModelForCausalLM,),
+        "type": "text",
+    },
+    "object-detection": {
+        "impl": YoloObjectDetectionPipeline,
+        "class": (RyzenAIModelForObjectDetection,),
+        "default": "amd/yolox-s",
+        "type": "image",
+        "model_type": "yolox",
     },
 }
 
@@ -101,11 +114,70 @@ def load_model(
     return model, model_id, model_type
 
 
+def get_processor_from_model(model: RyzenAIModel, type: Tuple[Any], name: str) -> Any:
+    for preprocessor in model.preprocessors:
+        if isinstance(preprocessor, type):
+            return preprocessor
+    if preprocessor is None:
+        raise ValueError(
+            f"Could not automatically find a {name} for the model, you must specify the argument `{name}` explicitly."
+        )
+    return None
+
+
+def get_processor(
+    task: str,
+    model: RyzenAIModel,
+    model_id: Optional[str] = None,
+    tokenizer: Optional[Union[str, PreTrainedTokenizer, PreTrainedTokenizerFast]] = None,
+    image_processor: Optional[Union[str, BaseImageProcessor]] = None,
+    feature_extractor: Optional[Union[str, "PreTrainedFeatureExtractor"]] = None,
+) -> Tuple[Union[PreTrainedTokenizer, PreTrainedTokenizerFast], BaseImageProcessor]:
+    supported_tasks = RYZENAI_SUPPORTED_TASKS
+
+    no_image_processor_tasks, no_tokenizer_tasks = get_task_processor_map(supported_tasks)
+
+    load_tokenizer = False if task in no_tokenizer_tasks else True
+    load_image_processor = False if task in no_image_processor_tasks else True
+
+    if tokenizer is None and load_tokenizer:
+        tokenizer = (
+            get_preprocessor(model_id)
+            if model_id
+            else get_processor_from_model(model, (PreTrainedTokenizer, PreTrainedTokenizerFast), "tokenizer")
+        )
+
+    if image_processor is None and feature_extractor is None and load_image_processor:
+        library_name = TasksManager._infer_library_from_model(model)
+        if library_name != "timm":
+            image_processor = (
+                get_preprocessor(model_id)
+                if model_id
+                else get_processor_from_model(model, BaseImageProcessor, "image_processor")
+            )
+
+    return tokenizer, image_processor
+
+
+def get_task_processor_map(supported_tasks):
+    no_image_processor_tasks = set()
+    no_tokenizer_tasks = set()
+    for _task, values in supported_tasks.items():
+        if values["type"] == "text":
+            no_image_processor_tasks.add(_task)
+        elif values["type"] == "image":
+            no_tokenizer_tasks.add(_task)
+        else:
+            raise ValueError(f"SUPPORTED_TASK {_task} contains invalid type {values['type']}")
+    return no_image_processor_tasks, no_tokenizer_tasks
+
+
 def pipeline(
     task,
     model: Optional[Any] = None,
     vaip_config: Optional[str] = None,
     model_type: Optional[str] = None,
+    tokenizer: Optional[Union[str, PreTrainedTokenizer]] = None,
     feature_extractor: Optional[Union[str, "PreTrainedFeatureExtractor"]] = None,
     image_processor: Optional[Union[str, BaseImageProcessor]] = None,
     use_fast: bool = True,
@@ -123,6 +195,8 @@ def pipeline(
         task (`str`):
             The task defining which pipeline will be returned. Available tasks include:
             - "image-classification"
+            - "image-segmentation"
+            - "text-generation"
             - "object-detection"
         model (`Optional[Any]`, defaults to `None`):
             The model that will be used by the pipeline to make predictions. This can be a model identifier or an
@@ -132,6 +206,9 @@ def pipeline(
             extracted during installation under the name `vaip_config.json`.
         model_type (`Optional[str]`, defaults to `None`):
             Model type for the model
+        tokenizer (`Optional[Union[str, PreTrainedTokenizer]]`, defaults to `None`):
+            The tokenizer that will be used by the pipeline to encode data for the model. This can be a model identifier
+            or an actual pretrained tokenizer.
         feature_extractor (`Union[str, "PreTrainedFeatureExtractor"]`, defaults to `None`):
             The feature extractor that will be used by the pipeline to encode data for the model. This can be a model
             identifier or an actual pretrained feature extractor.
@@ -161,6 +238,7 @@ def pipeline(
         revision=revision,
     )
 
+    ryzen_pipeline = transformers_pipeline
     if model.config is None:
         if model_type is None:
             raise ValueError(
@@ -177,30 +255,19 @@ def pipeline(
 
         model.config = PretrainedConfig.from_dict({})
     else:
-        library_name = TasksManager._infer_library_from_model(model)
+        library_name = TasksManager._infer_library_from_model(model) if task == "image-classification" else None
 
-        if library_name != "timm" and image_processor is None:
-            if model_id:
-                if feature_extractor is None and image_processor is None:
-                    image_processor = get_preprocessor(model_id)
-            else:
-                for preprocessor in model.preprocessors:
-                    if isinstance(preprocessor, BaseImageProcessor):
-                        image_processor = preprocessor
-                        break
-                if image_processor is None:
-                    raise ValueError(
-                        "Could not automatically find an image processor for the model, you must specifiy the argument `image_processor` explicitly."
-                    )
-
-        if task == "image-classification" and library_name == "timm":
+        if library_name == "timm":
             ryzen_pipeline = TimmImageClassificationPipeline
         else:
-            ryzen_pipeline = transformers_pipeline
+            tokenizer, image_processor = get_processor(
+                task, model, model_id, tokenizer, image_processor, feature_extractor
+            )
 
     return ryzen_pipeline(
         task=task,
         model=model,
+        tokenizer=tokenizer,
         feature_extractor=feature_extractor,
         image_processor=image_processor,
         use_fast=use_fast,
