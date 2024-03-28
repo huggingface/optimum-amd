@@ -88,7 +88,7 @@ def load_model(
     revision: str = "main",
 ):
     if model is None:
-        if task != "object-detection":
+        if task in {"image-classification", "text-generation"}:
             raise ValueError("Creating pipeline without model for the task is not supported!")
 
         model_id = SUPPORTED_TASKS[task]["default"]
