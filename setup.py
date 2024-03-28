@@ -67,6 +67,7 @@ setup(
     entry_points={"console_scripts": ["amdrun=optimum.amd.cli:amdrun"]},
     install_requires=INSTALL_REQUIRE,
     extras_require=EXTRAS_REQUIRE,
+    package_data={"optimum": ["amd/ryzenai/configs/*.json"]},
     include_package_data=True,
     zip_safe=False,
 )

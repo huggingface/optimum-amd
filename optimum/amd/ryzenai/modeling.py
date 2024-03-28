@@ -32,6 +32,7 @@ from transformers.file_utils import add_start_docstrings
 from transformers.modeling_outputs import ImageClassifierOutput, ModelOutput
 
 from .utils import (
+    DEFAULT_VAIP_CONFIG,
     ONNX_WEIGHTS_NAME,
     ONNX_WEIGHTS_NAME_STATIC,
     validate_provider_availability,
@@ -41,14 +42,6 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 CONFIG_NAME = "config.json"
-
-
-class classproperty:
-    def __init__(self, getter):
-        self.getter = getter
-
-    def __get__(self, instance, owner):
-        return self.getter(owner)
 
 
 class RyzenAIModel(OptimizedModel):
@@ -75,6 +68,7 @@ class RyzenAIModel(OptimizedModel):
 
     model_type = "onnx_model"
     auto_model_class = AutoModel
+    default_vaip_config = DEFAULT_VAIP_CONFIG
 
     def shared_attributes_init(
         self,
@@ -282,11 +276,11 @@ class RyzenAIModel(OptimizedModel):
 
         if provider == "VitisAIExecutionProvider":
             if vaip_config is None and "config_file" not in (provider_options or {}):
-                raise ValueError(
-                    "No config file provided. Please provide the necessary config file for inference with RyzenAI"
+                logger.warning(
+                    f"No Ryzen AI configuration file was provided. Using default: {cls.default_vaip_config}.\n"
                 )
-
-            if vaip_config and provider_options and "config_file" in provider_options:
+                vaip_config = cls.default_vaip_config
+            elif vaip_config is not None and provider_options is not None and "config_file" in provider_options:
                 raise ValueError(
                     "Configuration file paths were found in both `vaip_config` and `provider_options`."
                     "To avoid conflicts, please specify the configuration file path in either `vaip_config`"

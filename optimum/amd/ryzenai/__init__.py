@@ -18,7 +18,7 @@ _import_structure = {
     ],
     "quantization": ["RyzenAIOnnxQuantizer"],
     "pipelines": ["pipeline"],
-    "version": ["__version__"],
+    "utils": ["DEFAULT_VAIP_CONFIG"],
 }
 
 
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     )
     from .pipelines import pipeline
     from .quantization import RyzenAIOnnxQuantizer
-    from .version import __version__
+    from .utils import DEFAULT_VAIP_CONFIG
 else:
     import sys
 
