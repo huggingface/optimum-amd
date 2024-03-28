@@ -99,6 +99,11 @@
     "cpu": 327,
     "matmulinteger": 15
   },
+  "hf-internal-testing_tiny-random-gptbigcodemodel": {
+    "all": 449,
+    "cpu": 428,
+    "matmulinteger": 21
+  },
   "hf-internal-testing_tiny-random-optforcausallm": {
     "all": 658,
     "cpu": 627,

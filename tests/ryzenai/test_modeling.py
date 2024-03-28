@@ -25,7 +25,6 @@ from testing_models import (
 )
 from testing_utils import (
     DEFAULT_CACHE_DIR,
-    DEFAULT_VAIP_CONFIG_TRANSFORMERS,
     RyzenAITestCaseMixin,
     get_models_to_test,
 )
@@ -292,6 +291,7 @@ class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase, RyzenAITestCa
 
 class RyzenAIModelForCausalLMIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     SUPPORTED_ARCHITECTURES = {
+        "gpt_bigcode",
         "opt",
         "llama",
         "mistral",
@@ -347,20 +347,19 @@ class RyzenAIModelForCausalLMIntegrationTest(unittest.TestCase, RyzenAITestCaseM
         # inference
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_id.replace("/", "_").lower()
-        vaip_config = DEFAULT_VAIP_CONFIG_TRANSFORMERS
 
         prompt = "Hey, are you conscious? Can you talk to me?"
         inputs = tokenizer(prompt, return_tensors="np")
         ort_inputs = {key: np.array(inputs[key], dtype=np.int64) for key in inputs.keys()}
 
-        if model_type in {"llama", "mistral"}:
+        if model_type in {"llama", "mistral", "gpt_bigcode"}:
             attention_mask = torch.tensor(inputs["attention_mask"])
             position_ids = attention_mask.long().cumsum(-1) - 1
             position_ids.masked_fill_(attention_mask == 0, 1)
             ort_inputs["position_ids"] = position_ids.numpy()
 
         outputs_ipu, outputs_cpu = self.prepare_outputs(
-            quantization_dir.name, RyzenAIModelForCausalLM, ort_inputs, vaip_config, cache_dir, cache_key
+            quantization_dir.name, RyzenAIModelForCausalLM, ort_inputs, cache_dir, cache_key
         )
 
         for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
