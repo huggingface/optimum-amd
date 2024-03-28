@@ -27,6 +27,12 @@ DEFAULT_BUILTIN_QUANT_MODE = "w8a8"
 # The commit hash of the RyzenAI-SW (https://github.com/amd/RyzenAI-SW/) repository to use
 RYZEN_SW_COMMIT_HASH = "82c524a06693a18e167f032dbf5574a98dd24452"
 
+# Vaip configs
+DEFAULT_VAIP_CONFIG = os.path.normpath(os.path.join(os.path.dirname(__file__), "./configs/vaip_config.json"))
+DEFAULT_VAIP_CONFIG_TRANSFORMERS_EAGER_MODE = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "./configs/vaip_config_transformers.json")
+)
+
 
 def validate_provider_availability(provider: str):
     """

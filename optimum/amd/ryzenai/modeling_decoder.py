@@ -19,7 +19,7 @@ from transformers.generation import GenerationMixin
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from .modeling import RyzenAIModel
-from .utils import set_builtins, set_environment_variables
+from .utils import DEFAULT_VAIP_CONFIG_TRANSFORMERS_EAGER_MODE, set_builtins, set_environment_variables
 
 
 if TYPE_CHECKING:
@@ -33,6 +33,7 @@ class RyzenAIModelForCausalLM(RyzenAIModel, GenerationMixin):
 
     main_input_name = "input_ids"
     auto_model_class = AutoModelForCausalLM
+    default_vaip_config = DEFAULT_VAIP_CONFIG_TRANSFORMERS_EAGER_MODE
 
     def __init__(
         self,

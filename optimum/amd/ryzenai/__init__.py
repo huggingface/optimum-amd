@@ -21,6 +21,7 @@ _import_structure = {
     ],
     "quantization": ["RyzenAIOnnxQuantizer"],
     "pipelines": ["pipeline"],
+    "utils": ["DEFAULT_VAIP_CONFIG"],
 }
 
 
@@ -38,6 +39,7 @@ if TYPE_CHECKING:
     from .modeling_decoder import RyzenAIModelForCausalLM
     from .pipelines import pipeline
     from .quantization import RyzenAIOnnxQuantizer
+    from .utils import DEFAULT_VAIP_CONFIG
 else:
     import sys
 

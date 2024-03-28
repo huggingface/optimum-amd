@@ -13,7 +13,6 @@ from parameterized import parameterized
 from testing_models import PYTORCH_TIMM_MODEL, PYTORCH_TIMM_MODEL_SUBSET
 from testing_utils import (
     DEFAULT_CACHE_DIR,
-    DEFAULT_VAIP_CONFIG,
     RyzenAITestCaseMixin,
     get_models_to_test,
 )
@@ -84,13 +83,12 @@ class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
         # inference
         cache_dir = DEFAULT_CACHE_DIR
         cache_key = model_name.replace("/", "_").lower()
-        vaip_config = DEFAULT_VAIP_CONFIG
 
         evaluation_set = load_dataset(dataset_name, split="validation", streaming=True, trust_remote_code=True)
         ort_inputs = preprocess_fn(next(iter(evaluation_set)), transforms)["pixel_values"].unsqueeze(0)
 
         outputs_ipu, outputs_cpu = self.prepare_outputs(
-            quantization_dir.name, RyzenAIModelForImageClassification, ort_inputs, vaip_config, cache_dir, cache_key
+            quantization_dir.name, RyzenAIModelForImageClassification, ort_inputs, cache_dir, cache_key
         )
 
         self.assertTrue(torch.allclose(outputs_ipu.logits, outputs_cpu.logits, atol=1e-4))
