@@ -16,6 +16,9 @@ _import_structure = {
         "RyzenAIModelForImageToImage",
         "RyzenAIModelForObjectDetection",
     ],
+    "modeling_decoder": [
+        "RyzenAIModelForCausalLM",
+    ],
     "quantization": ["RyzenAIOnnxQuantizer"],
     "pipelines": ["pipeline"],
     "utils": ["DEFAULT_VAIP_CONFIG"],
@@ -33,6 +36,7 @@ if TYPE_CHECKING:
         RyzenAIModelForObjectDetection,
         RyzenAIModelForSemanticSegmentation,
     )
+    from .modeling_decoder import RyzenAIModelForCausalLM
     from .pipelines import pipeline
     from .quantization import RyzenAIOnnxQuantizer
     from .utils import DEFAULT_VAIP_CONFIG

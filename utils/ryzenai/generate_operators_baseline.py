@@ -9,7 +9,7 @@ import os
 def parse_json(json_path):
     with open(json_path, "r") as json_file:
         data = json.load(json_file)
-        result = {"all": 0, "dpu": 0, "cpu": 0}
+        result = {"all": 0, "dpu": 0, "cpu": 0, "matmulinteger": 0}
         for entry in data["deviceStat"]:
             result[entry["name"].lower()] = entry["nodeNum"]
         return result

@@ -27,6 +27,13 @@ jobs:
       timeout_minutes: 1200
     secrets:
       hf_hub_read_token: ${{ secrets.HF_READ_TOKEN }}
+  run_tests_brevitas_quantized_decoder_llms:
+    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
+    with:
+      pytest_marker: "brevitas_quantized_decoder_llms_test"
+      test_file: "tests/ryzenai/test_modeling.py"
+      report_name: "tests_brevitas_quantized_decoder_llms"
+      slow_test: true
   send_results:
     name: Send results to webhook
     runs-on: ubuntu-22.04
@@ -34,6 +41,7 @@ jobs:
     needs: [
       run_tests_prequantized_models,
       run_tests_quantization,
+      run_tests_brevitas_quantized_decoder_llms,
     ]
     steps:
       - uses: actions/checkout@v3

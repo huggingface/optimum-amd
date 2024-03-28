@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from .semanticfpn import SemanticFPNImageProcessor
     from .yolov3 import YoloV3ImageProcessor
     from .yolov5 import YoloV5ImageProcessor
-    from .yolov8 import YoloV3ImageProcessor
+    from .yolov8 import YoloV8ImageProcessor
     from .yolox import YoloXImageProcessor
 else:
     import sys

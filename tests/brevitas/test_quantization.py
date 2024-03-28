@@ -4,10 +4,11 @@
 import unittest
 
 import torch
-from brevitas.nn.quant_linear import QuantLinear
-from brevitas.proxy.runtime_quant import ActQuantProxyFromInjector, DynamicActQuantProxyFromInjector
 from parameterized import parameterized
 from testing_utils import SUPPORTED_MODELS_TINY, get_quantized_model
+
+from brevitas.nn.quant_linear import QuantLinear
+from brevitas.proxy.runtime_quant import ActQuantProxyFromInjector, DynamicActQuantProxyFromInjector
 
 
 def _get_all_model_ids(model_type: str):

@@ -166,3 +166,5 @@ cython_debug/
 runs
 sweeps
 experiments
+ryzen_cache
+RyzenAI-SW
