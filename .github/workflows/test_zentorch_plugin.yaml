@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: [amd-cpu, epyc-cpu, ci]
+    runs-on: [self-hosted, amd-cpu, epyc, genoa]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
