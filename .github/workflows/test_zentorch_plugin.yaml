@@ -35,4 +35,4 @@ jobs:
             --workdir /workspace
           run: |
             pip install .[zentorch,tests]
-            pytest tests/zentorch -s -v -n auto
+            pytest tests/zentorch -s -v -n 32
