@@ -406,11 +406,11 @@ class AutoQuantizationConfig:
         op_types_to_quantize: Optional[List[str]] = None,
         extra_options: Optional[Union[Dict[str, bool], ExtraOptions]] = None,
     ):
-        if isinstance(extra_options, ExtraOptions):
-            extra_options_dict = extra_options.__dict__
-        else:
-            extra_options_dict = extra_options or {}
+        extra_options = extra_options or {}
+        if isinstance(extra_options, dict):
+            extra_options = ExtraOptions(**extra_options)
 
+        extra_options_dict = extra_options.__dict__
         extra_options_dict["activation_symmetric"] = extra_options_dict.get("activation_symmetric", True)
 
         return QuantizationConfig(
@@ -419,6 +419,7 @@ class AutoQuantizationConfig:
             activation_type=QuantType.QUInt8,
             weight_type=QuantType.QInt8,
             enable_dpu=True,
+            convert_nchw_to_nhwc=True,
             op_types_to_quantize=op_types_to_quantize,
             nodes_to_quantize=nodes_to_quantize or [],
             nodes_to_exclude=nodes_to_exclude or [],
@@ -433,11 +434,11 @@ class AutoQuantizationConfig:
         op_types_to_quantize: Optional[List[str]] = None,
         extra_options: Optional[Union[Dict[str, bool], ExtraOptions]] = None,
     ):
-        if isinstance(extra_options, ExtraOptions):
-            extra_options_dict = extra_options.__dict__
-        else:
-            extra_options_dict = extra_options or {}
+        extra_options = extra_options or {}
+        if isinstance(extra_options, dict):
+            extra_options = ExtraOptions(**extra_options)
 
+        extra_options_dict = extra_options.__dict__
         extra_options_dict["activation_symmetric"] = extra_options_dict.get("activation_symmetric", True)
 
         return QuantizationConfig(
@@ -459,10 +460,9 @@ class AutoQuantizationConfig:
         op_types_to_quantize: Optional[List[str]] = None,
         extra_options: Optional[Union[Dict[str, bool], ExtraOptions]] = None,
     ):
-        if isinstance(extra_options, ExtraOptions):
-            extra_options_dict = extra_options.__dict__
-        else:
-            extra_options_dict = extra_options or {}
+        extra_options = extra_options or {}
+        if isinstance(extra_options, dict):
+            extra_options = ExtraOptions(**extra_options)
 
         return QuantizationConfig(
             format=QuantFormat.QDQ,
@@ -472,7 +472,7 @@ class AutoQuantizationConfig:
             op_types_to_quantize=op_types_to_quantize,
             nodes_to_quantize=nodes_to_quantize or [],
             nodes_to_exclude=nodes_to_exclude or [],
-            extra_options=ExtraOptions(**extra_options_dict),
+            extra_options=extra_options,
         )
 
 

@@ -169,6 +169,7 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
             weight_type=quantization_config.weight_type.value,
             activation_type=quantization_config.activation_type.value,
             enable_dpu=quantization_config.enable_dpu,
+            convert_nchw_to_nhwc=True,
             extra_options=(
                 quantization_config.extra_options.to_diff_dict(camel_case=True)
                 if quantization_config.extra_options
