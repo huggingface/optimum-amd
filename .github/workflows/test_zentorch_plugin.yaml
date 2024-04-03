@@ -1,4 +1,4 @@
-name: ZenTorch Plugin - Test
+name: ZenTorch - Test
 
 on:
   workflow_dispatch:
@@ -18,17 +18,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build_and_test:
     runs-on: [self-hosted, amd-cpu, epyc, genoa]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Copy zentorch binary to current directory
-        run: cp /home/github_actions/actions-runner/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl .
+        run: cp
+          /home/github_actions/actions-runner/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl
+          docker/transformers-pytorch-amd-cpu-zentorch/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl
 
       - name: Build Docker image
-        run: docker build -t optimum-amd-zentorch:2.2.1 -f docker/transformers-pytorch-amd-cpu-zentorch/Dockerfile .
+        run: docker build
+          --build-arg USER_ID=$(id -u)
+          --build-arg GROUP_ID=$(id -g)
+          --tag optimum-amd-zentorch:2.2.1
+          docker/transformers-pytorch-amd-cpu-zentorch
 
       - name: Run tests
         uses: addnab/docker-run-action@v3
