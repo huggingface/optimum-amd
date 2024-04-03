@@ -22,6 +22,19 @@ from testing_utils import (
 os.environ["TOKENIZERS_PARALLELISM"] = "FALSE"
 
 
+def test_amdrun_zentorch_setup():
+    assert os.environ["OMP_DYNAMIC"] == "False"
+    assert os.environ["ZENDNN_GEMM_ALGO"] == "4"
+    assert os.environ["OMP_WAIT_POLICY"] == "ACTIVE"
+    assert os.environ["OMP_NUM_THREADS"] == f"{os.cpu_count()}"
+    assert os.environ["GOMP_CPU_AFFINITY"] == f"0-{os.cpu_count() - 1}"
+    assert os.environ["LD_PRELOAD"] == "/usr/lib/x86_64-linux-gnu/libjemalloc.so"
+    assert (
+        os.environ["MALLOC_CONF"]
+        == "oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:-1,muzzy_decay_ms:-1"
+    )
+
+
 @pytest.mark.parametrize("model_type", SUPPORTED_SIMPLE_MODELS_TINY.keys())
 def test_simple_models(model_type: str):
     model_id_and_tasks = SUPPORTED_SIMPLE_MODELS_TINY[model_type]

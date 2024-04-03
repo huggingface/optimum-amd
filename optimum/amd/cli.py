@@ -11,7 +11,7 @@ except Exception:
     ROCM_AVAILABLE = False
 
 try:
-    import zentorch  # type: ignore
+    import zentorch  # noqa: F401 # type: ignore
 
     ZENTORCH_AVAILABLE = True
 except Exception:

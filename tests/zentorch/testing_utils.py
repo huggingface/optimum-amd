@@ -179,18 +179,3 @@ def compile_diffusion_pipeline(pipeline, backend):
     pipeline.vae.decoder = torch.compile(pipeline.vae.decoder, backend=backend)
 
     return pipeline
-
-
-def assert_optimal_zentorch_setup():
-    CPU_COUNT = os.cpu_count()
-
-    assert os.environ["OMP_DYNAMIC"] == "False"
-    assert os.environ["ZENDNN_GEMM_ALGO"] == "4"
-    assert os.environ["OMP_WAIT_POLICY"] == "ACTIVE"
-    assert os.environ["OMP_NUM_THREADS"] == f"{CPU_COUNT}"
-    assert os.environ["GOMP_CPU_AFFINITY"] == f"0-{CPU_COUNT - 1}"
-    assert os.environ["LD_PRELOAD"] == "/usr/lib/x86_64-linux-gnu/libjemalloc.so"
-    assert (
-        os.environ["MALLOC_CONF"]
-        == "oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:-1,muzzy_decay_ms:-1"
-    )
