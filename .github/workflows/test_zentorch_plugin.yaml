@@ -24,6 +24,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Copy zentorch binary to current directory
+        run: cp /home/github_actions/actions-runner/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl .
+
+      - name: Build Docker image
+        run: docker build -t optimum-amd-zentorch:2.2.1 -f docker/transformers-pytorch-amd-cpu-zentorch/Dockerfile .
+
       - name: Run tests
         uses: addnab/docker-run-action@v3
         with:
