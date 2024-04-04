@@ -18,10 +18,6 @@ from testing_utils import (
 )
 
 
-# to avoid fast tokenizers warnings
-os.environ["TOKENIZERS_PARALLELISM"] = "FALSE"
-
-
 def test_amdrun_zentorch_setup():
     assert os.environ["OMP_DYNAMIC"] == "False"
     assert os.environ["ZENDNN_GEMM_ALGO"] == "4"
