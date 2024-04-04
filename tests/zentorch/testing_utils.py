@@ -24,16 +24,11 @@ from transformers.pipelines.audio_utils import ffmpeg_read
 
 
 # to avoid fast tokenizers warnings
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["TOKENIZERS_PARALLELISM"] = "FALSE"
 
 SEED = 42
 BATCH_SIZE = 2
 
-TEXT_GENERATION_KWARGS = {
-    "pad_token_id": 0,
-    "min_new_tokens": 2,
-    "max_new_tokens": 2,
-}
 FAST_TEXT_GENERATION_KWARGS = {
     "pad_token_id": 0,
     "min_new_tokens": 2,
@@ -41,12 +36,7 @@ FAST_TEXT_GENERATION_KWARGS = {
     "output_logits": True,
     "return_dict_in_generate": True,
 }
-DIFFUSION_KWARGS = {"num_inference_steps": 2}
 FAST_DIFFUSION_KWARGS = {"num_inference_steps": 2, "output_type": "pt"}
-
-SUPPORTED_SIMPLE_MODELS = [("google-bert/bert-base-uncased", "text-classification")]
-SUPPORTED_TEXT_GENERATION_MODELS = [("openai-community/gpt2", "text-generation")]
-SUPPORTED_DIFFUSION_PIPELINES = [("stabilityai/sdxl-turbo", "text-to-image")]
 
 SUPPORTED_SIMPLE_MODELS_TINY = {
     # text encoder

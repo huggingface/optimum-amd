@@ -1,4 +1,4 @@
-name: ZenTorch - Test
+name: ZenTorch Plugin - Test
 
 on:
   workflow_dispatch:
