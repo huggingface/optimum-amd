@@ -33,7 +33,10 @@ TESTS_REQUIRE = [
 
 QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]
 
+BENCHMARKS_REQUIRE = ["optimum-benchmark@git+https://github.com/huggingface/optimum-benchmark.git"]
+
 EXTRAS_REQUIRE = {
+    "benchmarks": BENCHMARKS_REQUIRE,
     "quality": QUALITY_REQUIRE,
     "tests": TESTS_REQUIRE,
     "zentorch": ["zentorch", "torch==2.2.1"],
