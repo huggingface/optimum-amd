@@ -8,7 +8,7 @@ from optimum_benchmark.logging_utils import setup_logging
 setup_logging(level="INFO")
 
 REPO_ID = "optimum-amd/ci-benchmarks"
-EXPERIMENT_NAME = "encoder"
+EXPERIMENT_NAME = "encoder_models"
 
 ENCODER_MODELS_LIST = [
     "google-bert/bert-base-uncased",

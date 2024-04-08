@@ -8,31 +8,39 @@ from optimum_benchmark.logging_utils import setup_logging
 setup_logging(level="INFO")
 
 REPO_ID = "optimum-amd/ci-benchmarks"
-EXPERIMENT_NAME = "image_diffusion"
+EXPERIMENT_NAME = "text_generation_models/static_cache"
 
-IMAGE_DIFFUSION_PIPELINES_LIST = [
-    "stabilityai/stable-diffusion-2-1",
+# for list with static cache support
+# https://github.com/search?q=repo%3Ahuggingface%2Ftransformers+_setup_cache%28self&type=code
+STATIC_CACHE_MODELS_LIST = [
+    "google/gemma-2b",
+    "google/gemma-7b",
+    "huggyllama/llama-7b",
+    "meta-llama/Llama-2-7b-hf",
+    "mistralai/Mistral-7B-v0.1",
 ]
 INPUT_SHAPES = {
     "batch_size": 1,
+    "sequence_length": 2,
 }
-CALL_KWARGS = {
-    "num_inference_steps": 2,
-    "num_images_per_prompt": 1,
+GENERATE_KWARGS = {
+    "max_new_tokens": 2,
+    "min_new_tokens": 2,
 }
 TORCH_COMPILE_CONFIG = {
     "backend": "zentorch",
 }
+CACHE_IMPLEMENTATION = "static"
 
 
-def benchmark_image_diffusion():
-    for model in IMAGE_DIFFUSION_PIPELINES_LIST:
+def benchmark_text_generation_with_static_cache():
+    for model in STATIC_CACHE_MODELS_LIST:
         launcher_config = ProcessConfig(start_method="spawn")  # isolated process
         benchmark_config = InferenceConfig(
             memory=True,
             latency=True,
             input_shapes=INPUT_SHAPES,
-            call_kwargs=CALL_KWARGS,
+            generate_kwargs=GENERATE_KWARGS,
         )
         backend_config = PyTorchConfig(
             model=model,
@@ -40,6 +48,7 @@ def benchmark_image_diffusion():
             no_weights=True,
             torch_compile=True,
             torch_compile_config=TORCH_COMPILE_CONFIG,
+            cache_implementation=CACHE_IMPLEMENTATION,
         )
 
         experiment_config = ExperimentConfig(
@@ -66,4 +75,4 @@ def benchmark_image_diffusion():
 
 
 if __name__ == "__main__":
-    benchmark_image_diffusion()
+    benchmark_text_generation_with_static_cache()
