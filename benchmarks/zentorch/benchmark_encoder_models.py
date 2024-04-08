@@ -47,18 +47,18 @@ def benchmark_encoder():
 
         benchmark_report = launch(experiment_config)
 
-        experiment_config.push_to_hub(
-            save_path=f"zentorch/{EXPERIMENT_NAME}/{model}",
-            commit_message="Added experiment config",
-            repo_id=REPO_ID,
-            private=True,
-        )
-        benchmark_report.push_to_hub(
-            save_path=f"zentorch/{EXPERIMENT_NAME}/{model}",
-            commit_message="Added benchmark report",
-            repo_id=REPO_ID,
-            private=True,
-        )
+        # experiment_config.push_to_hub(
+        #     save_path=f"zentorch/{EXPERIMENT_NAME}/{model}",
+        #     commit_message="Added experiment config",
+        #     repo_id=REPO_ID,
+        #     private=True,
+        # )
+        # benchmark_report.push_to_hub(
+        #     save_path=f"zentorch/{EXPERIMENT_NAME}/{model}",
+        #     commit_message="Added benchmark report",
+        #     repo_id=REPO_ID,
+        #     private=True,
+        # )
 
 
 if __name__ == "__main__":
