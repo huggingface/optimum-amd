@@ -70,7 +70,7 @@ class BrevitasQuantizationConfig:
     weights_quant_granularity: Literal["per_tensor", "per_channel", "per_group"] = "per_channel"
     weights_group_size: Optional[int] = None
     quantize_zero_point: bool = True
-    activations_calibration_method: Optional[Literal["stats", "mse"]] = "mse"
+    activations_calibration_method: Optional[Literal["stats", "mse"]] = "stats"
     is_static: bool = False
     activations_symmetric: Optional[bool] = False
     activations_quant_granularity: Optional[Literal["per_tensor", "per_row", "per_group"]] = "per_tensor"
@@ -124,6 +124,11 @@ class BrevitasQuantizationConfig:
         if self.scale_precision == "power_of_two_scale" and not self.is_static:
             raise ValueError(
                 'The quantization configuration `scale_precision="power_of_two_scale"` is not supported along `is_static=False`. Dynamic activation quantization with power-of-two scale factor is not supported.'
+            )
+
+        if self.activations_calibration_method == "mse" and self.is_static:
+            raise ValueError(
+                'The quantization configuration `activations_calibration_method="mse"` is not supported along `is_static=True`. Dynamic activation quantization with mse calibration is not supported.'
             )
 
         if self.weights_only:
