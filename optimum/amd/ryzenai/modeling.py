@@ -111,7 +111,7 @@ class RyzenAIModel(OptimizedModel):
     def __init__(
         self,
         model: ort.InferenceSession,
-        config: PretrainedConfig,
+        config: Optional[PretrainedConfig] = None,
         vaip_config: Union[str, Path] = None,
         model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
         preprocessors: Optional[List] = None,
@@ -175,11 +175,12 @@ class RyzenAIModel(OptimizedModel):
         else:
             providers_options = None
 
-        is_dynamic = RyzenAIModel._check_uses_static_shape(path)
-        if is_dynamic and provider == "VitisAIExecutionProvider":
-            raise ValueError(
-                "The model provided has dynamic axes in input/output. Please provide model with static shapes for inference with RyzenAI."
-            )
+        from .utils import matmul_group_onnx
+
+        # from pdb import set_trace; set_trace()
+
+        path = matmul_group_onnx(path)
+        # from pdb import set_trace; set_trace()
 
         return ort.InferenceSession(
             path,
@@ -225,7 +226,7 @@ class RyzenAIModel(OptimizedModel):
         return [filename, f"{name}_quantized.{extension}", f"{name}_optimized.{extension}"]
 
     @classmethod
-    def _from_pretrained(
+    def _load_model_and_processors(
         cls,
         model_id: Union[str, Path],
         config: PretrainedConfig,
@@ -298,6 +299,8 @@ class RyzenAIModel(OptimizedModel):
 
         preprocessors = None
         if model_path.is_dir():
+            cls.validate_static_shape_compatibility(model_path / file_name, provider)
+
             model = RyzenAIModel.load_model(
                 model_path / file_name,
                 provider=provider,
@@ -334,6 +337,8 @@ class RyzenAIModel(OptimizedModel):
                 # model doesn't use external data
                 pass
 
+            cls.validate_static_shape_compatibility(model_cache_path, provider)
+
             model = RyzenAIModel.load_model(
                 model_cache_path,
                 provider=provider,
@@ -347,6 +352,49 @@ class RyzenAIModel(OptimizedModel):
         # instead of the path only.
         if model_save_dir is None:
             model_save_dir = new_model_save_dir
+
+        return model, vaip_config, model_save_dir, preprocessors
+
+    @staticmethod
+    def validate_static_shape_compatibility(path: Union[str, Path], provider: str):
+        return True
+
+    @classmethod
+    def _from_pretrained(
+        cls,
+        model_id: Union[str, Path],
+        config: PretrainedConfig,
+        vaip_config: Optional[str] = None,
+        use_auth_token: Optional[Union[bool, str]] = None,
+        revision: Optional[str] = None,
+        force_download: bool = False,
+        cache_dir: Optional[str] = None,
+        file_name: Optional[str] = None,
+        subfolder: str = "",
+        local_files_only: bool = False,
+        provider: str = "VitisAIExecutionProvider",
+        session_options: Optional[ort.SessionOptions] = None,
+        provider_options: Optional[Dict[str, Any]] = None,
+        model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
+        **kwargs,
+    ) -> "RyzenAIModel":
+        model, vaip_config, model_save_dir, preprocessors = cls._load_model_and_processors(
+            model_id,
+            config,
+            vaip_config,
+            use_auth_token,
+            revision,
+            force_download,
+            cache_dir,
+            file_name,
+            subfolder,
+            local_files_only,
+            provider,
+            session_options,
+            provider_options,
+            model_save_dir,
+            **kwargs,
+        )
 
         return cls(
             model=model,
@@ -400,21 +448,41 @@ class RyzenAIModel(OptimizedModel):
         **kwargs,
     ):
         """
-        provider (`str`, defaults to `"VitisAIExecutionProvider"`):
-            ONNX Runtime provider to use for loading the model. See https://onnxruntime.ai/docs/execution-providers/ for
-            possible providers.
-        session_options (`Optional[onnxruntime.SessionOptions]`, defaults to `None`),:
-            ONNX Runtime session options to use for loading the model.
-        provider_options (`Optional[Dict[str, Any]]`, defaults to `None`):
-            Provider option dictionaries corresponding to the provider used. See available options
-            for each provider: https://onnxruntime.ai/docs/api/c/group___global.html .
-        kwargs (`Dict[str, Any]`):
-            Will be passed to the underlying model loading methods.
+        Instantiate a RyzenAIModel model from a model identifier.
 
-        > Parameters for decoder models (RyzenAIForSpeechSeq2Seq)
-
-        use_cache (`Optional[bool]`, defaults to `True`):
-            Whether or not past key/values cache should be used. Defaults to `True`.
+        Args:
+            model_id (`Union[str, Path]`):
+                The model identifier to instantiate the model from.
+            vaip_config (`str`, defaults to `None`):
+                The path to the Vitis AI config file.
+            export (`bool`, defaults to `False`):
+                Whether to export the model to ONNX before loading it.
+            force_download (`bool`, defaults to `False`):
+                Whether to force the download of the model files.
+            use_auth_token (`Optional[str]`, defaults to `None`):
+                The authorization token to use for downloading the model.
+            cache_dir (`Optional[str]`, defaults to `None`):
+                The directory to cache the model files.
+            subfolder (`str`, defaults to `""`):
+                The subfolder to look for the model files.
+            config (`Optional[PretrainedConfig]`, defaults to `None`):
+                The configuration to use for the model.
+            local_files_only (`bool`, defaults to `False`):
+                Whether to only look for the model files locally.
+            provider (`str`, defaults to `"VitisAIExecutionProvider"`):
+                ONNX Runtime provider to use for loading the model.
+            session_options (`Optional[onnxruntime.SessionOptions]`, defaults to `None`):
+                ONNX Runtime session options to use for loading the model.
+            provider_options (`Optional[Dict[str, Any]]`, defaults to `None`):
+                Provider option dictionaries corresponding to the provider used.
+            trust_remote_code (`bool`, defaults to `False`):
+                Whether to trust the remote code when exporting the model.
+            revision (`Optional[str]`, defaults to `None`):
+                The revision of the model to load.
+            library_name (`Optional[Dict[str, Any]]`, defaults to `None`):
+                The library name to use for the model.
+            kwargs (`Dict[str, Any]`):
+                Will be passed to the underlying model loading methods.
 
         Returns:
             `RyzenAIModel`: The loaded RyzenAIModel model.
@@ -564,6 +632,12 @@ class RyzenAIModel(OptimizedModel):
 
         return model_path
 
+    def _convert_to_numpy(self, value, use_torch):
+        return value.cpu().detach().numpy() if use_torch else value
+
+    def _convert_to_tensor(self, value, use_torch):
+        return torch.from_numpy(value) if use_torch else torch.from_numpy(value)
+
 
 class RyzenAIModelForCustomTasks(RyzenAIModel):
     def forward(self, **kwargs):
@@ -671,6 +745,14 @@ class RyzenAIModelForImageClassification(RyzenAIModelForCustomTasks):
             model_save_dir=save_dir,
             **kwargs,
         )
+
+    @staticmethod
+    def validate_static_shape_compatibility(path: Union[str, Path], provider: str):
+        is_dynamic = RyzenAIModel._check_uses_static_shape(path)
+        if is_dynamic and provider == "VitisAIExecutionProvider":
+            raise ValueError(
+                "The model provided has dynamic axes in input/output. Please provide model with static shapes for inference with RyzenAI."
+            )
 
 
 class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):

@@ -12,20 +12,29 @@ import onnx
 import onnxruntime
 import pytest
 import requests
+import torch
 from parameterized import parameterized
 from PIL import Image
-from testing_utils import (
-    DEFAULT_CACHE_DIR,
+from testing_models import (
+    PYTORCH_MODELS,
     RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS,
     RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION,
     RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION,
     RYZEN_PREQUANTIZED_MODEL_IMAGE_TO_IMAGE,
     RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION,
+)
+from testing_utils import (
+    DEFAULT_CACHE_DIR,
     RyzenAITestCaseMixin,
+    get_models_to_test,
 )
 
+from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
+from optimum.amd.brevitas.data_utils import get_dataset_for_model
+from optimum.amd.brevitas.export import onnx_export_from_quantized_model
 from optimum.amd.ryzenai import (
     RyzenAIModel,
+    RyzenAIModelForCausalLM,
     RyzenAIModelForCustomTasks,
     RyzenAIModelForImageClassification,
     RyzenAIModelForImageToImage,
@@ -37,6 +46,7 @@ from optimum.utils import (
     DummyInputGenerator,
     logging,
 )
+from transformers import AutoTokenizer
 from transformers.testing_utils import slow
 
 
@@ -277,3 +287,90 @@ class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase, RyzenAITestCa
         self.assertEqual(baseline_ops["dpu"], current_ops["dpu"], f"DPU operators do not match! {current_ops}")
 
         gc.collect()
+
+
+class RyzenAIModelForCausalLMIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
+    SUPPORTED_ARCHITECTURES = {
+        "gpt_bigcode",
+        "opt",
+        "llama",
+        "mistral",
+    }
+
+    @parameterized.expand(
+        get_models_to_test(
+            PYTORCH_MODELS,
+            library_name="transformers",
+            supported_archs=SUPPORTED_ARCHITECTURES,
+            tasks="text-generation-with-past",
+        )
+    )
+    @pytest.mark.brevitas_quantized_decoder_llms_test
+    def test_model(self, test_name: str, model_type: str, model_id: str, task: str):
+        dataset_name = "wikitext2"
+        num_calib_samples = 10
+
+        quantization_dir = tempfile.TemporaryDirectory()
+
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+        quantization_config = BrevitasQuantizationConfig(
+            apply_gptq=False,
+            apply_weight_equalization=False,
+            activations_equalization="layerwise",
+            is_static=False,
+            weights_symmetric=True,
+            activations_symmetric=False,
+        )
+
+        # Load the data for calibration and evaluation.
+        calibration_dataset = get_dataset_for_model(
+            model_id,
+            qconfig=quantization_config,
+            dataset_name=dataset_name,
+            tokenizer=tokenizer,
+            nsamples=num_calib_samples,
+            seqlen=64,
+            split="train",
+            device=None,
+            fuse_sequences=False,
+        )
+
+        # quantize model
+        quantizer = BrevitasQuantizer.from_pretrained(model_id, device_map="cpu")
+
+        quantized_model = quantizer.quantize(quantization_config, calibration_dataset)
+
+        # export model
+        onnx_export_from_quantized_model(quantized_model, quantization_dir.name)
+
+        # inference
+        cache_dir = DEFAULT_CACHE_DIR
+        cache_key = model_id.replace("/", "_").lower()
+
+        prompt = "Hey, are you conscious? Can you talk to me?"
+        inputs = tokenizer(prompt, return_tensors="np")
+        ort_inputs = {key: np.array(inputs[key], dtype=np.int64) for key in inputs.keys()}
+
+        if model_type in {"llama", "mistral", "gpt_bigcode"}:
+            attention_mask = torch.tensor(inputs["attention_mask"])
+            position_ids = attention_mask.long().cumsum(-1) - 1
+            position_ids.masked_fill_(attention_mask == 0, 1)
+            ort_inputs["position_ids"] = position_ids.numpy()
+
+        outputs_ipu, outputs_cpu = self.prepare_outputs(
+            quantization_dir.name, RyzenAIModelForCausalLM, ort_inputs, cache_dir, cache_key
+        )
+
+        for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
+            self.assertTrue(np.allclose(output_ipu, output_cpu, atol=1e-4))
+
+        current_ops = self.get_ops(cache_dir, cache_key)
+        baseline_ops = self.get_baseline_ops(cache_key)
+
+        self.assertEqual(baseline_ops["all"], current_ops["all"], f"Total operators do not match! {current_ops}")
+        self.assertEqual(
+            baseline_ops["matmulinteger"], current_ops["matmulinteger"], f"MATMULINTEGERs do not match! {current_ops}"
+        )
+
+        quantization_dir.cleanup()
