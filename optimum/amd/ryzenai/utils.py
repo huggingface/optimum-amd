@@ -7,6 +7,8 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
+from pathlib import Path
 
 import onnxruntime as ort
 
@@ -53,6 +55,48 @@ def set_builtins():
     builtins.impl = os.getenv("BUILTINS_IMPL", DEFAULT_BUILTIN_IMPL)
     builtins.quant_mode = os.getenv("BUILTINS_IMPL", DEFAULT_BUILTIN_QUANT_MODE)
     logger.info(f"Builtins: impl={builtins.impl}, quant_mode={builtins.quant_mode}")
+
+
+def set_paths(paths):
+    for path in paths:
+        sys.path.append(path)
+
+
+def restore_paths(paths):
+    for path in paths:
+        sys.path.remove(path)
+
+
+def matmul_group_onnx(model_path: str):
+    model_path = normalize_path(model_path)
+
+    check_env_path_exists("RYZENAI_SW_PATH")
+    ryzenai_sw_path = os.environ.get("RYZENAI_SW_PATH")
+
+    onnx_graph_path = normalize_path(os.path.join(ryzenai_sw_path, "example", "transformers", "onnx-ops", "python"))
+    onnx_group_matmul_path = normalize_path(os.path.join(onnx_graph_path, "group", "matmulint"))
+    sys_paths = [onnx_graph_path, onnx_group_matmul_path]
+
+    model_path = Path(model_path)
+    group_model = normalize_path(os.path.join(model_path.parent, "grouped_" + model_path.name))
+
+    set_paths(sys_paths)
+    from onnx_group import GroupMatMulInteger
+
+    g = GroupMatMulInteger(model_path)
+    status = g.group()
+
+    if status is False:
+        logger.warning("Unable to perform MatMulInteger group operation....")
+        restore_paths(sys_paths)
+        return model_path.as_posix()
+    else:
+        logger.info("MatMulInteger Grouping successfull....")
+        g.save(group_model)
+
+    restore_paths(sys_paths)
+
+    return group_model
 
 
 def clone_repository(repo_url: str, repo_path: str):
@@ -109,6 +153,8 @@ def set_environment_variables():
     ryzenai_transformers_path = normalize_path(os.path.join(ryzenai_sw_path, "example/transformers"))
     third_party = normalize_path(os.path.join(ryzenai_transformers_path, "third_party"))
     device = os.environ.get("DEVICE", DEFAULT_DEVICE)
+
+    set_env_var("RYZENAI_SW_PATH", ryzenai_sw_path)
 
     set_env_var("THIRD_PARTY", third_party)
     check_env_path_exists("THIRD_PARTY")

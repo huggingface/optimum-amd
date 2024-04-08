@@ -175,6 +175,13 @@ class RyzenAIModel(OptimizedModel):
         else:
             providers_options = None
 
+        from .utils import matmul_group_onnx
+
+        # from pdb import set_trace; set_trace()
+
+        path = matmul_group_onnx(path)
+        # from pdb import set_trace; set_trace()
+
         return ort.InferenceSession(
             path,
             providers=providers,

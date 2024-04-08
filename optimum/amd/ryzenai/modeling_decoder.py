@@ -19,7 +19,11 @@ from transformers.generation import GenerationMixin
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from .modeling import RyzenAIModel
-from .utils import DEFAULT_VAIP_CONFIG_TRANSFORMERS_EAGER_MODE, set_builtins, set_environment_variables
+from .utils import (
+    DEFAULT_VAIP_CONFIG_TRANSFORMERS_EAGER_MODE,
+    set_builtins,
+    set_environment_variables,
+)
 
 
 if TYPE_CHECKING:
