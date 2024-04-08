@@ -5,7 +5,7 @@ from optimum_benchmark.launchers.process.config import ProcessConfig
 from optimum_benchmark.logging_utils import setup_logging
 
 
-setup_logging(level="INFO")
+setup_logging(level="ERROR")
 
 REPO_ID = "optimum-amd/ci-benchmarks"
 EXPERIMENT_NAME = "image_diffusion_pipelines"
