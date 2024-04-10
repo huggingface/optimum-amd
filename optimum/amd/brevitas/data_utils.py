@@ -40,7 +40,14 @@ def recursive_to_device(tensor_or_iterable: Union[Iterable, torch.Tensor], devic
 
 
 @torch.no_grad()
-def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length: int, tokenizer: Any, seed: int = 0):
+def compute_perplexity(
+    model: torch.nn.Module,
+    data: List[Dict],
+    context_length: int,
+    tokenizer: Any,
+    seed: int = 0,
+    add_bos_token_id: bool = True,
+):
     random.seed(seed)
     np.random.seed(seed)
     torch.random.manual_seed(seed)
@@ -50,10 +57,15 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
     cross_entropy_loss = nn.CrossEntropyLoss()
 
     nlls = []
+    total_eval_length = 0
     for sample in tqdm(data, desc="Computing perplexity..."):
-        sample_length = sample["input_ids"].shape[1]
-        for start_index in range(0, sample_length, context_length * 2):
-            end_index = min(start_index + sample_length, sample_length - 1)
+        batch_size, sample_length = sample["input_ids"].shape
+        for start_index in range(0, sample_length, context_length):
+            end_index = min(start_index + 2 * context_length, sample_length - 1)
+
+            eval_length = end_index - start_index + 1 - context_length
+            if eval_length <= 0:
+                continue
 
             subsample = {
                 "input_ids": sample["input_ids"][:, start_index : end_index + 1],
@@ -64,8 +76,19 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
             if "past_key_values" in sample and isinstance(model, torch.fx.GraphModule):
                 subsample["past_key_values"] = sample["past_key_values"]
 
+            dtype = subsample["input_ids"].dtype
+            device = subsample["input_ids"].device
+
             # Add BOS token.
-            subsample["input_ids"][:, 0] = tokenizer.bos_token_id
+            current_context_length = context_length
+            if add_bos_token_id and not torch.all(subsample["input_ids"][:, 0] == tokenizer.bos_token_id):
+                bos_tensor = torch.full((batch_size, 1), fill_value=tokenizer.bos_token_id, dtype=dtype, device=device)
+                bos_mask_tensor = torch.full((batch_size, 1), fill_value=1, dtype=dtype, device=device)
+
+                subsample["input_ids"] = torch.cat((subsample["input_ids"], bos_tensor), dim=-1)
+                subsample["attention_mask"] = torch.cat((subsample["attention_mask"], bos_mask_tensor), dim=-1)
+
+                current_context_length += 1
 
             use_accelerate = hasattr(model, "hf_device_map")
             if not use_accelerate or (use_accelerate and not hasattr(model, "_hf_hook")):
@@ -80,19 +103,21 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
 
             lm_logits = model(**subsample)["logits"]
 
-            reference_labels = subsample["input_ids"][:, context_length:]
+            reference_labels = subsample["input_ids"][:, current_context_length:]
 
-            shift_logits = lm_logits[:, context_length - 1 : -1]
+            shift_logits = lm_logits[:, current_context_length - 1 : -1]
 
             # Fuse batch and sequence length dimensions.
             reference_labels = reference_labels.view(reference_labels.shape[-1])
             shift_logits = shift_logits.view(-1, shift_logits.shape[-1])
 
             loss = cross_entropy_loss(shift_logits, reference_labels)
+            neg_log_likelihood = loss.float() * eval_length
 
-            nlls.append(loss)
+            total_eval_length += eval_length
+            nlls.append(neg_log_likelihood)
 
-    ppl = torch.exp(torch.stack(nlls).mean())
+    ppl = torch.exp(torch.stack(nlls).sum() / total_eval_length)
 
     return ppl
 
