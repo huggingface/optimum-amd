@@ -24,7 +24,7 @@ def get_amd_zentorch_env():
     before running the command passed to it.
 
     Usage: amdrun <script> <script_args>
-    Example: amdrun torchrun --nproc_per_node 4 train.py
+    Example: amdrun python train.py
     """
 
     CPU_COUNT = os.cpu_count()
