@@ -14,6 +14,7 @@ from brevitas_examples.llm.llm_quant.equalize import apply_weight_equalization
 from tqdm import tqdm
 
 from optimum.exporters import TasksManager
+from optimum.exporters.onnx.utils import MODEL_TYPES_REQUIRING_POSITION_IDS
 from optimum.quantization_base import OptimumQuantizer
 from transformers.utils.fx import symbolic_trace
 
@@ -160,6 +161,9 @@ class BrevitasQuantizer(OptimumQuantizer):
                 input_name in forward_signature for input_name in ["input_ids", "attention_mask", "past_key_values"]
             ):
                 input_names = ["input_ids", "attention_mask", "past_key_values"]
+
+                if self.config.model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                    input_names.append("position_ids")
             else:
                 raise ValueError(
                     f"Quantization with an FX graph is currently only supported for models taking `input_ids`, `attention_mask` and `past_key_values` as inputs. The model only has the following inputs: {forward_signature}"

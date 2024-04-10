@@ -11,6 +11,7 @@ import torch.nn as nn
 from datasets import load_dataset
 from tqdm import tqdm
 
+from optimum.exporters.onnx.utils import MODEL_TYPES_REQUIRING_POSITION_IDS
 from optimum.utils.normalized_config import NormalizedConfigManager
 from transformers import AutoConfig
 
@@ -89,6 +90,11 @@ def compute_perplexity(
                 subsample["attention_mask"] = torch.cat((subsample["attention_mask"], bos_mask_tensor), dim=-1)
 
                 current_context_length += 1
+
+            if "position_ids" in sample:
+                subsample["position_ids"] = torch.arange(
+                    subsample["input_ids"].shape[1], dtype=dtype, device=device
+                ).expand(batch_size, -1)
 
             use_accelerate = hasattr(model, "hf_device_map")
             if not use_accelerate or (use_accelerate and not hasattr(model, "_hf_hook")):
@@ -286,25 +292,36 @@ def get_dataset_for_model(
         tokenizer=tokenizer, nsamples=nsamples, seqlen=seqlen, split=split, fuse_sequences=fuse_sequences, seed=seed
     )
 
+    config = AutoConfig.from_pretrained(model_name_or_path)
+
     # In case the dataset is loaded to be used with an fx.GraphModule, we need to add empty past_key_values inputs in the dataset.
     if qconfig.requires_fx_graph():
-        config = AutoConfig.from_pretrained(model_name_or_path)
-
         normalized_config_class = NormalizedConfigManager.get_normalized_config_class(config.model_type)
         normalized_config = normalized_config_class(config)
 
-        num_heads = normalized_config.num_attention_heads
-        head_dim = normalized_config.hidden_size // num_heads
+        num_kv_heads = (
+            normalized_config.num_key_value_heads
+            if hasattr(normalized_config, "num_key_value_heads")
+            else normalized__config.numattention_heads
+        )
+        head_dim = normalized_config.hidden_size // normalized_config.num_attention_heads
         num_layers = normalized_config.num_layers
 
         for sample in data:
             sample["past_key_values"] = tuple(
                 (
-                    torch.zeros(1, num_heads, 0, head_dim, device=sample["input_ids"].device),
-                    torch.zeros(1, num_heads, 0, head_dim, device=sample["input_ids"].device),
+                    torch.zeros(1, num_kv_heads, 0, head_dim, device=sample["input_ids"].device),
+                    torch.zeros(1, num_kv_heads, 0, head_dim, device=sample["input_ids"].device),
                 )
                 for _ in range(num_layers)
             )
+
+    if config.model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+        for sample in data:
+            input_ids = sample["input_ids"]
+            sample["position_ids"] = torch.arange(
+                input_ids.shape[1], device=input_ids.device, dtype=input_ids.dtype
+            ).unsqueeze(0)
 
     data = DatasetToDevice(data, device=device)
 
