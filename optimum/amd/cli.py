@@ -94,7 +94,7 @@ def amdrun():
     Usage: amdrun <script> <script_args>
     Example: amdrun torchrun --nproc_per_node 4 train.py
     """
-    env = {}
+    env = os.environ.copy()
 
     if ROCM_AVAILABLE:
         env.update(get_amd_rocm_env())
@@ -102,6 +102,6 @@ def amdrun():
     if ZENTORCH_AVAILABLE:
         env.update(get_amd_zentorch_env())
 
-    cmd_args = [f"{k}={v}" for k, v in env.items()] + sys.argv[1:]
-    exit_code = subprocess.run(cmd_args, shell=True).returncode
+    exit_code = subprocess.run(sys.argv[1:], env=env).returncode
+
     sys.exit(exit_code)
