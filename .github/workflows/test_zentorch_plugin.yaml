@@ -43,6 +43,7 @@ jobs:
           options: |
             --rm
             --shm-size 64G
+            --entrypoint /bin/bash
             --volume ${{ github.workspace }}:/workspace
             --workdir /workspace
           run: |
