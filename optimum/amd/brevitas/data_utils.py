@@ -61,7 +61,7 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
             }
 
             # In case we are using torch.fx, we can not have optional inputs, and we have traced the model with past_key_values inputs, thus we need them here as well.
-            if "past_key_values" in sample:
+            if "past_key_values" in sample and isinstance(model, torch.fx.GraphModule):
                 subsample["past_key_values"] = sample["past_key_values"]
 
             # Add BOS token.
