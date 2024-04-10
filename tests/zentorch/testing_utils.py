@@ -6,17 +6,10 @@ import torch
 import zentorch  # noqa: F401
 from diffusers import DiffusionPipeline
 
+from optimum.exporters.tasks import TasksManager
 from transformers import (
     AutoFeatureExtractor,
     AutoImageProcessor,
-    AutoModelForAudioClassification,
-    AutoModelForCausalLM,
-    AutoModelForImageClassification,
-    AutoModelForSeq2SeqLM,
-    AutoModelForSequenceClassification,
-    AutoModelForSpeechSeq2Seq,
-    AutoModelForVision2Seq,
-    AutoModelForVisualQuestionAnswering,
     AutoProcessor,
     AutoTokenizer,
 )
@@ -30,6 +23,7 @@ SEED = 42
 BATCH_SIZE = 2
 
 FAST_TEXT_GENERATION_KWARGS = {
+    "pad_token_id": 0,
     "min_new_tokens": 2,
     "max_new_tokens": 2,
     "output_logits": True,
@@ -67,12 +61,8 @@ SUPPORTED_TEXT_GENERATION_MODELS_TINY = {
     "bart": {"hf-internal-testing/tiny-random-bart": ["text2text-generation"]},
     # image encoder text decoder
     "llava": {"IlyasMoutawwakil/tiny-random-LlavaForConditionalGeneration": ["image-to-text"]},
-    "blip": {
-        "hf-internal-testing/tiny-random-BlipForConditionalGeneration": ["image-to-text", "visual-question-answering"]
-    },
-    "blip2": {
-        "hf-internal-testing/tiny-random-Blip2ForConditionalGeneration": ["image-to-text", "visual-question-answering"]
-    },
+    "blip": {"hf-internal-testing/tiny-random-BlipForConditionalGeneration": ["image-to-text"]},
+    "blip2": {"hf-internal-testing/tiny-random-Blip2ForConditionalGeneration": ["image-to-text"]},
     # automatic speech recognition
     "whisper": {"openai/whisper-tiny": ["automatic-speech-recognition"]},
 }
@@ -84,24 +74,8 @@ SUPPORTED_DIFFUSION_PIPELINES_TINY = {
 
 
 def load_transformers_model(model_id: str, task: str):
-    if task == "text-classification":
-        return AutoModelForSequenceClassification.from_pretrained(model_id)
-    elif task == "image-classification":
-        return AutoModelForImageClassification.from_pretrained(model_id)
-    elif task == "text-generation":
-        return AutoModelForCausalLM.from_pretrained(model_id)
-    elif task == "text2text-generation":
-        return AutoModelForSeq2SeqLM.from_pretrained(model_id)
-    elif task == "automatic-speech-recognition":
-        return AutoModelForSpeechSeq2Seq.from_pretrained(model_id)
-    elif task == "audio-classification":
-        return AutoModelForAudioClassification.from_pretrained(model_id)
-    elif task == "image-to-text":
-        return AutoModelForVision2Seq.from_pretrained(model_id)
-    elif task == "visual-question-answering":
-        return AutoModelForVisualQuestionAnswering.from_pretrained(model_id)
-    else:
-        raise ValueError(f"Task {task} not supported")
+    model_class = TasksManager().get_model_class_for_task(task, framework="pt", library="transformers")
+    return model_class.from_pretrained(model_id)
 
 
 def load_diffusion_pipeline(pipeline_id: str, task: str):
