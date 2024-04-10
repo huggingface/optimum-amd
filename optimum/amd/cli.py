@@ -102,6 +102,6 @@ def amdrun():
     if ZENTORCH_AVAILABLE:
         env.update(get_amd_zentorch_env())
 
-    cmd_string = f"{' '.join(f'{k}={v}' for k, v in env.items())} {' '.join(sys.argv[1:])}"
-    exit_code = os.system(cmd_string)
+    cmd_args = [f"{k}={v}" for k, v in env.items()] + sys.argv[1:]
+    exit_code = subprocess.run(cmd_args, shell=True).returncode
     sys.exit(exit_code)
