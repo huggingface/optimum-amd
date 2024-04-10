@@ -302,7 +302,7 @@ def get_dataset_for_model(
         num_kv_heads = (
             normalized_config.num_key_value_heads
             if hasattr(normalized_config, "num_key_value_heads")
-            else normalized__config.numattention_heads
+            else normalized_config.numattention_heads
         )
         head_dim = normalized_config.hidden_size // normalized_config.num_attention_heads
         num_layers = normalized_config.num_layers
