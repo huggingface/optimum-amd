@@ -30,7 +30,6 @@ SEED = 42
 BATCH_SIZE = 2
 
 FAST_TEXT_GENERATION_KWARGS = {
-    "pad_token_id": 0,
     "min_new_tokens": 2,
     "max_new_tokens": 2,
     "output_logits": True,
