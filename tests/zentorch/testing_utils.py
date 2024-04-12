@@ -4,7 +4,7 @@ import PIL
 import requests
 import torch
 import zentorch  # noqa: F401
-from diffusers import DiffusionPipeline
+from diffusers import AutoPipelineForText2Image
 
 from optimum.exporters.tasks import TasksManager
 from transformers import (
@@ -23,7 +23,6 @@ SEED = 42
 BATCH_SIZE = 2
 
 FAST_TEXT_GENERATION_KWARGS = {
-    "pad_token_id": 0,
     "min_new_tokens": 2,
     "max_new_tokens": 2,
     "output_logits": True,
@@ -31,7 +30,7 @@ FAST_TEXT_GENERATION_KWARGS = {
 }
 FAST_DIFFUSION_KWARGS = {"num_inference_steps": 2, "output_type": "pt"}
 
-SUPPORTED_SIMPLE_MODELS_TINY = {
+SUPPORTED_COMMON_MODELS_TINY = {
     # text encoder
     "bert": {"hf-internal-testing/tiny-random-bert": ["text-classification"]},
     "xlnet": {"hf-internal-testing/tiny-random-xlnet": ["text-classification"]},
@@ -74,13 +73,15 @@ SUPPORTED_DIFFUSION_PIPELINES_TINY = {
 
 
 def load_transformers_model(model_id: str, task: str):
-    model_class = TasksManager().get_model_class_for_task(task, framework="pt", library="transformers")
+    torch.manual_seed(SEED)
+    model_class = TasksManager().get_model_class_for_task(task, library="transformers", framework="pt")
     return model_class.from_pretrained(model_id)
 
 
 def load_diffusion_pipeline(pipeline_id: str, task: str):
+    torch.manual_seed(SEED)
     if task == "text-to-image":
-        return DiffusionPipeline.from_pretrained(pipeline_id)
+        return AutoPipelineForText2Image.from_pretrained(pipeline_id)
     else:
         raise ValueError(f"Task {task} not supported")
 
@@ -128,14 +129,17 @@ def get_diffusion_pipeline_inputs(pipeline_id: str, task: str):
 
 
 def compile_transformers_model(model, backend):
+    torch.manual_seed(SEED)
     torch._dynamo.reset()
 
     model = torch.compile(model, backend=backend)
+    model.eval()
 
     return model
 
 
 def compile_diffusion_pipeline(pipeline, backend):
+    torch.manual_seed(SEED)
     torch._dynamo.reset()
 
     pipeline.unet = torch.compile(pipeline.unet, backend=backend)
