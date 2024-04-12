@@ -55,14 +55,14 @@ SUPPORTED_TEXT_GENERATION_MODELS_TINY = {
     "gpt-neox": {"hf-internal-testing/tiny-random-GPTNeoXForCausalLM": ["text-generation"]},
     "starcoder2": {"hf-internal-testing/tiny-random-Starcoder2ForCausalLM": ["text-generation"]},
     "gpt-bigcode": {"hf-internal-testing/tiny-random-GPTBigCodeForCausalLM": ["text-generation"]},
-    # text encoder-decoder
+    # text encoder text decoder
     "t5": {"hf-internal-testing/tiny-random-t5": ["text2text-generation"]},
     "bart": {"hf-internal-testing/tiny-random-bart": ["text2text-generation"]},
     # image encoder text decoder
     "llava": {"IlyasMoutawwakil/tiny-random-LlavaForConditionalGeneration": ["image-to-text"]},
     "blip": {"hf-internal-testing/tiny-random-BlipForConditionalGeneration": ["image-to-text"]},
     "blip2": {"hf-internal-testing/tiny-random-Blip2ForConditionalGeneration": ["image-to-text"]},
-    # automatic speech recognition
+    # audio encoder text decoder
     "whisper": {"openai/whisper-tiny": ["automatic-speech-recognition"]},
 }
 
@@ -128,21 +128,21 @@ def get_diffusion_pipeline_inputs(pipeline_id: str, task: str):
     return dummy_inputs
 
 
-def compile_transformers_model(model, backend):
+def compile_transformers_model(model, backend, **kwargs):
     torch.manual_seed(SEED)
     torch._dynamo.reset()
 
-    model = torch.compile(model, backend=backend)
+    model = torch.compile(model, backend=backend, **kwargs)
     model.eval()
 
     return model
 
 
-def compile_diffusion_pipeline(pipeline, backend):
+def compile_diffusion_pipeline(pipeline, backend, **kwargs):
     torch.manual_seed(SEED)
     torch._dynamo.reset()
 
-    pipeline.unet = torch.compile(pipeline.unet, backend=backend)
-    pipeline.vae.decoder = torch.compile(pipeline.vae.decoder, backend=backend)
+    pipeline.unet = torch.compile(pipeline.unet, backend=backend, **kwargs)
+    pipeline.vae.decoder = torch.compile(pipeline.vae.decoder, backend=backend, **kwargs)
 
     return pipeline

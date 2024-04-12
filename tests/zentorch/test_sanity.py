@@ -32,7 +32,7 @@ def test_amdrun_zentorch_setup():
 
 
 @pytest.mark.parametrize("model_type", SUPPORTED_COMMON_MODELS_TINY.keys())
-def test_common_models_inference(model_type: str):
+def test_common_models(model_type: str):
     model_id_and_tasks = SUPPORTED_COMMON_MODELS_TINY[model_type]
 
     for model_id, tasks in model_id_and_tasks.items():
@@ -55,7 +55,7 @@ def test_common_models_inference(model_type: str):
 
 
 @pytest.mark.parametrize("model_type", SUPPORTED_TEXT_GENERATION_MODELS_TINY.keys())
-def test_text_generation_models_inference(model_type: str):
+def test_text_generation_models(model_type: str):
     model_id_and_tasks = SUPPORTED_TEXT_GENERATION_MODELS_TINY[model_type]
 
     for model_id, tasks in model_id_and_tasks.items():
