@@ -38,17 +38,19 @@ jobs:
 
       - name: Run benchmarks
         uses: addnab/docker-run-action@v3
+        env:
+          HF_WRITE_TOKEN: ${{ secrets.HF_WRITE_TOKEN }}
         with:
           image: optimum-amd-zentorch:2.2.1
           options: |
             --rm
             --shm-size 64G
-            --env HF_READ_TOKEN=${{ secrets.HF_READ_TOKEN }}
+            --env HF_WRITE_TOKEN
             --volume ${{ github.workspace }}:/workspace
             --workdir /workspace
           run: |
             pip install .[zentorch,benchmarks]
-            huggingface-cli login --token $HF_READ_TOKEN
+            huggingface-cli login --token $HF_WRITE_TOKEN
             amdrun python benchmarks/zentorch/benchmark_encoder_models.py
             amdrun python benchmarks/zentorch/benchmark_text_generation_models.py
             amdrun python benchmarks/zentorch/benchmark_image_diffusion_pipelines.py

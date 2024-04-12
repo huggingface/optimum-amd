@@ -2,13 +2,10 @@ from optimum_benchmark.backends.pytorch.config import PyTorchConfig
 from optimum_benchmark.benchmarks.inference.config import InferenceConfig
 from optimum_benchmark.experiment import ExperimentConfig, launch
 from optimum_benchmark.launchers.process.config import ProcessConfig
-from optimum_benchmark.logging_utils import setup_logging
 
-
-setup_logging(level="ERROR")
 
 REPO_ID = "optimum-amd/ci-benchmarks"
-EXPERIMENT_NAME = "image_diffusion_pipelines"
+EXPERIMENT_NAME = "zentorch_image_diffusion"
 
 IMAGE_DIFFUSION_PIPELINES_LIST = [
     "stabilityai/stable-diffusion-2-1",
@@ -50,18 +47,18 @@ def benchmark_image_diffusion():
 
         benchmark_report = launch(experiment_config)
 
-        # experiment_config.push_to_hub(
-        #     save_path=f"zentorch/{EXPERIMENT_NAME}/{model}",
-        #     commit_message="Added experiment config",
-        #     repo_id=REPO_ID,
-        #     private=True,
-        # )
-        # benchmark_report.push_to_hub(
-        #     save_path=f"zentorch/{EXPERIMENT_NAME}/{model}",
-        #     commit_message="Added benchmark report",
-        #     repo_id=REPO_ID,
-        #     private=True,
-        # )
+        experiment_config.push_to_hub(
+            commit_message="Added experiment config",
+            subfolder=f"{EXPERIMENT_NAME}/{model}",
+            repo_id=REPO_ID,
+            private=True,
+        )
+        benchmark_report.push_to_hub(
+            commit_message="Added benchmark report",
+            subfolder=f"{EXPERIMENT_NAME}/{model}",
+            repo_id=REPO_ID,
+            private=True,
+        )
 
 
 if __name__ == "__main__":
