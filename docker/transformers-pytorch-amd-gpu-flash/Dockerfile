@@ -31,7 +31,7 @@ ARG FLASH_ATT_V2_COMMIT_ROCM=2554f490101742ccdc56620a938f847f61754be6
 
 RUN git clone https://github.com/ROCm/flash-attention.git flash-attention-v2 && \
     cd flash-attention-v2 && git submodule update --init --recursive && \
-	GPU_ARCHS="gfx90a;gfx942" PYTORCH_ROCM_ARCH="gfx90a;gfx942" python setup.py install && \
+    GPU_ARCHS="gfx90a;gfx942" PYTORCH_ROCM_ARCH="gfx90a;gfx942" python setup.py install && \
     cd .. && \
     rm -rf flash-attention
 
