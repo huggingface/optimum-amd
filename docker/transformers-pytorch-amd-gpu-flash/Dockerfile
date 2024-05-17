@@ -27,8 +27,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.0 --no-cache-dir
 RUN pip install -U --no-cache-dir ninja packaging git+https://github.com/facebookresearch/detectron2.git pytesseract "itsdangerous<2.1.0"
 
-ARG PYTORCH_ROCM_ARCH="gfx90a;gfx942"
-ARG GPU_ARCHS="gfx90a;gfx942"
 ARG FLASH_ATT_V2_COMMIT_ROCM=2554f490101742ccdc56620a938f847f61754be6
 
 RUN git clone https://github.com/ROCm/flash-attention.git flash-attention-v2 && \
