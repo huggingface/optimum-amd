@@ -85,7 +85,7 @@ Meanwhile, advanced users may want to use [ROCm/bitsandbytes](https://github.com
 
 ### AWQ quantization
 
-[AWQ](https://arxiv.org/abs/2306.00978) quantization, that is supported [in Transformers](https://huggingface.co/docs/transformers/main_classes/quantization#awq-integration) and [Text Generation Inference](https://huggingface.co/docs/text-generation-inference/basic_tutorials/preparing_model#quantization), is now supported on ROCm GPUs using Exllama kernels. With recent optimizations, the  AWQ model is converted to Exllama/GPTQ format model at load time. This allows ROCm and CUDA devices to benefit from the high quality of AWQ checkpoints and the speed of ExllamaV2 kernels combined.
+[AWQ](https://arxiv.org/abs/2306.00978) quantization, that is supported [in Transformers](https://huggingface.co/docs/transformers/main_classes/quantization#awq-integration) and [Text Generation Inference](https://huggingface.co/docs/text-generation-inference/basic_tutorials/preparing_model#quantization), is now supported on AMD GPUs using Exllama kernels. With recent optimizations, the AWQ model is converted to Exllama/GPTQ format model at load time. This allows AMD ROCm devices to benefit from the high quality of AWQ checkpoints and the speed of ExllamaV2 kernels combined.
 
 See: [AutoAWQ](https://github.com/casper-hansen/AutoAWQ/pull/313) for more details.
 
