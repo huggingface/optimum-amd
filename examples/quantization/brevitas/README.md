@@ -6,17 +6,24 @@ The example shows an example on how to quantize a decoder-class LLM model throug
 - Optional conversion of the LLM model to an FX representation, leveraging Hugging Face transformers' tracer.
 - Support of executing post-training quantization (PTQ) algorithms and validation (SmoothQuant, GPTQ), while leveraging CPU offload from Hugging Face accelerate.
 - Validation of the quantized model.
-- Export of the quantized model as ONNX, QDQ-style.
+- Export of the quantized model as ONNX, QOP-style.
 
 ## Prerequisites
 
 The examples were tested using:
+- `python>=3.9` (required for QOP ONNX export)
 - `brevitas` installed from dev (`pip install git+https://github.com/Xilinx/brevitas.git@dev`)
-- `torch>=2.1.2`
-- `transformers` installed from main (`pip install git+https://github.com/huggingface/transformers.git@4b236aed7618d90546cd2e8797dab5b4a24c5dce`)
+- `torch>=2.2`
+- `transformers>=4.38.0`
 - `optimum>=1.17.0`
-- `optimum-amd`` installed from main (`pip install git+https://github.com/huggingface/optimum-amd`)
-- Optionally, `accelerate` installed from main (`pip install git+https://github.com/huggingface/accelerate.git`)
+- `optimum-amd` installed from main (`pip install git+https://github.com/huggingface/optimum-amd`)
+- `accelerate>=0.30.0`
+
+Note, you can install all the prerequisites with:
+
+```bash
+pip install 'optimum-amd[brevitas,tests] @ git+https://github.com/huggingface/optimum-amd.git@main'
+```
 
 ## Running the Example
 
