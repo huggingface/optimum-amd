@@ -17,6 +17,7 @@ def main(args):
     qconfig = BrevitasQuantizationConfig(
         apply_gptq=args.apply_gptq,
         apply_weight_equalization=args.apply_weight_equalization,
+        apply_bias_correction=args.apply_bias_correction,
         activations_equalization=args.activations_equalization,
         is_static=args.is_static,
         weights_symmetric=True,
