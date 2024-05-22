@@ -22,7 +22,7 @@ The examples were tested using:
 Note, you can install all the prerequisites with:
 
 ```bash
-pip install 'optimum-amd[brevitas,tests] @ git+https://github.com/huggingface/optimum-amd.git@main'
+pip install 'brevitas @ git+https://github.com/Xilinx/brevitas.git@dev' 'optimum-amd[brevitas] @ git+https://github.com/huggingface/optimum-amd.git@main'
 ```
 
 ## Running the Example
