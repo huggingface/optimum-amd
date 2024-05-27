@@ -89,7 +89,7 @@ def load_model(
         ort_model_class = SUPPORTED_TASKS[task]["class"][0]
 
         model = ort_model_class.from_pretrained(
-            model_id, vaip_config=vaip_config, use_auth_token=token, revision=revision, provider="CPUExecutionProvider"
+            model_id, vaip_config=vaip_config, use_auth_token=token, revision=revision
         )
     elif isinstance(model, RyzenAIModel):
         model_id = None
