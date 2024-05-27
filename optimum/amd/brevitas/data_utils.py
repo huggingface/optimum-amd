@@ -272,14 +272,18 @@ def get_dataset_for_model(
         normalized_config = normalized_config_class(config)
 
         num_heads = normalized_config.num_attention_heads
+        if hasattr(normalized_config, "num_key_value_heads"):
+            num_kv_heads = normalized_config.num_key_value_heads
+        else:
+            num_kv_heads = num_heads
         head_dim = normalized_config.hidden_size // num_heads
         num_layers = normalized_config.num_layers
 
         for sample in data:
             sample["past_key_values"] = tuple(
                 (
-                    torch.zeros(1, num_heads, 0, head_dim, device=sample["input_ids"].device),
-                    torch.zeros(1, num_heads, 0, head_dim, device=sample["input_ids"].device),
+                    torch.zeros(1, num_kv_heads, 0, head_dim, device=sample["input_ids"].device),
+                    torch.zeros(1, num_kv_heads, 0, head_dim, device=sample["input_ids"].device),
                 )
                 for _ in range(num_layers)
             )
