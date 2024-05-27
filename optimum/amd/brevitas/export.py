@@ -148,7 +148,8 @@ def replace_matmul_to_matmulinteger(graph: Graph, found_nodes: List[List[str]], 
             graph.remove_node(name)
 
         graph.remove_node(deq_linear.prevnodes[0].name)
-        graph.remove_node(deq_linear.prevnodes[1].name)
+        if deq_linear.prevnodes[1].name in graph.nodemap:
+            graph.remove_node(deq_linear.prevnodes[1].name)
         if deq_linear.prevnodes[2].name in graph.nodemap:
             graph.remove_node(deq_linear.prevnodes[2].name)
 
@@ -203,7 +204,8 @@ def replace_gemm_to_matmulinteger(graph: Graph, found_nodes: List[List[str]], no
                 continue
             graph.remove_node(name)
         graph.remove_node(deq_linear.prevnodes[0].name)
-        graph.remove_node(deq_linear.prevnodes[1].name)
+        if deq_linear.prevnodes[1].name in graph.nodemap:
+            graph.remove_node(deq_linear.prevnodes[1].name)
         if deq_linear.prevnodes[2].name in graph.nodemap:
             graph.remove_node(deq_linear.prevnodes[2].name)
 
