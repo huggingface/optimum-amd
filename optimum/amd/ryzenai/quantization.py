@@ -168,8 +168,8 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
             calibrate_method=quantization_config.calibration_method.value,
             weight_type=quantization_config.weight_type.value,
             activation_type=quantization_config.activation_type.value,
-            enable_dpu=quantization_config.enable_dpu,
-            convert_nchw_to_nhwc=True,
+            enable_ipu_cnn=quantization_config.enable_ipu_cnn,
+
             extra_options=(
                 quantization_config.extra_options.to_diff_dict(camel_case=True)
                 if quantization_config.extra_options
