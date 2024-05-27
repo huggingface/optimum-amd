@@ -6,7 +6,7 @@ Currently the supported tasks are:
 
 * `image-classification`
 * `object-detection` (Supported model types - [yolox, yolov3, yolov5, yolov8](https://huggingface.co/models?other=RyzenAI&sort=trending&search=amd%2Fyolo))
-* `image-segmentation` (Supported model types - [hrnet, semantifpn](https://huggingface.co/models?other=RyzenAI))
+* `image-segmentation` (Supported model types - [hrnet, semantic_fpn](https://huggingface.co/models?other=RyzenAI))
 
 ## The pipeline abstraction
 The pipeline abstraction is a wrapper around all the available pipelines for specific tasks. The pipeline() function automatically loads a default model and tokenizer/feature-extractor capable of performing inference for your task.
@@ -46,7 +46,7 @@ The pipeline abstraction is a wrapper around all the available pipelines for spe
         'score': 0.408765971660614}]
 ```
 
-## Using RyzenAI models from the HuggingFace hub
+## Inference with RyzenAI models from the HuggingFace hub
 
 The [`~ryzenai.pipelines.pipeline`] function can load Ryzen AI supported models from the [Hugging Face Hub](https://huggingface.co/models?other=RyzenAI). Once you have picked an appropriate model, you can create the [`~ryzenai.pipelines.pipeline`] by specifying the model repository:
 
@@ -91,7 +91,7 @@ It is also possible to load the model with the `RyzenModelForXXX` class. For exa
 
 ### Using `model_type` argument
 
-Note for a few models, `model_type` and/or `image_preprocessor` has to be provided in addition to the model_id for inference. For example, here is how you can run inference using `yolox`:
+For some models, `model_type` and/or `image_preprocessor` has to be provided in addition to the model_id for inference. For example, here is how you can run inference using `yolox`:
 
 ```python
 >>> import requests
