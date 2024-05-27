@@ -19,7 +19,7 @@ from transformers.image_utils import (
 )
 from transformers.utils import TensorType
 
-from ..detection_utils import multiclass_nms, scale_coords
+from ..detection_utils import non_max_suppression, scale_coords
 from ..image_transforms import letterbox_image
 
 
@@ -165,7 +165,7 @@ class YoloV8ImageProcessor(BaseImageProcessor):
 
         predictions = postprocess(outputs, num_classes=self.num_classes, reg_max=self.reg_max, stride=self.stride)
 
-        dets = multiclass_nms(
+        dets = non_max_suppression(
             predictions.transpose(2, 1),
             threshold,
             nms_threshold,

@@ -19,7 +19,7 @@ from transformers.image_utils import (
 )
 from transformers.utils import TensorType
 
-from ..detection_utils import multiclass_nms, scale_coords
+from ..detection_utils import non_max_suppression, scale_coords
 from ..image_transforms import letterbox_image
 
 
@@ -158,7 +158,7 @@ class YoloV5ImageProcessor(BaseImageProcessor):
         anchors = torch.tensor(self.anchors)
         predictions = postprocess(outputs, anchors, self.num_classes, self.stride)
 
-        dets = multiclass_nms(
+        dets = non_max_suppression(
             predictions,
             threshold,
             nms_threshold,

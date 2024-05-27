@@ -23,7 +23,7 @@ from transformers.image_utils import (
 )
 from transformers.utils import TensorType
 
-from ..detection_utils import multiclass_nms
+from ..detection_utils import non_max_suppression
 
 
 def postprocess(outputs, img_size, strides):
@@ -185,7 +185,7 @@ class YoloXImageProcessor(BaseImageProcessor):
 
         predictions = postprocess(outputs, (self.size["height"], self.size["width"]), torch.Tensor(self.stride))
 
-        dets = multiclass_nms(
+        dets = non_max_suppression(
             predictions,
             threshold,
             nms_threshold,
