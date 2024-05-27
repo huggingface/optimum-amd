@@ -3,7 +3,6 @@
 
 
 import torch
-import torchvision
 
 from transformers.image_transforms import center_to_corners_format
 
@@ -51,51 +50,109 @@ def box_iou(boxes1, boxes2):
     return iou
 
 
-def non_max_suppression(
+def nms(boxes, scores, nms_threshold):
+    x1 = boxes[:, 0]
+    y1 = boxes[:, 1]
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    _, order = scores.sort(descending=True)
+    keep = []
+    while order.size(0) > 0:
+        i = order[0]
+        keep.append(i)
+        xx1 = torch.max(x1[i], x1[order[1:]])
+        yy1 = torch.max(y1[i], y1[order[1:]])
+        xx2 = torch.min(x2[i], x2[order[1:]])
+        yy2 = torch.min(y2[i], y2[order[1:]])
+        w = torch.clamp(xx2 - xx1 + 1, min=0)
+        h = torch.clamp(yy2 - yy1 + 1, min=0)
+        inter = w * h
+        ovr = inter / (areas[i] + areas[order[1:]] - inter)
+        inds = torch.where(ovr <= nms_threshold)[0]
+        order = order[inds + 1]
+
+    return torch.tensor(keep)
+
+
+def multiclass_nms(
     predictions,
-    has_confidence,
     confidence_threshold=0.25,
     iou_threshold=0.45,
     class_conf_start_index=5,
     agnostic=False,
     max_detections=300,
 ):
-    output = [torch.zeros((0, 6), device=predictions.device)] * predictions.shape[0]
-
+    outputs = []
     for image_idx, _ in enumerate(predictions):
         prediction = predictions[image_idx]
-
-        prediction = prediction[has_confidence[image_idx]]
-
-        if not prediction.shape[0]:
-            continue
+        if class_conf_start_index == 5:
+            scores = prediction[:, 4:5] * prediction[:, 5:]
+        else:
+            scores = prediction[:, class_conf_start_index:]
 
         boxes = center_to_corners_format(prediction[:, :4])
 
-        if class_conf_start_index == 5:
-            prediction[:, 5:] *= prediction[:, 4:5]
-
-        confidence_values, class_indices = prediction[:, class_conf_start_index:].max(1, keepdim=True)
-        prediction = torch.cat((boxes, confidence_values, class_indices.float()), 1)[
-            confidence_values.view(-1) > confidence_threshold
-        ]
-        prediction = prediction[prediction[:, 4].argsort(descending=True)]
-
-        boxes = prediction[:, :4]
-        scores = prediction[:, 4]
-        class_indices = prediction[:, 5]
-
         if agnostic:
-            nms_indices = torchvision.ops.nms(boxes, scores, iou_threshold)
+            nms_method = multiclass_nms_class_agnostic
         else:
-            nms_indices = torchvision.ops.batched_nms(boxes, scores, class_indices, iou_threshold)
+            nms_method = multiclass_nms_class_aware
 
-        if nms_indices.shape[0] > max_detections:
-            nms_indices = nms_indices[:max_detections]
+        output = nms_method(boxes, scores, iou_threshold, confidence_threshold)
 
-        output[image_idx] = prediction[nms_indices]
+        if len(output) > max_detections:
+            output = output[:max_detections]
 
-    return output
+        if output is not None:
+            outputs.append(output)
+        else:
+            outputs.append(torch.zeros((0, 6)))
+
+    return outputs
+
+
+def multiclass_nms_class_aware(boxes, scores, nms_threshold, score_threshold):
+    final_dets = []
+    num_classes = scores.shape[1]
+
+    for cls_ind in range(num_classes):
+        cls_scores = scores[:, cls_ind]
+        valid_score_mask = cls_scores > score_threshold
+        if valid_score_mask.sum() == 0:
+            continue
+
+        valid_scores = cls_scores[valid_score_mask]
+        valid_boxes = boxes[valid_score_mask]
+        keep = nms(valid_boxes, valid_scores, nms_threshold)
+        if len(keep) > 0:
+            cls_inds = torch.ones((len(keep), 1), dtype=torch.float32) * cls_ind
+            dets = torch.cat([valid_boxes[keep], valid_scores[keep, None], cls_inds], dim=1)
+            final_dets.append(dets)
+
+    if len(final_dets) == 0:
+        return None
+
+    return torch.cat(final_dets, 0)
+
+
+def multiclass_nms_class_agnostic(boxes, scores, nms_threshold, score_threshold):
+    cls_inds = torch.argmax(scores, dim=1)
+    cls_scores = scores[torch.arange(len(cls_inds)), cls_inds]
+    valid_score_mask = cls_scores > score_threshold
+
+    if valid_score_mask.sum() == 0:
+        return None
+
+    valid_scores = cls_scores[valid_score_mask]
+    valid_boxes = boxes[valid_score_mask]
+    valid_cls_inds = cls_inds[valid_score_mask]
+
+    keep = nms(valid_boxes, valid_scores, nms_threshold)
+    if keep.numel() > 0:
+        dets = torch.cat([valid_boxes[keep], valid_scores[keep, None], valid_cls_inds[keep, None]], dim=1)
+        return dets
+    else:
+        return None
 
 
 def scale_coords(current_shape, target_shape, coords):

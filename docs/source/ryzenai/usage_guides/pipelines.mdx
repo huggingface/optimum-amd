@@ -6,6 +6,7 @@ Currently the supported tasks are:
 
 * `image-classification`
 * `object-detection` (Supported model types - [yolox, yolov3, yolov5, yolov8](https://huggingface.co/models?other=RyzenAI&sort=trending&search=amd%2Fyolo))
+* `image-segmentation` (Supported model types - [hrnet, semantifpn](https://huggingface.co/models?other=RyzenAI))
 
 ## The pipeline abstraction
 The pipeline abstraction is a wrapper around all the available pipelines for specific tasks. The pipeline() function automatically loads a default model and tokenizer/feature-extractor capable of performing inference for your task.
@@ -45,11 +46,9 @@ The pipeline abstraction is a wrapper around all the available pipelines for spe
         'score': 0.408765971660614}]
 ```
 
-## Using Ryzen models
+## Using RyzenAI models from the HuggingFace hub
 
-The [`~ryzenai.pipelines.pipeline`] function can load Ryzen AI supported models from the [Hugging Face Hub](https://huggingface.co/models?other=RyzenAI)
-
-Once you have picked an appropriate model, you can create the [`~ryzenai.pipelines.pipeline`] by specifying the model repository:
+The [`~ryzenai.pipelines.pipeline`] function can load Ryzen AI supported models from the [Hugging Face Hub](https://huggingface.co/models?other=RyzenAI). Once you have picked an appropriate model, you can create the [`~ryzenai.pipelines.pipeline`] by specifying the model repository:
 
 ```python
 >>> import requests
@@ -67,7 +66,9 @@ Once you have picked an appropriate model, you can create the [`~ryzenai.pipelin
 >>> print(pipe(image))
 ```
 
-It is also possible to load with the `RyzenModelForXXX` class. For example, here is how you can load the [`~ryzenai.RyzenModelForImageClassification`] class for image classification:
+### Using RyzenModelForXXX class
+
+It is also possible to load the model with the `RyzenModelForXXX` class. For example, here is how you can load the [`~ryzenai.RyzenModelForImageClassification`] class for image classification:
 
 ```python
 >>> import requests
@@ -88,6 +89,8 @@ It is also possible to load with the `RyzenModelForXXX` class. For example, here
 >>> print(pipe(image))
 ```
 
+### Using `model_type` argument
+
 Note for a few models, `model_type` and/or `image_preprocessor` has to be provided in addition to the model_id for inference. For example, here is how you can run inference using `yolox`:
 
 ```python
@@ -96,15 +99,11 @@ Note for a few models, `model_type` and/or `image_preprocessor` has to be provid
 
 >>> from optimum.amd.ryzenai import pipeline
 
->>> img = ".\\image.jpg"
 >>> url = "http://images.cocodataset.org/val2017/000000039769.jpg"
 >>> image = Image.open(requests.get(url, stream=True).raw)
->>> img = ".\\image2.jpg"
-
->>> image = Image.open(img)
 
 >>> model_id = "amd/yolox-s"
 
->>> detector = pipeline("object-detection", model=model_id, model_type="yolox")
->>> detector = pipe(image)
+>>> pipe = pipeline("object-detection", model=model_id, model_type="yolox")
+>>> print(pipe(image))
 ```
