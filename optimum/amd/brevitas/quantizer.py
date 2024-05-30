@@ -192,7 +192,7 @@ class BrevitasQuantizer(OptimumQuantizer):
         if use_accelerate:
             remove_hooks(model)
             device = None
-            if self.config.add_bias_to_linear():
+            if quantization_config.add_bias_to_linear():
                 model = add_zero_bias_to_linear(model)
         else:
             device = next(model.parameters()).device
