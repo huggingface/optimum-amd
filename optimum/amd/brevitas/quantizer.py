@@ -192,6 +192,8 @@ class BrevitasQuantizer(OptimumQuantizer):
         if use_accelerate:
             remove_hooks(model)
             device = None
+            if self.config.add_bias_to_linear():
+                model = add_zero_bias_to_linear(model)
         else:
             device = next(model.parameters()).device
 
@@ -244,7 +246,7 @@ class BrevitasQuantizer(OptimumQuantizer):
             apply_bias_correction(
                 model,
                 calibration_dataset,
-                skip_if_no_bias=use_accelerate, # We can't add keys to the state dict if accelerate is being used
+                skip_if_no_bias=use_accelerate,  # We can't add keys to the state dict if accelerate is being used
             )
             logger.info("Bias Correction applied.")
 
@@ -336,3 +338,17 @@ def apply_bias_correction(model: torch.nn.Module, dataset: List[Dict], skip_if_n
     with bias_correction_mode(model, skip_if_no_bias=skip_if_no_bias):
         for inps in tqdm(dataset):
             model(**inps)
+
+
+@torch.no_grad()
+def add_zero_bias_to_linear(model: torch.nn.Module) -> torch.nn.Module:
+    for name, module in model.named_modules():
+        if type(module) == torch.nn.Linear:
+            if module.bias is None:
+                module.register_parameter(
+                    "bias",
+                    torch.nn.Parameter(
+                        torch.zeros((module.weight.shape[0],), device=module.weight.device, dtype=module.weight.dtype)
+                    ),
+                )
+    return model
