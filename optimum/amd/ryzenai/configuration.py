@@ -506,7 +506,6 @@ class AutoQuantizationConfig:
             activations_dtype="uint8",
             weights_dtype="int8",
             enable_ipu_cnn=True,
-
             op_types_to_quantize=op_types_to_quantize,
             nodes_to_quantize=nodes_to_quantize or [],
             nodes_to_exclude=nodes_to_exclude or [],
