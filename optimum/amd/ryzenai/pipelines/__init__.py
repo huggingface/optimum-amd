@@ -22,6 +22,7 @@ from ..models import (
     YoloV3ImageProcessor,
     YoloV5ImageProcessor,
     YoloV8ImageProcessor,
+    YoloV10ImageProcessor,
     YoloXImageProcessor,
 )
 from .image_classification import TimmImageClassificationPipeline
@@ -37,6 +38,7 @@ pipeline_map = {
     "yolov5": {"preprocessor": YoloV5ImageProcessor, "impl": YoloObjectDetectionPipeline},
     "yolov3": {"preprocessor": YoloV3ImageProcessor, "impl": YoloObjectDetectionPipeline},
     "yolov8": {"preprocessor": YoloV8ImageProcessor, "impl": YoloObjectDetectionPipeline},
+    "yolov10": {"preprocessor": YoloV10ImageProcessor, "impl": YoloObjectDetectionPipeline},
     "semantic_fpn": {"preprocessor": SemanticFPNImageProcessor, "impl": ImageSegmentationPipeline},
     "hrnet": {"preprocessor": HRNetImageProcessor, "impl": ImageSegmentationPipeline},
 }
@@ -89,7 +91,7 @@ def load_model(
         ort_model_class = SUPPORTED_TASKS[task]["class"][0]
 
         model = ort_model_class.from_pretrained(
-            model_id, vaip_config=vaip_config, use_auth_token=token, revision=revision
+            model_id, vaip_config=vaip_config, use_auth_token=token, revision=revision, provider="CPUExecutionProvider"
         )
     elif isinstance(model, RyzenAIModel):
         model_id = None

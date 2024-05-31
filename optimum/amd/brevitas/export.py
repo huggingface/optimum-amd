@@ -289,7 +289,9 @@ def find_and_insert_matmulinteger(model_path: str):
     for out in original_output:
         if out not in model_to_save.graph.output:
             model_to_save.graph.output.append(out)
+    from pdb import set_trace
 
+    set_trace()
     model_to_save.ir_version = model.mproto.ir_version
     model_to_save.opset_import.pop()
     for opset in model.mproto.opset_import:

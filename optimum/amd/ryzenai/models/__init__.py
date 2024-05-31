@@ -10,6 +10,7 @@ _import_structure = {
     "yolov3": ["YoloV3ImageProcessor"],
     "yolov5": ["YoloV5ImageProcessor"],
     "yolov8": ["YoloV8ImageProcessor"],
+    "yolov10": ["YoloV10ImageProcessor"],
     "yolox": ["YoloXImageProcessor"],
     "semanticfpn": ["SemanticFPNImageProcessor"],
     "hrnet": ["HRNetImageProcessor"],
@@ -22,7 +23,8 @@ if TYPE_CHECKING:
     from .semanticfpn import SemanticFPNImageProcessor
     from .yolov3 import YoloV3ImageProcessor
     from .yolov5 import YoloV5ImageProcessor
-    from .yolov8 import YoloV3ImageProcessor
+    from .yolov8 import YoloV8ImageProcessor
+    from .yolov10 import YoloV10ImageProcessor
     from .yolox import YoloXImageProcessor
 else:
     import sys
