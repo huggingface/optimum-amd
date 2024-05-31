@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         os: [ubuntu-20.04, windows-2019, macos-latest]
 
     runs-on: ${{ matrix.os }}
@@ -35,10 +35,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        # Transformers main may currently be broken due to the KV cache refactor that breaks many things, hence pin to the commit before that.
-        pip install git+https://github.com/huggingface/transformers.git@4b236aed7618d90546cd2e8797dab5b4a24c5dce
-        pip install git+https://github.com/huggingface/accelerate.git
-        pip install optimum
         pip install git+https://github.com/Xilinx/brevitas.git@dev
 
         pip install .[brevitas,tests]

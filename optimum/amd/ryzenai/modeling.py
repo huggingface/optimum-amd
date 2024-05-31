@@ -18,6 +18,7 @@ from onnx import shape_inference
 from onnx.tools import update_model_dims
 
 from optimum.exporters import TasksManager
+from optimum.exporters.onnx import main_export
 from optimum.modeling_base import FROM_PRETRAINED_START_DOCSTRING, OptimizedModel
 from optimum.onnx.utils import _get_external_data_paths
 from optimum.utils.save_utils import maybe_load_preprocessors
@@ -31,6 +32,7 @@ from transformers.file_utils import add_start_docstrings
 from transformers.modeling_outputs import ImageClassifierOutput, ModelOutput
 
 from .utils import (
+    DEFAULT_VAIP_CONFIG,
     ONNX_WEIGHTS_NAME,
     ONNX_WEIGHTS_NAME_STATIC,
     validate_provider_availability,
@@ -40,14 +42,6 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 CONFIG_NAME = "config.json"
-
-
-class classproperty:
-    def __init__(self, getter):
-        self.getter = getter
-
-    def __get__(self, instance, owner):
-        return self.getter(owner)
 
 
 class RyzenAIModel(OptimizedModel):
@@ -74,6 +68,7 @@ class RyzenAIModel(OptimizedModel):
 
     model_type = "onnx_model"
     auto_model_class = AutoModel
+    default_vaip_config = DEFAULT_VAIP_CONFIG
 
     def shared_attributes_init(
         self,
@@ -281,11 +276,11 @@ class RyzenAIModel(OptimizedModel):
 
         if provider == "VitisAIExecutionProvider":
             if vaip_config is None and "config_file" not in (provider_options or {}):
-                raise ValueError(
-                    "No config file provided. Please provide the necessary config file for inference with RyzenAI"
+                logger.warning(
+                    f"No Ryzen AI configuration file was provided. Using default: {cls.default_vaip_config}.\n"
                 )
-
-            if vaip_config and provider_options and "config_file" in provider_options:
+                vaip_config = cls.default_vaip_config
+            elif vaip_config is not None and provider_options is not None and "config_file" in provider_options:
                 raise ValueError(
                     "Configuration file paths were found in both `vaip_config` and `provider_options`."
                     "To avoid conflicts, please specify the configuration file path in either `vaip_config`"
@@ -623,6 +618,60 @@ class RyzenAIModelForImageClassification(RyzenAIModelForCustomTasks):
 
         return ImageClassifierOutput(logits=next(iter(outputs.values())))
 
+    @classmethod
+    def _export(
+        cls,
+        model_id: str,
+        config: "PretrainedConfig" = None,
+        revision: Optional[str] = None,
+        cache_dir: Optional[str] = None,
+        force_download: bool = False,
+        use_auth_token: Optional[Union[bool, str]] = None,
+        subfolder: str = "",
+        local_files_only: bool = False,
+        trust_remote_code: bool = False,
+        vaip_config: Optional[str] = None,
+        provider: Optional[Dict[str, Any]] = None,
+        session_options: Optional[ort.SessionOptions] = None,
+        provider_options: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> "RyzenAIModel":
+        save_dir = TemporaryDirectory()
+        save_dir_path = Path(save_dir.name)
+        main_export(
+            model_name_or_path=model_id,
+            output=save_dir_path,
+            task="image-classification",
+            opset=17,
+            batch_size=1,
+            no_dynamic_axes=True,
+            do_validation=False,
+            no_post_process=True,
+            subfolder=subfolder,
+            revision=revision,
+            cache_dir=cache_dir,
+            use_auth_token=use_auth_token,
+            local_files_only=local_files_only,
+            force_download=force_download,
+            trust_remote_code=trust_remote_code,
+        )
+        return cls._from_pretrained(
+            save_dir_path,
+            config,
+            vaip_config=vaip_config,
+            use_auth_token=use_auth_token,
+            revision=revision,
+            force_download=force_download,
+            cache_dir=cache_dir,
+            subfolder=subfolder,
+            local_files_only=local_files_only,
+            provider=provider,
+            session_options=session_options,
+            provider_options=provider_options,
+            model_save_dir=save_dir,
+            **kwargs,
+        )
+
 
 class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):
     def forward(self, pixel_values):
@@ -641,6 +690,10 @@ class RyzenAIModelForObjectDetection(RyzenAIModelForCustomTasks):
 
 
 class RyzenAIModelForImageSegmentation(RyzenAIModelForObjectDetection):
+    pass
+
+
+class RyzenAIModelForSemanticSegmentation(RyzenAIModelForObjectDetection):
     pass
 
 

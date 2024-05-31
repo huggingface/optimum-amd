@@ -92,9 +92,6 @@ For more information on quantization refer to [Model Quantization](https://ryzen
 
 To load a model and run inference with RyzenAI, you can just replace your `AutoModelForXxx` class with the corresponding `RyzenAIModelForXxx` class. 
 
-The `RyzenAIModelForXxx` requires a runtime configuration file. A default version of this runtime configuration file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
-For more information refer to [runtime-configuration-file](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html#runtime-configuration-file)
-
 ```diff
 import requests
 from PIL import Image
@@ -108,7 +105,7 @@ image = Image.open(requests.get(url, stream=True).raw)
 
 model_id = <path of the model>
 - model = AutoModelForImageClassification.from_pretrained(model_id)
-+ model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config=<path to config file>)
++ model = RyzenAIModelForImageClassification.from_pretrained(model_id)
 feature_extractor = AutoFeatureExtractor.from_pretrained(model_id)
 cls_pipe = pipeline("image-classification", model=model, feature_extractor=feature_extractor)
 outputs = cls_pipe(image)
@@ -150,6 +147,6 @@ For Windows Powershell, use the following command to run the slow tests:
 $env:RUN_SLOW=1; pytest -s -v ./tests/ryzenai/
 ```
 
-Note: The current [operators baseline](tests/ryzenai/operators_baseline.json) is generated using the Ryzen Software 1.0.1. To generate for your SDK version follow the steps in [README.md](utils/ryzenai/README.md)
+Note: The current [operators baseline](tests/ryzenai/operators_baseline.json) is generated using the Ryzen Software 1.1. To generate for your SDK version follow the steps in [README.md](utils/ryzenai/README.md)
 
 If you find any issue while using those, please open an issue or a pull request.

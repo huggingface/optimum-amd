@@ -27,6 +27,8 @@ TESTS_REQUIRE = [
     "torch==2.2.1",
     "torchvision==0.17.1",
     "opencv-python",
+    "pytest-xdist",
+    "diffusers",
 ]
 
 QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]
@@ -34,7 +36,17 @@ QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]
 EXTRAS_REQUIRE = {
     "quality": QUALITY_REQUIRE,
     "tests": TESTS_REQUIRE,
-    "brevitas": ["brevitas", "datasets>=2.17", "onnx", "onnxruntime", "accelerate"],
+    "zentorch": ["torch==2.2.1"],
+    "brevitas": [
+        "brevitas",
+        "torch>=2.2",
+        "datasets>=2.17",
+        "onnx",
+        "onnxruntime",
+        "accelerate>=0.30",
+        "onnx-tool",
+        "optimum>=1.17",
+    ],
 }
 
 setup(
@@ -67,6 +79,7 @@ setup(
     entry_points={"console_scripts": ["amdrun=optimum.amd.cli:amdrun"]},
     install_requires=INSTALL_REQUIRE,
     extras_require=EXTRAS_REQUIRE,
+    package_data={"optimum": ["amd/ryzenai/configs/*.json"]},
     include_package_data=True,
     zip_safe=False,
 )

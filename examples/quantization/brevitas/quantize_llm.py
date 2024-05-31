@@ -1,13 +1,9 @@
 from argparse import ArgumentParser
 
-import torch
-from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
-from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
-
 from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
 from optimum.amd.brevitas.accelerate_utils import calc_cpu_device_map, calc_gpu_device_map, offload_model, remove_hooks
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
-from optimum.exporters.onnx import onnx_export_from_model
+from optimum.amd.brevitas.export import onnx_export_from_quantized_model
 from transformers import AutoTokenizer
 
 
@@ -21,6 +17,7 @@ def main(args):
     qconfig = BrevitasQuantizationConfig(
         apply_gptq=args.apply_gptq,
         apply_weight_equalization=args.apply_weight_equalization,
+        apply_bias_correction=args.apply_bias_correction,
         activations_equalization=args.activations_equalization,
         is_static=args.is_static,
         weights_symmetric=True,
@@ -80,16 +77,7 @@ def main(args):
     quantized_model = quantized_model.to("cpu")
 
     # Export to ONNX through optimum.exporters.
-    export_manager = StdQCDQONNXManager
-    export_manager.change_weight_export(export_weight_q_node=True)
-    with torch.no_grad(), brevitas_proxy_export_mode(quantized_model, export_manager=export_manager):
-        onnx_export_from_model(
-            quantized_model,
-            args.onnx_output_path,
-            task="text-generation-with-past",
-            do_validation=False,
-            no_post_process=True,
-        )
+    onnx_export_from_quantized_model(quantized_model, args.onnx_output_path)
     return return_val
 
 

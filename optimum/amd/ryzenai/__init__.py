@@ -21,13 +21,13 @@ _import_structure = {
         "RyzenAIModel",
         "RyzenAIModelForCustomTasks",
         "RyzenAIModelForImageClassification",
-        "RyzenAIModelForImageSegmentation",
+        "RyzenAIModelForSemanticSegmentation",
         "RyzenAIModelForImageToImage",
         "RyzenAIModelForObjectDetection",
     ],
     "quantization": ["RyzenAIOnnxQuantizer"],
     "pipelines": ["pipeline"],
-    "version": ["__version__"],
+    "utils": ["DEFAULT_VAIP_CONFIG"],
 }
 
 
@@ -46,13 +46,13 @@ if TYPE_CHECKING:
         RyzenAIModel,
         RyzenAIModelForCustomTasks,
         RyzenAIModelForImageClassification,
-        RyzenAIModelForImageSegmentation,
         RyzenAIModelForImageToImage,
         RyzenAIModelForObjectDetection,
+        RyzenAIModelForSemanticSegmentation,
     )
     from .pipelines import pipeline
     from .quantization import RyzenAIOnnxQuantizer
-    from .version import __version__
+    from .utils import DEFAULT_VAIP_CONFIG
 else:
     import sys
 

@@ -1,0 +1,50 @@
+name: ZenTorch Plugin - Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/zentorch/**/*.py"
+      - ".github/workflows/test_zentorch_plugin.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/zentorch/**/*.py"
+      - ".github/workflows/test_zentorch_plugin.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_test:
+    runs-on: [self-hosted, amd-cpu, epyc, genoa]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy zentorch binary to current directory
+        run: cp
+          /home/github_actions/actions-runner/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl
+          docker/transformers-pytorch-amd-cpu-zentorch/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl
+
+      - name: Build Docker image
+        run: docker build
+          --build-arg USER_ID=$(id -u)
+          --build-arg GROUP_ID=$(id -g)
+          --tag optimum-amd-zentorch:2.2.1
+          docker/transformers-pytorch-amd-cpu-zentorch
+
+      - name: Run tests
+        uses: addnab/docker-run-action@v3
+        with:
+          image: optimum-amd-zentorch:2.2.1
+          options: |
+            --rm
+            --shm-size 64G
+            --volume ${{ github.workspace }}:/workspace
+            --workdir /workspace
+          run: |
+            pip install -e .[zentorch,tests]
+            amdrun pytest tests/zentorch -s -v -n 32

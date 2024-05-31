@@ -9,8 +9,7 @@ from transformers import set_seed
 
 SEED = 42
 
-BASELINE_JSON = os.path.normpath("./tests/ryzenai/operators_baseline.json")  # For RyzenSDK 1.0.1
-DEFAULT_VAIP_CONFIG = os.path.normpath("./tests/ryzenai/vaip_config.json")
+BASELINE_JSON = os.path.normpath("./tests/ryzenai/operators_baseline.json")  # For RyzenSDK 1.1
 
 DEFAULT_CACHE_DIR = "ryzen_cache"
 
@@ -32,7 +31,6 @@ class RyzenAITestCaseMixin:
         ort_input,
         use_cpu_runner,
         compile_reserve_const_data,
-        vaip_config,
         cache_dir=None,
         cache_key=None,
         file_name=None,
@@ -48,9 +46,7 @@ class RyzenAITestCaseMixin:
         if cache_key:
             provider_options["cacheKey"] = cache_key
 
-        model_instance = model_class.from_pretrained(
-            model_id, file_name=file_name, vaip_config=vaip_config, provider_options=provider_options
-        )
+        model_instance = model_class.from_pretrained(model_id, file_name=file_name, provider_options=provider_options)
 
         if isinstance(ort_input, dict):
             outputs = model_instance(**ort_input)
@@ -59,9 +55,7 @@ class RyzenAITestCaseMixin:
 
         return outputs
 
-    def prepare_outputs(
-        self, model_id, model_class, ort_input, vaip_config, cache_dir=None, cache_key=None, file_name=None
-    ):
+    def prepare_outputs(self, model_id, model_class, ort_input, cache_dir=None, cache_key=None, file_name=None):
         set_seed(SEED)
         output_ipu = self.run_model(
             model_class,
@@ -69,7 +63,6 @@ class RyzenAITestCaseMixin:
             ort_input,
             use_cpu_runner=0,
             compile_reserve_const_data=0,
-            vaip_config=vaip_config,
             cache_dir=cache_dir,
             cache_key=cache_key,
             file_name=file_name,
@@ -81,7 +74,6 @@ class RyzenAITestCaseMixin:
             ort_input,
             use_cpu_runner=1,
             compile_reserve_const_data=1,
-            vaip_config=vaip_config,
             file_name=file_name,
         )
 

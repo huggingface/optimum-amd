@@ -16,7 +16,6 @@ from parameterized import parameterized
 from PIL import Image
 from testing_utils import (
     DEFAULT_CACHE_DIR,
-    DEFAULT_VAIP_CONFIG,
     RYZEN_PREQUANTIZED_MODEL_CUSTOM_TASKS,
     RYZEN_PREQUANTIZED_MODEL_IMAGE_CLASSIFICATION,
     RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION,
@@ -29,9 +28,9 @@ from optimum.amd.ryzenai import (
     RyzenAIModel,
     RyzenAIModelForCustomTasks,
     RyzenAIModelForImageClassification,
-    RyzenAIModelForImageSegmentation,
     RyzenAIModelForImageToImage,
     RyzenAIModelForObjectDetection,
+    RyzenAIModelForSemanticSegmentation,
     pipeline,
 )
 from optimum.utils import (
@@ -70,7 +69,7 @@ class RyzenAIModelIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
         os.environ["XLNX_ENABLE_CACHE"] = "0"
         os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-        model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=DEFAULT_VAIP_CONFIG)
+        model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID)
         self.assertIsInstance(model.model, onnxruntime.InferenceSession)
         self.assertListEqual(model.providers, ["VitisAIExecutionProvider", "CPUExecutionProvider"])
 
@@ -78,16 +77,12 @@ class RyzenAIModelIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
         with self.assertRaises(ValueError):
             RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=".\\invalid_path\\vaip_config.json")
 
-    def test_load_model_no_config_path(self):
-        with self.assertRaises(ValueError):
-            RyzenAIModel.from_pretrained(self.TEST_MODEL_ID)
-
     def test_save_model(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
             os.environ["XLNX_ENABLE_CACHE"] = "0"
             os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-            model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID, vaip_config=DEFAULT_VAIP_CONFIG)
+            model = RyzenAIModel.from_pretrained(self.TEST_MODEL_ID)
             model.save_pretrained(tmpdirname)
             folder_contents = os.listdir(tmpdirname)
             self.assertTrue("ResNet_int.onnx" in folder_contents)
@@ -102,9 +97,8 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
-            model_id, RyzenAIModelForImageClassification, ort_input, vaip_config, cache_dir, cache_key, file_name
+            model_id, RyzenAIModelForImageClassification, ort_input, cache_dir, cache_key, file_name
         )
 
         self.assertIn("logits", outputs_ipu)
@@ -124,11 +118,11 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
         ["mohitsha/timm-resnet18-onnx-quantized-ryzen", "mohitsha/transformers-resnet18-onnx-quantized-ryzen"]
     )
     @slow
-    def test_pipeline_model(self, model_id):
+    def test_pipeline(self, model_id):
         os.environ["XLNX_ENABLE_CACHE"] = "0"
         os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-        pipe = pipeline("image-classification", model=model_id, vaip_config=self.VAIP_CONFIG)
+        pipe = pipeline("image-classification", model=model_id)
 
         url = "http://images.cocodataset.org/val2017/000000039769.jpg"
         image = Image.open(requests.get(url, stream=True).raw)
@@ -153,9 +147,8 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
-            model_id, RyzenAIModelForObjectDetection, ort_input, vaip_config, cache_dir, cache_key, file_name
+            model_id, RyzenAIModelForObjectDetection, ort_input, cache_dir, cache_key, file_name
         )
 
         for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
@@ -176,7 +169,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
         os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
         model_id = RYZEN_PREQUANTIZED_MODEL_OBJECT_DETECTION[model_arch]
-        pipe = pipeline("object-detection", model=model_id, vaip_config=self.VAIP_CONFIG, model_type=model_arch)
+        pipe = pipeline("object-detection", model=model_id, model_type=model_arch)
 
         url = "http://images.cocodataset.org/val2017/000000039769.jpg"
         image = Image.open(requests.get(url, stream=True).raw)
@@ -195,7 +188,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
         os.environ["XLNX_ENABLE_CACHE"] = "0"
         os.environ["XLNX_USE_SHARED_CONTEXT"] = "1"
 
-        pipe = pipeline("object-detection", vaip_config=self.VAIP_CONFIG)
+        pipe = pipeline("object-detection")
 
         url = "http://images.cocodataset.org/val2017/000000039769.jpg"
         image = Image.open(requests.get(url, stream=True).raw)
@@ -210,7 +203,7 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
             self.assertGreaterEqual(pred["score"], 0.0)
 
 
-class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
+class RyzenAIModelForSemanticSegmentationIntegrationTest(unittest.TestCase, RyzenAITestCaseMixin):
     @parameterized.expand(RYZEN_PREQUANTIZED_MODEL_IMAGE_SEGMENTATION)
     @pytest.mark.prequantized_model_test
     def test_model(self, model_id):
@@ -219,9 +212,8 @@ class RyzenAIModelForImageSegmentationIntegrationTest(unittest.TestCase, RyzenAI
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
-            model_id, RyzenAIModelForImageSegmentation, ort_input, vaip_config, cache_dir, cache_key, file_name
+            model_id, RyzenAIModelForSemanticSegmentation, ort_input, cache_dir, cache_key, file_name
         )
 
         for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
@@ -245,9 +237,8 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase, RyzenAITestC
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
-            model_id, RyzenAIModelForImageToImage, ort_input, vaip_config, cache_dir, cache_key, file_name
+            model_id, RyzenAIModelForImageToImage, ort_input, cache_dir, cache_key, file_name
         )
 
         for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
@@ -272,9 +263,8 @@ class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase, RyzenAITestCa
         file_name, ort_input, input_name = load_model_and_input(model_id)
         ort_input = {input_name: ort_input}
 
-        vaip_config = DEFAULT_VAIP_CONFIG
         outputs_ipu, outputs_cpu = self.prepare_outputs(
-            model_id, RyzenAIModelForCustomTasks, ort_input, vaip_config, cache_dir, cache_key, file_name
+            model_id, RyzenAIModelForCustomTasks, ort_input, cache_dir, cache_key, file_name
         )
 
         for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):

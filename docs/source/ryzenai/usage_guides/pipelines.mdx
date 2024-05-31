@@ -7,12 +7,6 @@ Currently the supported tasks are:
 * `image-classification`
 * `object-detection` (Supported model types - [yolox, yolov3, yolov5, yolov8](https://huggingface.co/models?other=RyzenAI&sort=trending&search=amd%2Fyolo))
 
-<Tip warning={true}>
-The RyzenAI pipelines requires a runtime configuration file for inference. A default version of this runtime configuration file can be found in the Ryzen AI VOE package, extracted during installation under the name `vaip_config.json`.
-
-For more information refer to [runtime-configuration-file](https://ryzenai.docs.amd.com/en/latest/runtime_setup.html#runtime-configuration-file)
-</Tip>
-
 ## The pipeline abstraction
 The pipeline abstraction is a wrapper around all the available pipelines for specific tasks. The pipeline() function automatically loads a default model and tokenizer/feature-extractor capable of performing inference for your task.
 
@@ -21,7 +15,7 @@ The pipeline abstraction is a wrapper around all the available pipelines for spe
 ```python
 >>> from optimum.amd.ryzenai import pipeline
 
->>> detector = pipeline("object-detection", vaip_config=vaip_config_patj)
+>>> detector = pipeline("object-detection")
 ```
 
 2. Pass your input text/image to the [`~pipelines.pipeline`] function:
@@ -69,7 +63,7 @@ Once you have picked an appropriate model, you can create the [`~ryzenai.pipelin
 >>> # Hugging Face hub model-id with the quantized ONNX model
 >>> model_id = "mohitsha/timm-resnet18-onnx-quantized-ryzen"
 
->>> pipe = pipeline("image-classification", model=model_id, vaip_config="vaip_config.json")
+>>> pipe = pipeline("image-classification", model=model_id)
 >>> print(pipe(image))
 ```
 
@@ -88,7 +82,7 @@ It is also possible to load with the `RyzenModelForXXX` class. For example, here
 
 >>> # Hugging Face hub model-id with the quantized ONNX model
 >>> model_id = "mohitsha/timm-resnet18-onnx-quantized-ryzen"
->>> model = RyzenAIModelForImageClassification.from_pretrained(model_id, vaip_config="vaip_config.json")
+>>> model = RyzenAIModelForImageClassification.from_pretrained(model_id)
 
 >>> pipe = pipeline("image-classification", model=model)
 >>> print(pipe(image))
@@ -111,6 +105,6 @@ Note for a few models, `model_type` and/or `image_preprocessor` has to be provid
 
 >>> model_id = "amd/yolox-s"
 
->>> detector = pipeline("object-detection", model=model_id, vaip_config="vaip_config.json", model_type="yolox")
+>>> detector = pipeline("object-detection", model=model_id, model_type="yolox")
 >>> detector = pipe(image)
 ```
