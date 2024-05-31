@@ -173,7 +173,7 @@ class ExtraOptions:
     force_quantize_no_input_check: bool = False
     matmul_const_b_only: bool = False
     add_qdq_pair_to_weight: bool = False
-    op_types_to_exclude_output_quantization: Union[List[str], None] = None
+    op_types_to_exclude_output_quantization: Union[List[str], None] = field(default_factory=list)
     dedicated_qdq_pair: bool = False
     qdq_op_type_per_channel_support_to_axis: Dict = field(default_factory=dict)
     use_qdq_vitis_custom_ops: bool = True
@@ -248,7 +248,11 @@ class ExtraOptions:
                 )
             else:
                 name = option.name
-            if getattr(self, option.name) != option.default and getattr(self, option.name) != {}:
+            if (
+                getattr(self, option.name) != option.default
+                and getattr(self, option.name) != {}
+                and getattr(self, option.name) != []
+            ):
                 non_default_values[name] = getattr(self, option.name)
         return non_default_values
 
@@ -300,9 +304,9 @@ class QuantizationConfig:
             Determines whether weights should be quantized per channel. Must be False for DPU/NPU devices.
         reduce_range (bool, defaults to `False`):
             If True, quantizes weights with 7-bits. Must be False for DPU/NPU devices.
-        activation_type (QuantType, defaults to `QuantType.QInt8`):
+        activations_dtype (QuantType, defaults to `QuantType.QInt8`):
             Specifies the quantization data type for activations.
-        weight_type (QuantType, defaults to `QuantType.QInt8`):
+        weights_dtype (QuantType, defaults to `QuantType.QInt8`):
             Specifies the quantization data type for weights. Must be `QuantType.QInt8` for NPU devices.
         nodes_to_quantize (List[str], defaults to an empty list `[]`):
             If specified, only the nodes in this list are quantized.
@@ -348,9 +352,9 @@ class QuantizationConfig:
     def __post_init__(self):
         if isinstance(self.extra_options, dict):
             self.extra_options = ExtraOptions(**self.extra_options)
-        self.format = self._map_format(self.format)
-        self.calibration_method = self._map_calibration_method(self.calibration_method)
-        self.activations_dtype, self.weights_dtype = self._map_dtypes(self.activations_dtype, self.weights_dtype)
+
+        if self.calibration_method in {"mse", "overflow"}:
+            self.extra_options.calib_tensor_range_symmetric = True
 
         self.check_dtype_and_format(self.activations_dtype, "activations_dtype", self.format)
         self.check_dtype_and_format(self.weights_dtype, "weights_dtype", self.format)
@@ -376,6 +380,16 @@ class QuantizationConfig:
             setattr(self, "extra_options", ExtraOptions(**value))
         else:
             super().__setattr__(name, value)
+
+    def __getattr__(self, name):
+        value = getattr(self, name)
+        if name == "format":
+            value = self._map_format(value)
+        elif name == "calibration_method":
+            value = self._map_calibration_method(value)
+        elif name in ["activations_dtype", "weights_dtype"]:
+            value = self._map_dtypes(value, name)
+        return value
 
     def to_diff_dict(self) -> dict:
         """
@@ -428,7 +442,7 @@ class QuantizationConfig:
         return QuantizationConfig._map_value(mapping, method_str, "calibration method")
 
     @staticmethod
-    def _map_dtypes(activations_dtype_str, weights_dtype_str):
+    def _map_dtypes(dtype, name):
         mapping = {
             "uint8": QuantType.QUInt8,
             "int8": QuantType.QInt8,
@@ -439,9 +453,8 @@ class QuantizationConfig:
             "float16": QuantType.QFloat16,
             "bfloat16": QuantType.QBFloat16,
         }
-        activations_dtype = QuantizationConfig._map_value(mapping, activations_dtype_str, "activations dtype")
-        weights_dtype = QuantizationConfig._map_value(mapping, weights_dtype_str, "weights dtype")
-        return activations_dtype, weights_dtype
+        dtype = QuantizationConfig._map_value(mapping, dtype, name)
+        return dtype
 
     @staticmethod
     def _map_value(mapping, value, name):
@@ -479,7 +492,7 @@ class QuantizationConfig:
     def __str__(self):
         return (
             f"{self.format} ("
-            f"schema: {QuantizationConfig.quantization_type_str(self.activation_type, self.weight_type)}, "
+            f"schema: {QuantizationConfig.quantization_type_str(self.activations_dtype, self.weights_dtype)}, "
             f"enable_ipu_cnn: {self.enable_ipu_cnn})"
         )
 
