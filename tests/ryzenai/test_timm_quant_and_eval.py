@@ -9,8 +9,10 @@ from functools import partial
 import numpy as np
 import onnxruntime
 import timm
+import vai_q_onnx
 from timm.data import create_dataset, create_loader
 from timm.utils import AverageMeter
+from tqdm import tqdm
 
 from optimum.amd.ryzenai import (
     AutoQuantizationConfig,
@@ -19,11 +21,23 @@ from optimum.amd.ryzenai import (
 )
 
 
+"""
+For example:
+Float Accuracy of resnet50.tv_in1k:
+- Prec@1: 76.128%
+- Prec@5: 92.858%
+
+Quantization Accuracy of resnet50.tv_in1k:
+- Prec@1: 74.072%
+- Prec@5: 91.816%
+"""
+
+
 def parse_args():
     parser = ArgumentParser("RyzenAIQuantization")
     parser.add_argument("--data-path", metavar="DIR", required=True, help="path to dataset")
     parser.add_argument(
-        "--model_id", type=str, default="timm/resnet50.a1_in1k", help='Model id, default to "timm/resnet50.a1_in1k"'
+        "--model_id", type=str, default="timm/resnet50.tv_in1k", help='Model id, default to "timm/resnet50.tv_in1k"'
     )
     parser.add_argument(
         "--dataset", type=str, default="imagenet-1k", help='Calibration dataset, default to "imagenet-1k"'
@@ -62,11 +76,12 @@ def main(args):
     # quantize
     quantizer = RyzenAIOnnxQuantizer.from_pretrained(onnx_model)
     quantization_config = AutoQuantizationConfig.cpu_cnn_config()
+    quantization_config.calibration_method = vai_q_onnx.CalibrationMethod.Percentile
 
     calibration_dataset = quantizer.get_calibration_dataset(
         args.dataset,
         preprocess_function=partial(preprocess_fn, transforms=transforms),
-        num_samples=200,
+        num_samples=100,
         dataset_split="validation",
         preprocess_batch=False,
         streaming=True,
@@ -105,7 +120,7 @@ def main(args):
     top1 = AverageMeter()
     top5 = AverageMeter()
     end = time.time()
-    for i, (input, target) in enumerate(loader):
+    for i, (input, target) in enumerate(tqdm(loader, desc="Processing")):
         # run the net and return prediction
         output = session.run([], {input_name: input.data.numpy()})
         output = output[0]
