@@ -421,17 +421,15 @@ class QuantizationConfig:
         if dtype not in ["uint8", "int8"] and format not in ["vitisqdq"]:
             raise ValueError(f'{dtype_name} is: "{dtype}", format must be "vitisqdq".')
 
-    @staticmethod
-    def _map_format(format_str):
+    def map_format(self):
         mapping = {
             "qdq": QuantFormat.QDQ,
             "qop": QuantFormat.QOperator,
             "vitisqdq": QuantFormat.VitisQuantFormat_QDQ,
         }
-        return QuantizationConfig._map_value(mapping, format_str, "format")
+        return QuantizationConfig._map_value(mapping, self.format, "format")
 
-    @staticmethod
-    def _map_calibration_method(method_str):
+    def map_calibration_method(self):
         mapping = {
             "nonoverflow": CalibrationMethod.NonOverflow,
             "mse": CalibrationMethod.MinMSE,
@@ -439,10 +437,10 @@ class QuantizationConfig:
             "entropy": CalibrationMethod.Entropy,
             "percentile": CalibrationMethod.Percentile,
         }
-        return QuantizationConfig._map_value(mapping, method_str, "calibration method")
+        return QuantizationConfig._map_value(mapping, self.calibration_method, "calibration method")
 
-    @staticmethod
-    def _map_dtypes(dtype, name):
+    @property
+    def _dtype_mapping(self):
         mapping = {
             "uint8": QuantType.QUInt8,
             "int8": QuantType.QInt8,
@@ -453,8 +451,13 @@ class QuantizationConfig:
             "float16": QuantType.QFloat16,
             "bfloat16": QuantType.QBFloat16,
         }
-        dtype = QuantizationConfig._map_value(mapping, dtype, name)
-        return dtype
+        return mapping
+
+    def map_activations_dtype(self):
+        return QuantizationConfig._map_value(self._dtype_mapping, self.activations_dtype, "Activations dtype")
+
+    def map_weights_dtype(self):
+        return QuantizationConfig._map_value(self._dtype_mapping, self.weights_dtype, "Weights dtype")
 
     @staticmethod
     def _map_value(mapping, value, name):
@@ -501,16 +504,16 @@ class AutoQuantizationConfig:
     @staticmethod
     def ipu_cnn_config(
         calibrate_method: Literal["nonoverflow", "mse", "minmax", "entropy", "percentile"] = "mse",
-        nodes_to_quantize: Optional[List[str]] = None,
-        nodes_to_exclude: Optional[List[str]] = None,
-        op_types_to_quantize: Optional[List[str]] = None,
+        nodes_to_quantize: List[str] = [],
+        nodes_to_exclude: List[str] = [],
+        op_types_to_quantize: List[str] = [],
         extra_options: Optional[Union[Dict[str, bool], ExtraOptions]] = None,
     ):
         extra_options = extra_options or {}
         if isinstance(extra_options, dict):
             extra_options = ExtraOptions(**extra_options)
 
-        extra_options_dict = extra_options.__dict__
+        extra_options_dict = extra_options.to_diff_dict()
         extra_options_dict["activation_symmetric"] = extra_options_dict.get("activation_symmetric", True)
 
         return QuantizationConfig(
@@ -528,9 +531,9 @@ class AutoQuantizationConfig:
     @staticmethod
     def ipu_transformer_config(
         calibrate_method: Literal["nonoverflow", "mse", "minmax", "entropy", "percentile"] = "minmax",
-        nodes_to_quantize: Optional[List[str]] = None,
-        nodes_to_exclude: Optional[List[str]] = None,
-        op_types_to_quantize: Optional[List[str]] = None,
+        nodes_to_quantize: List[str] = [],
+        nodes_to_exclude: List[str] = [],
+        op_types_to_quantize: List[str] = [],
         extra_options: Optional[Union[Dict[str, bool], ExtraOptions]] = None,
     ):
         extra_options = extra_options or {}
@@ -554,9 +557,9 @@ class AutoQuantizationConfig:
     @staticmethod
     def cpu_cnn_config(
         calibrate_method: Literal["nonoverflow", "mse", "minmax", "entropy", "percentile"] = "minmax",
-        nodes_to_quantize: Optional[List[str]] = None,
-        nodes_to_exclude: Optional[List[str]] = None,
-        op_types_to_quantize: Optional[List[str]] = None,
+        nodes_to_quantize: List[str] = [],
+        nodes_to_exclude: List[str] = [],
+        op_types_to_quantize: List[str] = [],
         extra_options: Optional[Union[Dict[str, bool], ExtraOptions]] = None,
     ):
         extra_options = extra_options or {}
