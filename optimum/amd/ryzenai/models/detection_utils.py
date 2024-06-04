@@ -28,13 +28,14 @@ def non_max_suppression(
         scores, idxs = scores.max(1)
 
         valid_mask = scores > confidence_threshold
-        if valid_mask.sum() == 0:
-            outputs.append(torch.empty((0, 6)))
-            continue
 
         boxes = boxes[valid_mask]
         scores = scores[valid_mask]
         idxs = idxs[valid_mask]
+
+        if boxes.shape[0] == 0:
+            outputs.append(torch.empty((0, 6)))
+            continue
 
         scores, sorted_indices = scores.sort(descending=True)
         boxes = boxes[sorted_indices]
