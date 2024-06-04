@@ -523,8 +523,8 @@ class AutoQuantizationConfig:
             weights_dtype="int8",
             enable_ipu_cnn=True,
             op_types_to_quantize=op_types_to_quantize,
-            nodes_to_quantize=nodes_to_quantize or [],
-            nodes_to_exclude=nodes_to_exclude or [],
+            nodes_to_quantize=nodes_to_quantize,
+            nodes_to_exclude=nodes_to_exclude,
             extra_options=ExtraOptions(**extra_options_dict),
         )
 
@@ -540,7 +540,7 @@ class AutoQuantizationConfig:
         if isinstance(extra_options, dict):
             extra_options = ExtraOptions(**extra_options)
 
-        extra_options_dict = extra_options.__dict__
+        extra_options_dict = extra_options.to_diff_dict()
         extra_options_dict["activation_symmetric"] = extra_options_dict.get("activation_symmetric", True)
 
         return QuantizationConfig(
@@ -549,8 +549,8 @@ class AutoQuantizationConfig:
             activations_dtype="int8",
             weights_dtype="int8",
             op_types_to_quantize=op_types_to_quantize,
-            nodes_to_quantize=nodes_to_quantize or [],
-            nodes_to_exclude=nodes_to_exclude or [],
+            nodes_to_quantize=nodes_to_quantize,
+            nodes_to_exclude=nodes_to_exclude,
             extra_options=ExtraOptions(**extra_options_dict),
         )
 
@@ -572,8 +572,8 @@ class AutoQuantizationConfig:
             activations_dtype="uint8",
             weights_dtype="int8",
             op_types_to_quantize=op_types_to_quantize,
-            nodes_to_quantize=nodes_to_quantize or [],
-            nodes_to_exclude=nodes_to_exclude or [],
+            nodes_to_quantize=nodes_to_quantize,
+            nodes_to_exclude=nodes_to_exclude,
             extra_options=extra_options,
         )
 
