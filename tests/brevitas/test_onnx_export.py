@@ -9,11 +9,11 @@ from typing import Dict
 
 import onnx
 import torch
+from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from brevitas_examples.llm.llm_quant.export import brevitas_proxy_export_mode
 from parameterized import parameterized
 from testing_utils import SUPPORTED_MODELS_TINY, VALIDATE_EXPORT_ON_SHAPES, get_quantized_model
 
-from brevitas.export.onnx.standard.qcdq.manager import StdQCDQONNXManager
 from optimum.amd.brevitas.export import find_and_insert_matmulinteger
 from optimum.exporters import TasksManager
 from optimum.exporters.onnx import (
