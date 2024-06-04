@@ -48,12 +48,12 @@ jobs:
           pip install .
           pip install black wheel
           cd ..
+          pip install onnxruntime==1.14.0
           git clone --depth 1 --branch main https://github.com/amd/RyzenAI-SW/ && cd RyzenAI-SW/tutorial/RyzenAI_quant_tutorial/onnx_example/ && pip install pkgs/*.whl
 
           cd ../../../../optimum-amd
           pip install .[brevitas,tests]
 
-          pip install onnxruntime==1.14.0
           cd ..
 
       - name: Make documentation
