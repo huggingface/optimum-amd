@@ -65,7 +65,8 @@ def compute_perplexity(model: torch.nn.Module, data: List[Dict], context_length:
                 subsample["past_key_values"] = sample["past_key_values"]
 
             # Add BOS token.
-            subsample["input_ids"][:, 0] = tokenizer.bos_token_id
+            if tokenizer.bos_token_id is not None:
+                subsample["input_ids"][:, 0] = tokenizer.bos_token_id
 
             use_accelerate = hasattr(model, "hf_device_map")
             if not use_accelerate or (use_accelerate and not hasattr(model, "_hf_hook")):
@@ -136,7 +137,8 @@ def get_wikitext2(
                 input_ids = enc["input_ids"][:, start_idx : end_idx + 1]
 
                 # Add BOS token.
-                input_ids[:, 0] = tokenizer.bos_token_id
+                if tokenizer.bos_token_id is not None:
+                    input_ids[:, 0] = tokenizer.bos_token_id
 
                 dataset.append({"input_ids": input_ids, "attention_mask": attention_mask})
                 pbar.update(1)
@@ -187,7 +189,8 @@ def get_c4(
                 input_ids = enc["input_ids"][:, start_idx : end_idx + 1]
 
                 # Add BOS token.
-                input_ids[:, 0] = tokenizer.bos_token_id
+                if tokenizer.eos_token_id is not None:
+                    input_ids[:, 0] = tokenizer.eos_token_id
 
                 dataset.append({"input_ids": input_ids, "attention_mask": attention_mask})
                 pbar.update(1)
@@ -269,14 +272,18 @@ def get_dataset_for_model(
         normalized_config = normalized_config_class(config)
 
         num_heads = normalized_config.num_attention_heads
+        if hasattr(normalized_config, "num_key_value_heads"):
+            num_kv_heads = normalized_config.num_key_value_heads
+        else:
+            num_kv_heads = num_heads
         head_dim = normalized_config.hidden_size // num_heads
         num_layers = normalized_config.num_layers
 
         for sample in data:
             sample["past_key_values"] = tuple(
                 (
-                    torch.zeros(1, num_heads, 0, head_dim, device=sample["input_ids"].device),
-                    torch.zeros(1, num_heads, 0, head_dim, device=sample["input_ids"].device),
+                    torch.zeros(1, num_kv_heads, 0, head_dim, device=sample["input_ids"].device),
+                    torch.zeros(1, num_kv_heads, 0, head_dim, device=sample["input_ids"].device),
                 )
                 for _ in range(num_layers)
             )
