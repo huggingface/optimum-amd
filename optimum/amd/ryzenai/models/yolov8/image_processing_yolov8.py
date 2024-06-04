@@ -169,7 +169,7 @@ class YoloV8ImageProcessor(BaseImageProcessor):
             predictions.transpose(2, 1),
             threshold,
             nms_threshold,
-            agnostic=True,
+            agnostic=agnostic_nms,
             class_conf_start_index=4,
             max_detections=max_detections,
         )
