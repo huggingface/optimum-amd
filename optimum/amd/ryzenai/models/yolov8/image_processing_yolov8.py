@@ -165,11 +165,8 @@ class YoloV8ImageProcessor(BaseImageProcessor):
 
         predictions = postprocess(outputs, num_classes=self.num_classes, reg_max=self.reg_max, stride=self.stride)
 
-        has_confidence = predictions[:, 4 : 4 + self.num_classes].amax(1) > threshold
-
         dets = non_max_suppression(
             predictions.transpose(2, 1),
-            has_confidence,
             threshold,
             nms_threshold,
             agnostic=agnostic_nms,

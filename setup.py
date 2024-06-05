@@ -36,6 +36,7 @@ QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]
 EXTRAS_REQUIRE = {
     "quality": QUALITY_REQUIRE,
     "tests": TESTS_REQUIRE,
+    "ryzenai": ["opencv-python", "timm"],
     "zentorch": ["torch==2.2.1"],
     "brevitas": [
         "brevitas",

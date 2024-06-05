@@ -155,11 +155,9 @@ class YoloV3ImageProcessor(BaseImageProcessor):
 
         anchors = torch.tensor(self.anchors)
         predictions = postprocess(outputs, anchors, self.num_classes, self.stride)
-        has_confidence = predictions[..., 4] > threshold
 
         dets = non_max_suppression(
             predictions,
-            has_confidence,
             threshold,
             nms_threshold,
             agnostic=agnostic_nms,

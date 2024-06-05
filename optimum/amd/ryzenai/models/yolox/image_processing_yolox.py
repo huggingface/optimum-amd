@@ -185,11 +185,8 @@ class YoloXImageProcessor(BaseImageProcessor):
 
         predictions = postprocess(outputs, (self.size["height"], self.size["width"]), torch.Tensor(self.stride))
 
-        has_confidence = predictions[..., 4] > threshold  # Candidates
-
         dets = non_max_suppression(
             predictions,
-            has_confidence,
             threshold,
             nms_threshold,
             agnostic=agnostic_nms,
