@@ -48,12 +48,12 @@ jobs:
           pip install .
           pip install black wheel
           cd ..
-          git clone --depth 1 --branch v3.5 https://github.com/Xilinx/Vitis-AI.git && cd Vitis-AI/src/vai_quantizer/vai_q_onnx && sh build.sh && pip install pkgs/*.whl
+          git clone --depth 1 --branch main https://github.com/amd/RyzenAI-SW/ && cd RyzenAI-SW/tutorial/RyzenAI_quant_tutorial/onnx_example/ && pip install pkgs/*.whl
 
           cd ../../../../optimum-amd
           pip install .[brevitas,tests]
 
-          pip install onnxruntime==1.14.0
+          pip install onnxruntime==1.15.0
           cd ..
 
       - name: Make documentation
