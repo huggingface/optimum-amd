@@ -289,10 +289,6 @@ class QuantizationConfig:
             - `CalibrationMethod.MinMax`: Obtain quantization parameters based on minimum and maximum values of each tensor.
             - `CalibrationMethod.Entropy`: Determine quantization parameters based on the entropy algorithm of each tensor's distribution.
             - `CalibrationMethod.Percentile`: Calculate quantization parameters using percentiles of tensor values.
-        activations_dtype (`QuantType`, defaults to `QuantType.QUInt8`):
-            The quantization data type to use for the activations.
-        weights_dtype (`QuantType`, defaults to `QuantType.QInt8`):
-            The quantization data type to use for the weights.
         enable_ipu_cnn (`bool`, defaults to `True`):
             Flag to generate a quantized model suitable for DPU/NPU computations. If True, the quantization process will
             consider specific limitations and requirements of DPU/NPU, optimizing the model accordingly.
@@ -309,9 +305,9 @@ class QuantizationConfig:
             Determines whether weights should be quantized per channel. Must be False for DPU/NPU devices.
         reduce_range (`bool`, defaults to `False`):
             If True, quantizes weights with 7-bits. Must be False for DPU/NPU devices.
-        activations_dtype (`QuantType`, defaults to `QuantType.QInt8`):
+        activations_dtype (`QuantType`, defaults to `quint8`):
             Specifies the quantization data type for activations.
-        weights_dtype (`QuantType`, defaults to `QuantType.QInt8`):
+        weights_dtype (`QuantType`, defaults to `qint8`):
             Specifies the quantization data type for weights. Must be `QuantType.QInt8` for NPU devices.
         nodes_to_quantize (`List[str]`, defaults to an empty list `[]`):
             If specified, only the nodes in this list are quantized.
