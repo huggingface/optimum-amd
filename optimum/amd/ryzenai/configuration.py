@@ -12,6 +12,33 @@ import vai_q_onnx
 from optimum.configuration_utils import BaseConfig
 
 
+QUANT_TYPE_MAPPING = {
+    "uint8": vai_q_onnx.QuantType.QUInt8,
+    "int8": vai_q_onnx.QuantType.QInt8,
+    "uint16": vai_q_onnx.VitisQuantType.QUInt16,
+    "int16": vai_q_onnx.VitisQuantType.QInt16,
+    "uint32": vai_q_onnx.VitisQuantType.QUInt32,
+    "int32": vai_q_onnx.VitisQuantType.QInt32,
+    "float16": vai_q_onnx.VitisQuantType.QFloat16,
+    "bfloat16": vai_q_onnx.VitisQuantType.QBFloat16,
+}
+
+QUANT_FORMAT_MAPPING = {
+    "qop": vai_q_onnx.QuantFormat.QOperator,
+    "qdq": vai_q_onnx.QuantFormat.QDQ,
+    "vitisqdq": vai_q_onnx.VitisQuantFormat.QDQ,
+    "vitisfixneuron": vai_q_onnx.VitisQuantFormat.FixNeuron,
+}
+
+CALIBRATION_METHOD_MAPPING = {
+    "minmax": vai_q_onnx.CalibrationMethod.MinMax,
+    "entropy": vai_q_onnx.CalibrationMethod.Entropy,
+    "percentile": vai_q_onnx.CalibrationMethod.Percentile,
+    "nonoverflow": vai_q_onnx.PowerOfTwoMethod.NonOverflow,
+    "mse": vai_q_onnx.PowerOfTwoMethod.MinMSE,
+}
+
+
 class CalibrationMethod(Enum):
     """CalibrationMethod is an enumeration of the calibration methods supported by RyzenAI quantization."""
 
@@ -20,28 +47,6 @@ class CalibrationMethod(Enum):
     Percentile = vai_q_onnx.CalibrationMethod.Percentile
     NonOverflow = vai_q_onnx.PowerOfTwoMethod.NonOverflow
     MinMSE = vai_q_onnx.PowerOfTwoMethod.MinMSE
-
-
-class QuantFormat(Enum):
-    """QuantFormat is an enumeration of the quantization formats supported by RyzenAI quantization."""
-
-    QOperator = vai_q_onnx.QuantFormat.QOperator
-    QDQ = vai_q_onnx.QuantFormat.QDQ
-    VitisQuantFormat_QDQ = vai_q_onnx.VitisQuantFormat.QDQ
-    VitisQuantFormat_FixNeuron = vai_q_onnx.VitisQuantFormat.FixNeuron
-
-
-class QuantType(Enum):
-    """QuantType is an enumeration of the quantization types supported by RyzenAI quantization."""
-
-    QInt8 = vai_q_onnx.QuantType.QInt8
-    QUInt8 = vai_q_onnx.QuantType.QUInt8
-    QUInt16 = vai_q_onnx.VitisQuantType.QUInt16
-    QInt16 = vai_q_onnx.VitisQuantType.QInt16
-    QUInt32 = vai_q_onnx.VitisQuantType.QUInt32
-    QInt32 = vai_q_onnx.VitisQuantType.QInt32
-    QFloat16 = vai_q_onnx.VitisQuantType.QFloat16
-    QBFloat16 = vai_q_onnx.VitisQuantType.QBFloat16
 
 
 @dataclass
@@ -265,7 +270,7 @@ class QuantizationConfig:
     Args:
         is_static (`bool`):
             Whether to apply static quantization or dynamic quantization.
-        format (Union[QuantFormat, str], defaults to `QuantFormat.QDQ`):
+        format (`Union[QuantFormat, str]`, defaults to `QuantFormat.QDQ`):
             This parameter is used to specify the quantization format of the model.
             Options:
             - `QuantFormat.QOperator`: Quantizes the model directly using quantized operators.
@@ -275,7 +280,7 @@ class QuantizationConfig:
               into the tensor. Supports a wider range of bit-widths and precisions.
             - `QuantFormat.FixNeuron` (Experimental): Quantizes the model by inserting FixNeuron (a combination of
               QuantizeLinear and DeQuantizeLinear) into the tensor. Experimental and not recommended for deployment.
-        calibration_method (Union[CalibrationMethod, str], defaults to `CalibrationMethod.MinMSE`):
+        calibration_method (`Union[CalibrationMethod, str]`, defaults to `CalibrationMethod.MinMSE`):
             The method used in calibration.
             Options (for CNNs running on NPU, power-of-two methods; for Transformers on NPU or CNNs on CPU, float scale methods):
             - `CalibrationMethod.NonOverflow`: Power-of-two method to prevent min/max values from overflowing.
@@ -284,47 +289,47 @@ class QuantizationConfig:
             - `CalibrationMethod.MinMax`: Obtain quantization parameters based on minimum and maximum values of each tensor.
             - `CalibrationMethod.Entropy`: Determine quantization parameters based on the entropy algorithm of each tensor's distribution.
             - `CalibrationMethod.Percentile`: Calculate quantization parameters using percentiles of tensor values.
-        activations_dtype (QuantType, defaults to `QuantType.QUInt8`):
+        activations_dtype (`QuantType`, defaults to `QuantType.QUInt8`):
             The quantization data type to use for the activations.
-        weights_dtype (QuantType, defaults to `QuantType.QInt8`):
+        weights_dtype (`QuantType`, defaults to `QuantType.QInt8`):
             The quantization data type to use for the weights.
-        enable_ipu_cnn (bool, defaults to `True`):
+        enable_ipu_cnn (`bool`, defaults to `True`):
             Flag to generate a quantized model suitable for DPU/NPU computations. If True, the quantization process will
             consider specific limitations and requirements of DPU/NPU, optimizing the model accordingly.
-        input_nodes (List[str], defaults to an empty list `[]`):
+        input_nodes (`List[str]`, defaults to an empty list `[]`):
             List of names of starting nodes to be quantized. Nodes before these nodes will not be quantized.
-        output_nodes (List[str], defaults to an empty list `[]`):
+        output_nodes (`List[str]`, defaults to an empty list `[]`):
             List of names of end nodes to be quantized. Nodes after these nodes will not be quantized.
-        op_types_to_quantize (List[str], defaults to an empty list `[]`):
+        op_types_to_quantize (`List[str]`, defaults to an empty list `[]`):
             If specified, only operators of the given types will be quantized (e.g., ['Conv'] to quantize Convolutional layers).
-        random_data_reader_input_shape (Union[List[int], Tuple[int], Dict[str, List[int]]], defaults to an empty list `[]`):
+        random_data_reader_input_shape (`Union[List[int], Tuple[int], Dict[str, List[int]]]`, defaults to an empty list `[]`):
             Shapes of input nodes for internal random data reader. If dynamic axes require specific values, provide shapes.
             Format: list/tuple for single input, list of lists for multiple inputs, or dict {name: shape} for named inputs.
-        per_channel (bool, defaults to `False`):
+        per_channel (`bool`, defaults to `False`):
             Determines whether weights should be quantized per channel. Must be False for DPU/NPU devices.
-        reduce_range (bool, defaults to `False`):
+        reduce_range (`bool`, defaults to `False`):
             If True, quantizes weights with 7-bits. Must be False for DPU/NPU devices.
-        activations_dtype (QuantType, defaults to `QuantType.QInt8`):
+        activations_dtype (`QuantType`, defaults to `QuantType.QInt8`):
             Specifies the quantization data type for activations.
-        weights_dtype (QuantType, defaults to `QuantType.QInt8`):
+        weights_dtype (`QuantType`, defaults to `QuantType.QInt8`):
             Specifies the quantization data type for weights. Must be `QuantType.QInt8` for NPU devices.
-        nodes_to_quantize (List[str], defaults to an empty list `[]`):
+        nodes_to_quantize (`List[str]`, defaults to an empty list `[]`):
             If specified, only the nodes in this list are quantized.
-        nodes_to_exclude (List[str], defaults to an empty list `[]`):
+        nodes_to_exclude (`List[str]`, defaults to an empty list `[]`):
             If specified, nodes in this list will be excluded from quantization.
-        optimize_model (bool, defaults to `True`):
+        optimize_model (`bool`, defaults to `True`):
             If True, optimizes the model before quantization.
-        use_external_data_format (bool, defaults to `False`):
+        use_external_data_format (`bool`, defaults to `False`):
             Flag for large size (>2GB) models. If True, model proto and data will be stored in separate files.
-        execution_providers (List[str], defaults to `['CPUExecutionProvider']`):
+        execution_providers (`List[str]`, defaults to `['CPUExecutionProvider']`):
             Defines the execution providers used by ONNX Runtime for model calibration.
-        convert_fp16_to_fp32 (bool, defaults to `False`):
+        convert_fp16_to_fp32 (`bool`, defaults to `False`):
             Controls whether to convert the input model from float16 to float32 before quantization.
-        convert_nchw_to_nhwc (bool, defaults to `False`):
+        convert_nchw_to_nhwc (`bool`, defaults to `False`):
             Controls whether to convert the input NCHW model to NHWC model before quantization.
-        include_cle (bool, defaults to `False`):
+        include_cle (`bool`, defaults to `False`):
             Flag to optimize models using CrossLayerEqualization; can improve accuracy for some models.
-        extra_options (Union[Dict, None, ExtraOptions], defaults to an instance of `ExtraOptions` with default values):
+        extra_options (`Union[Dict, None, ExtraOptions]`, defaults to an instance of `ExtraOptions` with default values):
             Contains key-value pairs for various options in different cases.
     """
 
@@ -353,27 +358,46 @@ class QuantizationConfig:
         if isinstance(self.extra_options, dict):
             self.extra_options = ExtraOptions(**self.extra_options)
 
-        if self.calibration_method in {"mse", "overflow"}:
+        if self.calibration_method in {vai_q_onnx.PowerOfTwoMethod.NonOverflow, vai_q_onnx.PowerOfTwoMethod.MinMSE}:
             self.extra_options.calib_tensor_range_symmetric = True
 
-        self.check_dtype_and_format(self.activations_dtype, "activations_dtype", self.format)
-        self.check_dtype_and_format(self.weights_dtype, "weights_dtype", self.format)
+        if (
+            self.activations_dtype not in {vai_q_onnx.QuantType.QUInt8, vai_q_onnx.QuantType.QInt8}
+            and self.format != vai_q_onnx.VitisQuantFormat.QDQ
+        ):
+            raise ValueError(
+                f'activations_dtype is: "{self.activations_dtype.name.lower()}", format must be "vitisqdq".'
+            )
+        if (
+            self.weights_dtype not in {vai_q_onnx.QuantType.QUInt8, vai_q_onnx.QuantType.QInt8}
+            and self.format != vai_q_onnx.VitisQuantFormat.QDQ
+        ):
+            raise ValueError(f'weights_dtype is: "{self.weights_dtype.name.lower()}", format must be "vitisqdq".')
 
         if self.enable_ipu_cnn:
-            if self.format not in ["qdq"]:
-                raise ValueError('ipu cnn configuration only support format "qdq".')
-            if self.calibration_method not in ["nonoverflow", "mse"]:
-                raise ValueError('ipu cnn configuration only support calibration_method "nonoverflow" and "mse".')
+            if self.format != vai_q_onnx.QuantFormat.QDQ:
+                raise ValueError(f'ipu cnn configuration only support format "qdq". Got {self.format}.')
+
+            if self.calibration_method not in {
+                vai_q_onnx.PowerOfTwoMethod.NonOverflow,
+                vai_q_onnx.PowerOfTwoMethod.MinMSE,
+            }:
+                raise ValueError(
+                    f'ipu cnn configuration only support calibration_method "nonoverflow" and "mse". Got {self.calibration_method.name.lower()}.'
+                )
+
             if not (self.extra_options.activation_symmetric and self.extra_options.weight_symmetric):
                 raise ValueError(
                     "ipu cnn configuration requires setting activation_symmetric and weight_symmetric to true."
                 )
-            if self.activations_dtype not in ["uint8", "int8"]:
-                raise ValueError('ipu cnn configuration only support activations_dtype "uint8" and "int8".')
-            if self.weights_dtype not in ["int8"]:
-                raise ValueError('ipu cnn configuration only support weights_dtype "int8".')
+
+            if self.weights_dtype != vai_q_onnx.QuantType.QInt8:
+                raise ValueError(
+                    f'ipu cnn configuration only support weights_dtype "int8". Got {self.weights_dtype.name.lower()}.'
+                )
+
             if self.per_channel:
-                raise ValueError("ipu cnn configuration only supports per tensor.")
+                raise ValueError("ipu cnn configuration only supports per tensor. Got per_channel=True.")
 
     def __setattr__(self, name, value):
         if name == "extra_options" and isinstance(value, dict):
@@ -381,15 +405,24 @@ class QuantizationConfig:
         else:
             super().__setattr__(name, value)
 
-    def __getattr__(self, name):
-        value = getattr(self, name)
-        if name == "format":
-            value = self._map_format(value)
-        elif name == "calibration_method":
-            value = self._map_calibration_method(value)
-        elif name in ["activations_dtype", "weights_dtype"]:
-            value = self._map_dtypes(value, name)
+    def __getattribute__(self, name: str):
+        value = super().__getattribute__(name)
+        if isinstance(value, str):
+            if name == "format":
+                value = QUANT_FORMAT_MAPPING[value]
+            elif name == "calibration_method":
+                value = CALIBRATION_METHOD_MAPPING[value]
+            elif name == "activations_dtype":
+                value = QUANT_TYPE_MAPPING[value]
+            elif name == "weights_dtype":
+                value = QUANT_TYPE_MAPPING[value]
+
         return value
+
+    def to_dict(self):
+        options_dict = self.__dict__.copy()
+        options_dict["extra_options"] = options_dict["extra_options"].to_diff_dict()
+        return options_dict
 
     def to_diff_dict(self) -> dict:
         """
@@ -416,75 +449,6 @@ class QuantizationConfig:
                     non_default_values[option.name] = value
         return non_default_values
 
-    @staticmethod
-    def check_dtype_and_format(dtype, dtype_name, format):
-        if dtype not in ["uint8", "int8"] and format not in ["vitisqdq"]:
-            raise ValueError(f'{dtype_name} is: "{dtype}", format must be "vitisqdq".')
-
-    def map_format(self):
-        mapping = {
-            "qdq": QuantFormat.QDQ,
-            "qop": QuantFormat.QOperator,
-            "vitisqdq": QuantFormat.VitisQuantFormat_QDQ,
-        }
-        return QuantizationConfig._map_value(mapping, self.format, "format")
-
-    def map_calibration_method(self):
-        mapping = {
-            "nonoverflow": CalibrationMethod.NonOverflow,
-            "mse": CalibrationMethod.MinMSE,
-            "minmax": CalibrationMethod.MinMax,
-            "entropy": CalibrationMethod.Entropy,
-            "percentile": CalibrationMethod.Percentile,
-        }
-        return QuantizationConfig._map_value(mapping, self.calibration_method, "calibration method")
-
-    @property
-    def _dtype_mapping(self):
-        mapping = {
-            "uint8": QuantType.QUInt8,
-            "int8": QuantType.QInt8,
-            "uint16": QuantType.QUInt16,
-            "int16": QuantType.QInt16,
-            "uint32": QuantType.QUInt32,
-            "int32": QuantType.QInt32,
-            "float16": QuantType.QFloat16,
-            "bfloat16": QuantType.QBFloat16,
-        }
-        return mapping
-
-    def map_activations_dtype(self):
-        return QuantizationConfig._map_value(self._dtype_mapping, self.activations_dtype, "Activations dtype")
-
-    def map_weights_dtype(self):
-        return QuantizationConfig._map_value(self._dtype_mapping, self.weights_dtype, "Weights dtype")
-
-    @staticmethod
-    def _map_value(mapping, value, name):
-        try:
-            return mapping[value]
-        except KeyError:
-            valid_values = ", ".join(f'"{v}"' for v in mapping.keys())
-            raise ValueError(f'{name} only supports the following values: {valid_values}. Received "{value}".')
-
-    @staticmethod
-    def quantization_type_str(activations_dtype, weights_dtype) -> str:
-        str_mapping = {
-            QuantType.QUInt8: "u8",
-            QuantType.QInt8: "s8",
-            QuantType.QUInt16: "u16",
-            QuantType.QInt16: "s16",
-            QuantType.QUInt32: "u32",
-            QuantType.QInt32: "s32",
-            QuantType.QFloat16: "f16",
-            QuantType.QBFloat16: "bf16",
-        }
-        activations_str = str_mapping.get(activations_dtype)
-        weights_str = str_mapping.get(weights_dtype)
-        if activations_str is None or weights_str is None:
-            raise ValueError("Unsupported quantization type")
-        return f"{activations_str}/{weights_str}"
-
     @property
     def use_symmetric_calibration(self) -> bool:
         if self.extra_options:
@@ -495,7 +459,7 @@ class QuantizationConfig:
     def __str__(self):
         return (
             f"{self.format} ("
-            f"schema: {QuantizationConfig.quantization_type_str(self.activations_dtype, self.weights_dtype)}, "
+            f"schema: {self.activations_dtype.name}/{self.weights_dtype.name}, "
             f"enable_ipu_cnn: {self.enable_ipu_cnn})"
         )
 
@@ -601,7 +565,7 @@ class RyzenAIConfig(BaseConfig):
     ):
         super().__init__()
         self.opset = opset
-        self.quantization = quantization.to_diff_dict() if quantization is not None else None
+        self.quantization = quantization.to_dict() if quantization is not None else None
         self.optimum_version = kwargs.pop("optimum_version", None)
 
     @staticmethod

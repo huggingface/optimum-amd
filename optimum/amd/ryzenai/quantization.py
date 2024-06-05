@@ -164,25 +164,24 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
 
         LOGGER.info("Quantizing model...")
 
-        format = quantization_config.map_format().value
-        calibration_method = quantization_config.map_calibration_method().value
-        activation_type = quantization_config.map_activations_dtype().value
-        weight_type = quantization_config.map_weights_dtype().value
+        quantization_config.map_calibration_method().value
+        quantization_config.map_activations_dtype().value
+        quantization_config.map_weights_dtype().value
 
         quantize_static(
             model_input=Path(self.onnx_model_path).as_posix(),
             model_output=quantized_model_path.as_posix(),
             calibration_data_reader=reader,
-            quant_format=format,
-            calibrate_method=calibration_method,
+            quant_format=quantization_config.format,
+            calibrate_method=quantization_config.calibration_method,
             input_nodes=quantization_config.input_nodes,
             output_nodes=quantization_config.output_nodes,
             op_types_to_quantize=quantization_config.op_types_to_quantize,
             random_data_reader_input_shape=quantization_config.random_data_reader_input_shape,
             per_channel=quantization_config.per_channel,
             reduce_range=quantization_config.reduce_range,
-            activation_type=activation_type,
-            weight_type=weight_type,
+            activation_type=quantization_config.activations_dtype,
+            weight_type=quantization_config.weights_dtype,
             nodes_to_quantize=quantization_config.nodes_to_quantize,
             nodes_to_exclude=quantization_config.nodes_to_exclude,
             optimize_model=quantization_config.optimize_model,

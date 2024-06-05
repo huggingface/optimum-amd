@@ -1,5 +1,6 @@
 import unittest
 
+import vai_q_onnx
 from parameterized import parameterized
 
 from optimum.amd.ryzenai import AutoQuantizationConfig, ExtraOptions, QuantizationConfig
@@ -103,16 +104,16 @@ class TestExtraOptions(unittest.TestCase):
 class TestQuantizationConfig(unittest.TestCase):
     def test_default_values(self):
         config = QuantizationConfig()
-        self.assertEqual(config.format, "qdq")
-        self.assertEqual(config.calibration_method, "mse")
+        self.assertEqual(config.format, vai_q_onnx.QuantFormat.QDQ)
+        self.assertEqual(config.calibration_method, vai_q_onnx.PowerOfTwoMethod.MinMSE)
         self.assertEqual(config.input_nodes, [])
         self.assertEqual(config.output_nodes, [])
         self.assertEqual(config.op_types_to_quantize, [])
         self.assertEqual(config.random_data_reader_input_shape, [])
         self.assertFalse(config.per_channel)
         self.assertFalse(config.reduce_range)
-        self.assertEqual(config.activations_dtype, "uint8")
-        self.assertEqual(config.weights_dtype, "int8")
+        self.assertEqual(config.activations_dtype, vai_q_onnx.QuantType.QUInt8)
+        self.assertEqual(config.weights_dtype, vai_q_onnx.QuantType.QInt8)
         self.assertEqual(config.nodes_to_quantize, [])
         self.assertEqual(config.nodes_to_exclude, [])
         self.assertTrue(config.optimize_model)
@@ -129,22 +130,16 @@ class TestQuantizationConfig(unittest.TestCase):
         config = QuantizationConfig(extra_options=extra_options)
         self.assertEqual(config.extra_options.activation_symmetric, True)
 
-    def test_to_diff_dict(self):
-        config = QuantizationConfig(format="qop", calibration_method="entropy")
-        diff_dict = config.to_diff_dict()
-        self.assertEqual(diff_dict["format"], "qop")
-        self.assertEqual(diff_dict["calibration_method"], "entropy")
-
     def test_use_symmetric_calibration(self):
         config = QuantizationConfig(extra_options=ExtraOptions(activation_symmetric=True, weight_symmetric=True))
         self.assertTrue(config.use_symmetric_calibration)
 
     @parameterized.expand(
         [
-            ("format", "qdq", "qop"),
-            ("calibration_method", "mse", "entropy"),
-            ("activations_dtype", "uint8", "int8"),
-            ("weights_dtype", "int8", "uint8"),
+            ("format", vai_q_onnx.QuantFormat.QDQ, vai_q_onnx.QuantFormat.QOperator),
+            ("calibration_method", vai_q_onnx.PowerOfTwoMethod.MinMSE, vai_q_onnx.CalibrationMethod.Entropy),
+            ("activations_dtype", vai_q_onnx.QuantType.QUInt8, vai_q_onnx.QuantType.QInt8),
+            ("weights_dtype", vai_q_onnx.QuantType.QInt8, vai_q_onnx.QuantType.QUInt8),
         ]
     )
     def test_parametric_setting_attributes(self, attribute, default_value, new_value):
@@ -157,17 +152,18 @@ class TestQuantizationConfig(unittest.TestCase):
 class TestAutoQuantizationConfig(unittest.TestCase):
     def test_ipu_cnn_config(self):
         config = AutoQuantizationConfig.ipu_cnn_config()
-        self.assertEqual(config.format, "qdq")
-        self.assertEqual(config.calibration_method, "mse")
+        self.assertEqual(config.format, vai_q_onnx.QuantFormat.QDQ)
+        self.assertEqual(config.calibration_method, vai_q_onnx.PowerOfTwoMethod.MinMSE)
         self.assertTrue(config.extra_options.activation_symmetric)
 
     def test_ipu_transformer_config(self):
         config = AutoQuantizationConfig.ipu_transformer_config()
-        self.assertEqual(config.format, "qdq")
-        self.assertEqual(config.calibration_method, "minmax")
+        self.assertEqual(config.format, vai_q_onnx.QuantFormat.QDQ)
+        self.assertEqual(config.calibration_method, vai_q_onnx.CalibrationMethod.MinMax)
         self.assertTrue(config.extra_options.activation_symmetric)
 
     def test_cpu_cnn_config(self):
         config = AutoQuantizationConfig.cpu_cnn_config()
-        self.assertEqual(config.format, "qdq")
-        self.assertEqual(config.calibration_method, "minmax")
+
+        self.assertEqual(config.format, vai_q_onnx.QuantFormat.QDQ)
+        self.assertEqual(config.calibration_method, vai_q_onnx.CalibrationMethod.MinMax)
