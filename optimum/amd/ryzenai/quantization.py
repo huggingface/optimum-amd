@@ -164,10 +164,6 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
 
         LOGGER.info("Quantizing model...")
 
-        quantization_config.map_calibration_method().value
-        quantization_config.map_activations_dtype().value
-        quantization_config.map_weights_dtype().value
-
         quantize_static(
             model_input=Path(self.onnx_model_path).as_posix(),
             model_output=quantized_model_path.as_posix(),
