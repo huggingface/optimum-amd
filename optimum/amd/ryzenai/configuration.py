@@ -48,6 +48,12 @@ class QuantizationConfig:
     weights_dtype: QuantType = QuantType.QInt8
     weights_symmetric: bool = True
     enable_dpu: bool = True
+    use_external_data_format: bool = False
+    include_cle: bool = False
+    include_sq: bool = False
+    include_fast_ft: bool = False
+    include_auto_mp: bool = False
+    extra_options: dict = None
 
     @staticmethod
     def quantization_type_str(activations_dtype: QuantType, weights_dtype: QuantType) -> str:

@@ -77,6 +77,18 @@ def main(args):
     quantizer = RyzenAIOnnxQuantizer.from_pretrained(onnx_model)
     quantization_config = AutoQuantizationConfig.cpu_cnn_config()
     quantization_config.calibration_method = vai_q_onnx.CalibrationMethod.Percentile
+    quantization_config.include_cle = True
+    quantization_config.include_fast_ft = True
+    quantization_config.extra_options = {
+        "FastFinetune": {
+            "BatchSize": 1,
+            "NumIterations": 1000,
+            "LearningRate": 0.1,
+            "OptimAlgorithm": "adaround",
+            "OptimDevice": "cpu",
+            "EarlyStop": True,
+        },
+    }
 
     calibration_dataset = quantizer.get_calibration_dataset(
         args.dataset,
