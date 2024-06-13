@@ -2,14 +2,18 @@
 # Copyright (C) 2023, Advanced Micro Devices, Inc. All rights reserved.
 # SPDX-License-Identifier: MIT
 #
+import os
+import shutil
+import tarfile
 import time
 from argparse import ArgumentParser
-from functools import partial
 
 import numpy as np
 import onnxruntime
 import timm
+import torch
 import vai_q_onnx
+from datasets import Dataset
 from timm.data import create_dataset, create_loader
 from timm.utils import AverageMeter
 from tqdm import tqdm
@@ -22,22 +26,38 @@ from optimum.amd.ryzenai import (
 
 
 """
+If you already have an ImageNet datasets, you can directly use your dataset path with' --calib-data-path' and '--eval-data-path'.
+
+To prepare the test data, please check the download section of the main website:
+https://huggingface.co/datasets/imagenet-1k/tree/main/data.
+You need to register and download **val_images.tar.gz**.
+
 For example:
+python test_timm_quant_and_eval.py -c $PATH/calib_100 -e $PATH/val_data -m timm/resnetv2_50.a1h_in1k
+or
+python test_timm_quant_and_eval.py -v $PATH/val_images.tar.gz -m timm/resnetv2_50.a1h_in1k
+
 Float Accuracy of resnet50.tv_in1k:
 - Prec@1: 76.128%
 - Prec@5: 92.858%
 
 Quantization Accuracy of resnet50.tv_in1k:
-- Prec@1: 74.072%
-- Prec@5: 91.816%
+- Prec@1: 74.384%
+- Prec@5: 91.968%
 """
 
 
 def parse_args():
     parser = ArgumentParser("RyzenAIQuantization")
-    parser.add_argument("--data-path", metavar="DIR", required=True, help="path to dataset")
+    parser.add_argument("-v", "--val-path", metavar="DIR", required=False, help="path to dataset")
+    parser.add_argument("-c", "--calib-data-path", metavar="DIR", required=False, help="path to dataset")
+    parser.add_argument("-e", "--eval-data-path", metavar="DIR", required=False, help="path to dataset")
     parser.add_argument(
-        "--model_id", type=str, default="timm/resnet50.tv_in1k", help='Model id, default to "timm/resnet50.tv_in1k"'
+        "-m",
+        "--model_id",
+        type=str,
+        default="timm/resnet50.tv_in1k",
+        help='Model id, default to "timm/resnet50.tv_in1k"',
     )
     parser.add_argument(
         "--dataset", type=str, default="imagenet-1k", help='Calibration dataset, default to "imagenet-1k"'
@@ -51,53 +71,119 @@ def parse_args():
     )
     parser.add_argument("-b", "--batch-size", default=1, type=int, metavar="N", help="mini-batch size (default: 1)")
     args, _ = parser.parse_known_args()
+    if args.val_path is None and (args.calib_data_path is None and args.eval_data_path is None):
+        parser.error("You must either provide --calib-data-path and --eval-data-path, or --val-path")
+
     return args
 
 
 def main(args):
+    # prepare val data and calib data
+    if (args.calib_data_path is None and args.eval_data_path is None) and args.val_path is not None:
+        os.makedirs("val_data", exist_ok=True)
+        with tarfile.open(args.val_path, "r:gz") as tar:
+            tar.extractall(path="val_data")
+        source_folder = "val_data"
+        calib_data_path = "calib_data"
+        if not os.path.exists(source_folder):
+            raise ValueError("The val_data does not exist.")
+        files = os.listdir(source_folder)
+        for filename in files:
+            if not filename.startswith("ILSVRC2012_val_") or not filename.endswith(".JPEG"):
+                continue
+
+            n_identifier = filename.split("_")[-1].split(".")[0]
+            folder_name = n_identifier
+            folder_path = os.path.join(source_folder, folder_name)
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+            file_path = os.path.join(source_folder, filename)
+            destination = os.path.join(folder_path, filename)
+            shutil.move(file_path, destination)
+
+        print("File organization complete.")
+
+        if not os.path.exists(calib_data_path):
+            os.makedirs(calib_data_path)
+
+        destination_folder = calib_data_path
+
+        subfolders = os.listdir(source_folder)
+
+        for subfolder in subfolders:
+            source_subfolder = os.path.join(source_folder, subfolder)
+            destination_subfolder = os.path.join(destination_folder, subfolder)
+            os.makedirs(destination_subfolder, exist_ok=True)
+
+            files = os.listdir(source_subfolder)
+
+            if files:
+                file_to_copy = files[0]
+                source_file = os.path.join(source_subfolder, file_to_copy)
+                destination_file = os.path.join(destination_subfolder, file_to_copy)
+
+                shutil.copy(source_file, destination_file)
+
+        print("Creating calibration dataset complete.")
+
     model_id = args.model_id
 
     onnx_model = RyzenAIModelForImageClassification.from_pretrained(
         model_id, export=True, provider="CPUExecutionProvider"
     )
-    # preprocess config
-    data_config = timm.data.resolve_data_config(pretrained_cfg=onnx_model.config.to_dict())
-    transforms = timm.data.create_transform(**data_config, is_training=False)
+    # # preprocess config
+    data_config = timm.data.resolve_data_config(pretrained_cfg=onnx_model.config.to_dict(), use_test_size=True)
 
-    def preprocess_fn(ex, transforms):
-        image = ex["image"]
-        if image.mode == "L":
-            # Three channels.
-            image = image.convert("RGB")
-        pixel_values = transforms(image)
-
-        return {"pixel_values": pixel_values}
-
-    # quantize
+    # # quantize
     quantizer = RyzenAIOnnxQuantizer.from_pretrained(onnx_model)
     quantization_config = AutoQuantizationConfig.cpu_cnn_config()
     quantization_config.calibration_method = vai_q_onnx.CalibrationMethod.Percentile
     quantization_config.include_cle = True
     quantization_config.include_fast_ft = True
     quantization_config.extra_options = {
+        "CalibDataSize": 200,
         "FastFinetune": {
-            "BatchSize": 1,
-            "NumIterations": 1000,
+            "BatchSize": 2,
+            "NumIterations": 10000,
             "LearningRate": 0.1,
             "OptimAlgorithm": "adaround",
             "OptimDevice": "cpu",
             "EarlyStop": True,
         },
+        "Percentile": 99.9999,
     }
 
-    calibration_dataset = quantizer.get_calibration_dataset(
-        args.dataset,
-        preprocess_function=partial(preprocess_fn, transforms=transforms),
-        num_samples=100,
-        dataset_split="validation",
-        preprocess_batch=False,
-        streaming=True,
+    calib_loader = create_loader(
+        create_dataset("", args.calib_data_path),
+        input_size=data_config["input_size"],
+        batch_size=args.batch_size,
+        use_prefetcher=False,
+        interpolation=data_config["interpolation"],
+        mean=data_config["mean"],
+        std=data_config["std"],
+        num_workers=args.workers,
+        crop_pct=data_config["crop_pct"],
     )
+
+    data_list = []
+    labels_list = []
+
+    for batch in calib_loader:
+        data, labels = batch
+        data_list.append(data)
+        labels_list.append(labels)
+
+    data_list = torch.cat(data_list, dim=0)
+    labels_list = torch.cat(labels_list, dim=0)
+
+    data_np = data_list.numpy()
+
+    data_dict = {
+        "pixel_values": data_np,
+    }
+
+    calibration_dataset = Dataset.from_dict(data_dict)
+
     quantizer.quantize(
         quantization_config=quantization_config, dataset=calibration_dataset, save_dir="quantized_model"
     )
@@ -112,10 +198,8 @@ def main(args):
 
     session = onnxruntime.InferenceSession("quantized_model/model_quantized.onnx", sess_options)
 
-    data_config = timm.data.resolve_data_config(pretrained_cfg=onnx_model.config.to_dict(), use_test_size=True)
-
     loader = create_loader(
-        create_dataset("", args.data_path),
+        create_dataset("", args.eval_data_path),
         input_size=data_config["input_size"],
         batch_size=args.batch_size,
         use_prefetcher=False,
@@ -132,7 +216,7 @@ def main(args):
     top1 = AverageMeter()
     top5 = AverageMeter()
     end = time.time()
-    for i, (input, target) in enumerate(tqdm(loader, desc="Processing")):
+    for input, target in tqdm(loader, desc="Processing"):
         # run the net and return prediction
         output = session.run([], {input_name: input.data.numpy()})
         output = output[0]
