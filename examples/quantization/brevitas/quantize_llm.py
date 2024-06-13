@@ -21,7 +21,6 @@ def main(args):
         activations_equalization=args.activations_equalization,
         is_static=args.is_static,
         weights_symmetric=True,
-        activations_symmetric=args.is_static,  # ONNX export only supports unsigned for dynamic quantization
         gpu_device_map=args.gpu_device_map,
         cpu_device_map=args.cpu_device_map,
     )
@@ -110,12 +109,6 @@ if __name__ == "__main__":
         choices=[None, "cross_layer", "layerwise"],
         default=None,
         help="Apply the activation equalization (SmoothQuant) algorithm (choices: [%(choices)s], default: %(default)s). This option requires a calibration dataset.",
-    )
-    parser.add_argument(
-        "--is-static",
-        action="store_true",
-        default=False,
-        help="Whether to do static quantization of the activations (default: %(default)s), with pre-computed quantizaton parameters ahead of inference. This option requires a calibration dataset.",
     )
     parser.add_argument(
         "--seqlen",
