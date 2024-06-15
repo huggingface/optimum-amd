@@ -80,51 +80,62 @@ def parse_args():
 def main(args):
     # prepare val data and calib data
     if (args.calib_data_path is None and args.eval_data_path is None) and args.val_path is not None:
-        os.makedirs("val_data", exist_ok=True)
-        with tarfile.open(args.val_path, "r:gz") as tar:
-            tar.extractall(path="val_data")
         source_folder = "val_data"
         calib_data_path = "calib_data"
-        if not os.path.exists(source_folder):
-            raise ValueError("The val_data does not exist.")
-        files = os.listdir(source_folder)
-        for filename in files:
-            if not filename.startswith("ILSVRC2012_val_") or not filename.endswith(".JPEG"):
-                continue
+        if os.path.isdir(source_folder) and os.path.isdir(calib_data_path):
+            print(
+                f"Detected that {source_folder} and {calib_data_path} already exist, skipping the creation of the calibration dataset."
+            )
+        else:
+            os.makedirs(source_folder, exist_ok=True)
+            with tarfile.open(args.val_path, "r:gz") as tar:
+                tar.extractall(path=source_folder)
 
-            n_identifier = filename.split("_")[-1].split(".")[0]
-            folder_name = n_identifier
-            folder_path = os.path.join(source_folder, folder_name)
-            if not os.path.exists(folder_path):
-                os.makedirs(folder_path)
-            file_path = os.path.join(source_folder, filename)
-            destination = os.path.join(folder_path, filename)
-            shutil.move(file_path, destination)
+            if not os.path.exists(source_folder):
+                raise ValueError("The val_data does not exist.")
+            files = os.listdir(source_folder)
+            for filename in files:
+                if not filename.startswith("ILSVRC2012_val_") or not filename.endswith(".JPEG"):
+                    continue
 
-        print("File organization complete.")
+                n_identifier = filename.split("_")[-1].split(".")[0]
+                folder_name = n_identifier
+                folder_path = os.path.join(source_folder, folder_name)
+                if not os.path.exists(folder_path):
+                    os.makedirs(folder_path)
+                file_path = os.path.join(source_folder, filename)
+                destination = os.path.join(folder_path, filename)
+                shutil.move(file_path, destination)
 
-        if not os.path.exists(calib_data_path):
-            os.makedirs(calib_data_path)
+            print("File organization complete.")
 
-        destination_folder = calib_data_path
+            if not os.path.exists(calib_data_path):
+                os.makedirs(calib_data_path)
 
-        subfolders = os.listdir(source_folder)
+            destination_folder = calib_data_path
 
-        for subfolder in subfolders:
-            source_subfolder = os.path.join(source_folder, subfolder)
-            destination_subfolder = os.path.join(destination_folder, subfolder)
-            os.makedirs(destination_subfolder, exist_ok=True)
+            subfolders = os.listdir(source_folder)
+            cnt = 0
+            for subfolder in subfolders:
+                source_subfolder = os.path.join(source_folder, subfolder)
+                destination_subfolder = os.path.join(destination_folder, subfolder)
+                os.makedirs(destination_subfolder, exist_ok=True)
 
-            files = os.listdir(source_subfolder)
+                files = os.listdir(source_subfolder)
 
-            if files:
-                file_to_copy = files[0]
-                source_file = os.path.join(source_subfolder, file_to_copy)
-                destination_file = os.path.join(destination_subfolder, file_to_copy)
+                if files:
+                    file_to_copy = files[0]
+                    source_file = os.path.join(source_subfolder, file_to_copy)
+                    destination_file = os.path.join(destination_subfolder, file_to_copy)
 
-                shutil.copy(source_file, destination_file)
+                    shutil.copy(source_file, destination_file)
+                    cnt += 1
+                if cnt > 200:
+                    break
 
-        print("Creating calibration dataset complete.")
+            print("Creating calibration dataset complete.")
+        args.calib_data_path = source_folder
+        args.eval_data_path = calib_data_path
 
     model_id = args.model_id
 
@@ -141,13 +152,12 @@ def main(args):
     quantization_config.include_cle = True
     quantization_config.include_fast_ft = True
     quantization_config.extra_options = {
-        "CalibDataSize": 200,
         "FastFinetune": {
             "BatchSize": 2,
             "NumIterations": 10000,
             "LearningRate": 0.1,
             "OptimAlgorithm": "adaround",
-            "OptimDevice": "cpu",
+            "OptimDevice": "cuda:0",
             "EarlyStop": True,
         },
         "Percentile": 99.9999,
