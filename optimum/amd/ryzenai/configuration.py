@@ -48,6 +48,7 @@ class QuantizationConfig:
     weights_dtype: QuantType = QuantType.QInt8
     weights_symmetric: bool = True
     enable_dpu: bool = True
+    enable_ipu_transformer: bool = False
     use_external_data_format: bool = False
     include_cle: bool = False
     include_sq: bool = False
@@ -89,19 +90,37 @@ class AutoQuantizationConfig:
         )
 
     @staticmethod
+    def ipu_transformer_config():
+        return QuantizationConfig(
+            format=QuantFormat.QDQ,
+            calibration_method=vai_q_onnx.CalibrationMethod.MinMax,
+            activations_dtype=QuantType.QInt8,
+            activations_symmetric=False,
+            weights_dtype=QuantType.QInt8,
+            weights_symmetric=True,
+            enable_ipu_transformer=True,
+        )
+
+    @staticmethod
     def cpu_cnn_config(
         use_symmetric_activations: bool = False,
         use_symmetric_weights: bool = True,
         enable_dpu: bool = False,
+        include_cle: bool = True,
+        include_fast_ft: bool = True,
+        extra_options: dict = None,
     ):
         return QuantizationConfig(
             format=QuantFormat.QDQ,
-            calibration_method=vai_q_onnx.CalibrationMethod.MinMax,
-            activations_dtype=QuantType.QUInt8,
+            calibration_method=vai_q_onnx.CalibrationMethod.Percentile,
+            activations_dtype=QuantType.QInt8,
             activations_symmetric=use_symmetric_activations,
             weights_dtype=QuantType.QInt8,
             weights_symmetric=use_symmetric_weights,
             enable_dpu=enable_dpu,
+            include_cle=include_cle,
+            include_fast_ft=include_fast_ft,
+            extra_options=extra_options,
         )
 
 

@@ -12,7 +12,6 @@ import numpy as np
 import onnxruntime
 import timm
 import torch
-import vai_q_onnx
 from datasets import Dataset
 from timm.data import create_dataset, create_loader
 from timm.utils import AverageMeter
@@ -149,26 +148,22 @@ def main(args):
     # # quantize
     quantizer = RyzenAIOnnxQuantizer.from_pretrained(onnx_model)
     quantization_config = AutoQuantizationConfig.cpu_cnn_config()
-    quantization_config.activations_dtype=vai_q_onnx.QuantType.QInt8
-    quantization_config.calibration_method = vai_q_onnx.CalibrationMethod.Percentile
-    quantization_config.include_cle = True
-    quantization_config.include_fast_ft = True
     quantization_config.extra_options = {
         "FastFinetune": {
             "BatchSize": 2,
-            'FixedSeed': 1705472343,
-            'NumBatches': 1,
-            'NumIterations': 10000,
-            'LearningRate': 0.1,
-            'OptimAlgorithm': 'adaround',
-            'OptimDevice': "cuda:0",  # or 'cpu'
-            'LRAdjust': (),
-            'SelectiveUpdate': False,
-            'EarlyStop': True,
-            'DropRatio': 0.75,
-            'RegParam': 0.01,  # default
-            'BetaRange': (20, 2),  # default
-            'WarmStart': 0.2,  # default
+            "FixedSeed": 1705472343,
+            "NumBatches": 1,
+            "NumIterations": 10000,
+            "LearningRate": 0.1,
+            "OptimAlgorithm": "adaround",
+            "OptimDevice": "cuda:0",  # or 'cpu'
+            "LRAdjust": (),
+            "SelectiveUpdate": False,
+            "EarlyStop": True,
+            "DropRatio": 0.75,
+            "RegParam": 0.01,  # default
+            "BetaRange": (20, 2),  # default
+            "WarmStart": 0.2,  # default
         },
         "Percentile": 99.9999,
     }
