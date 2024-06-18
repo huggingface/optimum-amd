@@ -19,7 +19,6 @@ def main(args):
         apply_weight_equalization=args.apply_weight_equalization,
         apply_bias_correction=args.apply_bias_correction,
         activations_equalization=args.activations_equalization,
-        is_static=args.is_static,
         weights_symmetric=True,
         gpu_device_map=args.gpu_device_map,
         cpu_device_map=args.cpu_device_map,
