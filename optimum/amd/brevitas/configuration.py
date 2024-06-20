@@ -17,7 +17,7 @@ class BrevitasQuantizationConfig:
             Bitwidth of the activations quantization.
         weights_only (`bool`, defaults to `False`):
             If set to `True`, only weights are to be quantized, otherwise activations are quantized as well.
-        weights_param_method (`str`, defaults to `stats`):
+        weights_calibration_method (`str`, defaults to `stats`):
             Strategy to use to estimate the quantization parameters (scale, zero-point) for the weights. Two strategies are available:
             - `"stats"`: Use min-max to estimate the range to quantize on.
             - `"mse"`: Use mean-square error between the unquantized weights and quantized weights to estimate the range to quantize on.
@@ -34,7 +34,7 @@ class BrevitasQuantizationConfig:
             Group size to use for the weights in case `weights_quant_granularity="per_group"`. Defaults to `128` in this case, to `None` otherwise.
         quantize_zero_point (`bool`, defaults to `True`):
             When set to True, the unquantized value 0.0 is exactly representable as a quantized value: the zero point. When set to False, a quantization range [a, b] is exactly reprensentable (no rounding on a and b), but the unquantized value zero is not exactly representable.
-        activations_param_method (`List[str]`):
+        activations_calibration_method (`List[str]`):
             Strategy to use to estimate the quantization parameters (scale, zero-point) for the activations. Two strategies are available:
             - `"stats"`: Use min-max to estimate the range to quantize on.
             - `"mse"`: Use mean-square error between the unquantized activations and quantized activations to estimate the range to quantize on.
@@ -67,18 +67,18 @@ class BrevitasQuantizationConfig:
     weights_bitwidth: int = 8
     activations_bitwidth: Optional[int] = 8
     weights_only: bool = False
-    weights_param_method: Literal["stats", "mse"] = "stats"
+    weights_calibration_method: Literal["stats", "mse"] = "stats"
     weights_symmetric: bool = True
     scale_precision: Literal["float_scale", "power_of_two_scale"] = "float_scale"
-    weights_quant_granularity: Literal["per_tensor", "per_channel", "per_group"] = "per_tensor"
+    weights_quant_granularity: Literal["per_tensor", "per_channel", "per_group"] = "per_channel"
     weights_group_size: Optional[int] = None
     quantize_zero_point: bool = True
-    activations_param_method: Optional[Literal["stats", "mse"]] = "stats"
+    activations_calibration_method: Optional[Literal["stats", "mse"]] = "stats"
     is_static: bool = False
     activations_symmetric: Optional[bool] = False
     activations_quant_granularity: Optional[Literal["per_tensor", "per_row", "per_group"]] = "per_tensor"
     activations_group_size: Optional[int] = None
-    activations_equalization: Optional[Literal[None, "layerwise", "cross_layer"]] = "cross_layer"
+    activations_equalization: Optional[Literal[None, "layerwise", "cross_layer"]] = None
     apply_weight_equalization: bool = False
     apply_bias_correction: bool = False
     apply_gptq: bool = False
@@ -103,9 +103,9 @@ class BrevitasQuantizationConfig:
                 f'Static quantization with activations_quant_granularity="{self.activations_quant_granularity}" is not supported. The quantization granularity must be activations_quant_granularity="per_tensor" when using static quantization.'
             )
 
-        if self.weights_quant_granularity == "per_group" and self.weights_param_method == "mse":
+        if self.weights_quant_granularity == "per_group" and self.weights_calibration_method == "mse":
             raise ValueError(
-                'The quantization configuration `weights_quant_granularity="per_group"` is not supported along `weights_param_method="mse"`. Per group MSE weight quantization is not supported.'
+                'The quantization configuration `weights_quant_granularity="per_group"` is not supported along `weights_calibration_method="mse"`. Per group MSE weight quantization is not supported.'
             )
 
         if self.scale_precision == "power_of_two_scale" and (
@@ -130,12 +130,40 @@ class BrevitasQuantizationConfig:
                 'The quantization configuration `scale_precision="power_of_two_scale"` is not supported along `is_static=False`. Dynamic activation quantization with power-of-two scale factor is not supported.'
             )
 
+        if self.activations_calibration_method == "mse" and self.is_static:
+            raise ValueError(
+                'The quantization configuration `activations_calibration_method="mse"` is not supported along `is_static=True`. Dynamic activation quantization with mse calibration is not supported.'
+            )
+
         if self.weights_only:
             self.activations_bitwidth = None
             self.activations_symmetric = None
             self.activations_equalization = None
             self.activations_group_size = None
-            self.activations_param_method = None
+            self.activations_calibration_method = None
 
     def requires_fx_graph(self):
         return self.activations_equalization == "cross_layer" or self.apply_weight_equalization
+
+
+class AutoQuantizationConfig:
+    @staticmethod
+    def ipu_transformers_config(
+        activations_equalization: Optional[Literal[None, "layerwise", "cross_layer"]] = None,
+        apply_weight_equalization: bool = False,
+        apply_bias_correction: bool = False,
+        apply_gptq: bool = False,
+        gptq_act_order: bool = False,
+        gpu_device_map: Optional[Dict[int, float]] = None,
+        cpu_device_map: Optional[Dict[int, float]] = None,
+    ):
+        return BrevitasQuantizationConfig(
+            weights_quant_granularity="per_tensor",
+            activations_equalization=activations_equalization,
+            apply_weight_equalization=apply_weight_equalization,
+            apply_bias_correction=apply_bias_correction,
+            apply_gptq=apply_gptq,
+            gptq_act_order=gptq_act_order,
+            gpu_device_map=gpu_device_map,
+            cpu_device_map=cpu_device_map,
+        )

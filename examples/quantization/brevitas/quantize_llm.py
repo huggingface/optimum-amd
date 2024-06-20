@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 
-from optimum.amd import BrevitasQuantizationConfig, BrevitasQuantizer
+from optimum.amd import AutoQuantizationConfig, BrevitasQuantizer
 from optimum.amd.brevitas.accelerate_utils import calc_cpu_device_map, calc_gpu_device_map, offload_model, remove_hooks
 from optimum.amd.brevitas.data_utils import compute_perplexity, get_dataset_for_model
 from optimum.amd.brevitas.export import onnx_export_from_quantized_model
@@ -14,14 +14,11 @@ def main(args):
     use_accelerate = args.device == "auto"
 
     # Prepare the quantizer, specifying its configuration and loading the model.
-    qconfig = BrevitasQuantizationConfig(
+    qconfig = AutoQuantizationConfig.ipu_transformers_config(
         apply_gptq=args.apply_gptq,
         apply_weight_equalization=args.apply_weight_equalization,
         apply_bias_correction=args.apply_bias_correction,
         activations_equalization=args.activations_equalization,
-        is_static=args.is_static,
-        weights_symmetric=True,
-        activations_symmetric=args.is_static,  # ONNX export only supports unsigned for dynamic quantization
         gpu_device_map=args.gpu_device_map,
         cpu_device_map=args.cpu_device_map,
     )
