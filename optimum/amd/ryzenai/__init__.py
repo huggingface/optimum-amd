@@ -7,7 +7,16 @@ from transformers.utils import _LazyModule
 
 
 _import_structure = {
-    "configuration": ["RyzenAIConfig", "QuantizationConfig", "AutoQuantizationConfig"],
+    "configuration": [
+        "AutoQuantizationConfig",
+        "CalibrationMethod",
+        "ExtraOptions",
+        "QuantFormat",
+        "QuantizationConfig",
+        "QuantType",
+        "AutoQuantizationConfig",
+        "RyzenAIConfig",
+    ],
     "modeling": [
         "RyzenAIModel",
         "RyzenAIModelForCustomTasks",
@@ -24,7 +33,15 @@ _import_structure = {
 
 # Direct imports for type-checking
 if TYPE_CHECKING:
-    from .configuration import AutoQuantizationConfig, QuantizationConfig, RyzenAIConfig
+    from .configuration import (
+        AutoQuantizationConfig,
+        CalibrationMethod,
+        ExtraOptions,
+        QuantFormat,
+        QuantizationConfig,
+        QuantType,
+        RyzenAIConfig,
+    )
     from .modeling import (
         RyzenAIModel,
         RyzenAIModelForCustomTasks,
