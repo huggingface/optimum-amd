@@ -181,15 +181,12 @@ def main(args):
     )
 
     data_list = []
-    labels_list = []
 
     for batch in calib_loader:
-        data, labels = batch
+        data = batch[0]
         data_list.append(data)
-        labels_list.append(labels)
 
     data_list = torch.cat(data_list, dim=0)
-    labels_list = torch.cat(labels_list, dim=0)
 
     data_np = data_list.numpy()
 
