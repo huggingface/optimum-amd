@@ -14,6 +14,7 @@ import timm
 import torch
 from datasets import Dataset
 from timm.data import create_dataset, create_loader
+from timm.models import create_model
 from timm.utils import AverageMeter
 from tqdm import tqdm
 
@@ -143,7 +144,8 @@ def main(args):
         model_id, export=True, provider="CPUExecutionProvider"
     )
     # # preprocess config
-    data_config = timm.data.resolve_data_config(pretrained_cfg=onnx_model.config.to_dict(), use_test_size=True)
+    model = create_model(model_id, pretrained=False)
+    data_config = timm.data.resolve_data_config(model=model, use_test_size=True)
 
     # # quantize
     quantizer = RyzenAIOnnxQuantizer.from_pretrained(onnx_model)
