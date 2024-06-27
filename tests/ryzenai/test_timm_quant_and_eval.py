@@ -33,17 +33,17 @@ https://huggingface.co/datasets/imagenet-1k/tree/main/data.
 You need to register and download **val_images.tar.gz**.
 
 For example:
-python test_timm_quant_and_eval.py -c $PATH/calib_100 -e $PATH/val_data -m timm/resnetv2_50.a1h_in1k
+python test_timm_quant_and_eval.py -c $PATH/calib_100 -e $PATH/val_data -m timm/botnet26t_256.c1_in1k
 or
-python test_timm_quant_and_eval.py -v $PATH/val_images.tar.gz -m timm/resnetv2_50.a1h_in1k
+python test_timm_quant_and_eval.py -v $PATH/val_images.tar.gz -m timm/botnet26t_256.c1_in1k
 
-Float Accuracy of resnet50.tv_in1k:
-- Prec@1: 76.128%
-- Prec@5: 92.858%
+Float Accuracy of timm/botnet26t_256.c1_in1k:
+- Prec@1: 79.258%
+- Prec@5: 94.538%
 
-Quantization Accuracy of resnet50.tv_in1k:
-- Prec@1: 74.384%
-- Prec@5: 91.968%
+Quantization Accuracy of timm/botnet26t_256.c1_in1k:
+- Prec@1: 79.036%
+- Prec@5: 94.408%
 """
 
 
@@ -56,8 +56,8 @@ def parse_args():
         "-m",
         "--model_id",
         type=str,
-        default="timm/resnet50.tv_in1k",
-        help='Model id, default to "timm/resnet50.tv_in1k"',
+        default="timm/botnet26t_256.c1_in1k",
+        help='Model id, default to "timm/botnet26t_256.c1_in1k"',
     )
     parser.add_argument(
         "--dataset", type=str, default="imagenet-1k", help='Calibration dataset, default to "imagenet-1k"'
