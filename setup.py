@@ -16,9 +16,8 @@ except Exception as error:
 # ORT 1.16 is not compatible: https://github.com/Xilinx/Vitis-AI/issues/1343
 INSTALL_REQUIRE = ["optimum", "transformers>=4.38", "onnx", "onnxruntime-extensions"]
 
-# TODO: unpin pytest once https://github.com/huggingface/transformers/pull/29154 is merged & released
 TESTS_REQUIRE = [
-    "pytest<=7.4.4",
+    "pytest",
     "parameterized",
     "evaluate",
     "timm",
