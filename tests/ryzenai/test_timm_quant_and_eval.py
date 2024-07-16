@@ -10,6 +10,7 @@ from argparse import ArgumentParser
 
 import numpy as np
 import onnxruntime
+import onnx
 import timm
 import torch
 from datasets import Dataset
@@ -70,6 +71,10 @@ def parse_args():
         "-j", "--workers", default=2, type=int, metavar="N", help="number of data loading workers (default: 2)"
     )
     parser.add_argument("-b", "--batch-size", default=1, type=int, metavar="N", help="mini-batch size (default: 1)")
+    
+    # execution provider options
+    parser.add_argument('--ep', type=str, default ='cpu',choices = ['cpu','ipu'], help='EP backend selection')
+
     args, _ = parser.parse_known_args()
     if args.val_path is None and (args.calib_data_path is None and args.eval_data_path is None):
         parser.error("You must either provide --calib-data-path and --eval-data-path, or --val-path")
@@ -145,11 +150,21 @@ def main(args):
     )
     # # preprocess config
     model = create_model(model_id, pretrained=False)
-    data_config = timm.data.resolve_data_config(model=model, use_test_size=True)
+    data_config = timm.data.resolve_data_config(model=model)
 
     # # quantize
     quantizer = RyzenAIOnnxQuantizer.from_pretrained(onnx_model)
-    quantization_config = AutoQuantizationConfig.cpu_cnn_config()
+    # determine whether to use ipu config
+    if args.ep == "ipu":
+        quantization_config = AutoQuantizationConfig.ipu_cnn_config()
+    else:
+        quantization_config = AutoQuantizationConfig.cpu_cnn_config()
+    quantization_config.include_fast_ft = True
+    # determine if cuda is available
+    if torch.cuda.is_available():
+        device = "cuda:0"
+    else:
+        device = "cpu"
     quantization_config.extra_options = {
         "FastFinetune": {
             "BatchSize": 2,
@@ -158,7 +173,7 @@ def main(args):
             "NumIterations": 10000,
             "LearningRate": 0.1,
             "OptimAlgorithm": "adaround",
-            "OptimDevice": "cuda:0",  # or 'cpu'
+            "OptimDevice": device, # "cuda:0" or 'cpu'
             "LRAdjust": (),
             "SelectiveUpdate": False,
             "EarlyStop": True,
@@ -169,7 +184,7 @@ def main(args):
         },
         "Percentile": 99.9999,
     }
-
+    
     calib_loader = create_loader(
         create_dataset("", args.calib_data_path),
         input_size=data_config["input_size"],
@@ -210,8 +225,26 @@ def main(args):
     if args.onnx_output_opt:
         sess_options.optimized_model_filepath = args.onnx_output_opt
 
-    session = onnxruntime.InferenceSession("quantized_model/model_quantized.onnx", sess_options)
+    if args.ep == "ipu":
+        print("Run evaluation on IPU")
+        # clear modelcachekey if it exist
+        if os.path.exists("modelcachekey") and os.path.isdir("modelcachekey"):
+            shutil.rmtree("modelcachekey")
 
+        from pathlib import Path
+        providers = ['VitisAIExecutionProvider']
+        cache_dir = Path(__file__).parent.resolve()
+        provider_options = [{
+                'config_file': 'vaip_config.json',
+                'cacheDir': str(cache_dir),
+                'cacheKey': 'modelcachekey'
+            }]
+        model = onnx.load("quantized_model/model_quantized.onnx")
+        session = onnxruntime.InferenceSession(model.SerializeToString(), sess_options, providers=providers,
+                               provider_options=provider_options)
+    else:
+        session = onnxruntime.InferenceSession("quantized_model/model_quantized.onnx", sess_options)
+    
     loader = create_loader(
         create_dataset("", args.eval_data_path),
         input_size=data_config["input_size"],
