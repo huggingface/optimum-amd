@@ -41,10 +41,6 @@ class QuarkQuantizer(OptimumQuantizer):
         # Initialize the quantizer
         self.quantizer = ModelQuantizer(quantization_config)
 
-        from pdb import set_trace
-
-        set_trace()
-
     @classmethod
     def from_pretrained(
         cls,
