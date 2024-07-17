@@ -143,7 +143,7 @@ class QuarkQuantizer(OptimumQuantizer):
             no_weight_matrix_merge (`bool`, defaults to `False`):
                 Whether to merge weight matrix when dump quantized model
         """
-        if self.model_dtype != "llama":
+        if self.model_type != "llama":
             raise ValueError("Only models with dtype `llama` can be saved.")
         model = self.quantizer.freeze(self.model)
 
