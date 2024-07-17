@@ -153,6 +153,8 @@ class QuarkQuantizer(OptimumQuantizer):
             exporter = ModelExporter(config=export_config, export_dir=save_directory)
             exporter.export_model_info(model, self.model_type, self.model_dtype, export_type="vllm-adopt")
 
+        model.config.save_pretrained(save_directory)
+
     def get_calibration_data(
         self,
         dataset_name: str,
