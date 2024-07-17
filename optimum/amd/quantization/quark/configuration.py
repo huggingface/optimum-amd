@@ -83,7 +83,7 @@ class AutoQuantizationConfig:
     def w_fp8_a_fp8(
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -103,7 +103,7 @@ class AutoQuantizationConfig:
     def w_fp8_a_fp8_o_fp8(
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -123,7 +123,7 @@ class AutoQuantizationConfig:
     def w_int4_per_tensor(
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -143,7 +143,7 @@ class AutoQuantizationConfig:
     def w_int4_per_channel_sym(
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -163,7 +163,7 @@ class AutoQuantizationConfig:
     def w_int4_per_group_sym(
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -184,7 +184,7 @@ class AutoQuantizationConfig:
         model_type: str,
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -213,7 +213,7 @@ class AutoQuantizationConfig:
         model_type: str,
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -242,7 +242,7 @@ class AutoQuantizationConfig:
         model_type: str,
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -270,7 +270,7 @@ class AutoQuantizationConfig:
     def w_uint4_per_group_asym(
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -290,7 +290,7 @@ class AutoQuantizationConfig:
     def w_uint4_a_bfloat16_per_group_asym(
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -310,7 +310,7 @@ class AutoQuantizationConfig:
     def w_int8_a_int8_per_tensor_sym(
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -330,7 +330,7 @@ class AutoQuantizationConfig:
     def w_int8_a_int8_per_tensor_sym_dynamic(
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):
@@ -350,7 +350,7 @@ class AutoQuantizationConfig:
     def float16(
         layer_type_quant_config: Dict[str, QuantizationConfig] = {},
         layer_quant_config: Dict[str, QuantizationConfig] = {},
-        exclude: List[str] = None,
+        exclude: List[str] = [],
         pre_quant_opt_config: Optional[QuantizationConfig] = None,
         kv_cache_dtype: Optional[KVCacheDType] = None,
     ):

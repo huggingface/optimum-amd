@@ -3,15 +3,18 @@
 """AMD Quark Quantizer"""
 
 import logging
-from typing import Dict, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import torch
+from datasets import Dataset, load_dataset
 from quark.torch import ModelExporter, ModelQuantizer
 from quark.torch.export.config.custom_config import DEFAULT_EXPORTER_CONFIG, EMPTY_EXPORTER_CONFIG
+from torch.utils.data import DataLoader
 
 from optimum.exporters import TasksManager
 from optimum.quantization_base import OptimumQuantizer
-from transformers import PretrainedConfig
+
+from .configuration import QuarkQuantizationConfig
 
 
 logger = logging.getLogger(__name__)
@@ -25,23 +28,28 @@ class QuarkQuantizer(OptimumQuantizer):
     def __init__(
         self,
         model: torch.nn.Module,
-        quantization_config,
+        quantization_config: QuarkQuantizationConfig,
         model_name_or_path: Optional[str],
-        config: Optional[PretrainedConfig] = None,
     ):
         super().__init__()
         self.model_name_or_path = model_name_or_path
 
         self.model = model
-        self.model_type = model.config.type
+        self.model_type = model.config.model_type
+        self.model_dtype = next(model.parameters()).dtype
 
         # Initialize the quantizer
-        self.quantizer = ModelQuantizer(config)
+        self.quantizer = ModelQuantizer(quantization_config)
+
+        from pdb import set_trace
+
+        set_trace()
 
     @classmethod
     def from_pretrained(
         cls,
         model_name_or_path: str,
+        quantization_config: QuarkQuantizationConfig,
         subfolder: str = "",
         revision: Optional[str] = None,
         cache_dir: Optional[str] = None,
@@ -53,9 +61,9 @@ class QuarkQuantizer(OptimumQuantizer):
         **model_kwargs,
     ):
         """
-        Loads the BrevitasQuantizer and model.
+        Loads the QuarkQuantizer and model.
 
-        Arguments:
+        Args:
             model_name_or_path (`Union[str, Path]`):
                 Can be either the model id of a model repo on the Hugging Face Hub, or a path to a local directory
                 containing a model.
@@ -103,48 +111,53 @@ class QuarkQuantizer(OptimumQuantizer):
             device=device,
             framework="pt",
             **model_kwargs,
-        )
+        ).eval()
 
-        return cls(model, model_name_or_path)
+        return cls(model, quantization_config, model_name_or_path)
 
     def quantize(
         self,
-        dataset: Dataset,
+        dataloader: Optional[Dataset] = None,
     ) -> torch.nn.Module:
-        """
-        Quantizes the model using Brevitas according to the `quantization_config`.
+        """_summary_
 
-        Arguments:
-            quantization_config (`BrevitasQuantizationConfig`):
-                Quantization configuration to use to quantize the model.
-            calibration_dataset (`Optional[List[Dict]]`, defaults to `None`):
-                In case the quantization involves a calibration phase, this argument needs to be specified as a list of inputs to the model.
-                Example: `calibration_dataset = [{"input_ids": torch.tensor([[1, 2, 3, 4]])}, {"input_ids": torch.tensor([[6, 7, 3, 4]])}]` which is a dataset for a model taking `input_ids` as an argument, and which has two samples.
-        """
-        calib_dataloader = get_calib_dataloader(dataset)
+        Args:
+            dataloader (`Optional[Union[DataLoader[torch.Tensor], DataLoader[List[Dict[str, torch.Tensor]]],
+                                                  DataLoader[Dict[str, torch.Tensor]]]]`, defaults to `None`):
+                The DataLoader providing data that the quantization process will use for calibration. This can be a simple DataLoader returning
+                tensors, or a more complex structure returning either a list of dictionaries or a dictionary of tensors.
 
-        self.model = self.quantizer.quantize_model(self.model, calib_dataloader)
+        Returns:
+            torch.nn.Module: Quantized model
+        """
+        if not self.quantizer.is_all_dynamic and dataloader is None:
+            raise ValueError("A calibration dataset is required for the quantization method.")
+
+        self.model = self.quantizer.quantize_model(self.model, dataloader)
 
         return self.model
 
-    def save_pretrained(self, save_directory: str, export_config=None):
+    def save_pretrained(self, save_directory: str, no_weight_matrix_merge=False):
         """
         Save the quantized model to the specified directory.
 
-        Arguments:
+        Args:
             save_directory (`str`):
                 Directory to save the quantized model to.
+            no_weight_matrix_merge (`bool`, defaults to `False`):
+                Whether to merge weight matrix when dump quantized model
         """
+        if self.model_dtype != "llama":
+            raise ValueError("Only models with dtype `llama` can be saved.")
         model = self.quantizer.freeze(self.model)
 
         with torch.inference_mode():
-            export_config = EMPTY_EXPORTER_CONFIG if args.no_weight_matrix_merge else DEFAULT_EXPORTER_CONFIG
+            export_config = EMPTY_EXPORTER_CONFIG if no_weight_matrix_merge else DEFAULT_EXPORTER_CONFIG
 
-            exporter = ModelExporter(config=config, export_dir=save_directory)
-            exporter.export_model_info(model, model_type, model_dtype, export_type="native")
+            exporter = ModelExporter(config=export_config, export_dir=save_directory)
+            exporter.export_model_info(model, self.model_type, self.model_dtype, export_type="vllm-adopt")
 
-
-    def get_calibration_dataset(
+    def get_calibration_data(
         self,
         dataset_name: str,
         num_samples: int = 100,
@@ -153,9 +166,11 @@ class QuarkQuantizer(OptimumQuantizer):
         preprocess_function: Optional[Callable] = None,
         preprocess_batch: bool = True,
         seed: int = 2016,
-        use_auth_token: Optional[Union[bool, str]] = None,
         token: Optional[Union[bool, str]] = None,
-    ) -> Dataset:
+        batch_size: int = 1,
+    ) -> Union[
+        DataLoader[torch.Tensor], DataLoader[List[Dict[str, torch.Tensor]]], DataLoader[Dict[str, torch.Tensor]]
+    ]:
         """
         Creates the calibration `datasets.Dataset` to use for the post-training static quantization calibration step.
 
@@ -185,22 +200,6 @@ class QuarkQuantizer(OptimumQuantizer):
             The calibration `datasets.Dataset` to use for the post-training static quantization calibration
             step.
         """
-
-        if use_auth_token is not None:
-            warnings.warn(
-                "The `use_auth_token` argument is deprecated and will be removed soon. Please use the `token` argument instead.",
-                FutureWarning,
-            )
-            if token is not None:
-                raise ValueError("You cannot use both `use_auth_token` and `token` arguments at the same time.")
-            token = use_auth_token
-
-        if dataset_name is None:
-            raise ValueError(
-                "ORTQuantizer: Static quantization calibration step requires a dataset_name if no calib_dataset is "
-                "provided."
-            )
-
         calib_dataset = load_dataset(
             dataset_name,
             name=dataset_config_name,
@@ -217,10 +216,6 @@ class QuarkQuantizer(OptimumQuantizer):
         else:
             processed_calib_dataset = calib_dataset
 
-        return self.clean_calibration_dataset(processed_calib_dataset)
+        dataloader = DataLoader(processed_calib_dataset, batch_size=batch_size, shuffle=False)
 
-    def clean_calibration_dataset(self, dataset: Dataset) -> Dataset:
-        model = onnx.load(self.onnx_model_path)
-        model_inputs = {input.name for input in model.graph.input}
-        ignored_columns = list(set(dataset.column_names) - model_inputs)
-        return dataset.remove_columns(ignored_columns)
+        return dataloader
