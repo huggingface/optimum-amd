@@ -170,7 +170,7 @@ def main(args):
             "BatchSize": 2,
             "FixedSeed": 1705472343,
             "NumBatches": 1,
-            "NumIterations": 10000,
+            "NumIterations": 2000,
             "LearningRate": 0.1,
             "OptimAlgorithm": "adaround",
             "OptimDevice": device, # "cuda:0" or 'cpu'
