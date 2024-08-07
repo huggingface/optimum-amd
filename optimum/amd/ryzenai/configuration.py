@@ -15,22 +15,22 @@ from optimum.configuration_utils import BaseConfig
 
 class AutoQuantizationConfig:
     @staticmethod
-    def ipu_cnn_config():
+    def npu_cnn_config():
         return QuantizationConfig(
             calibrate_method=PowerOfTwoMethod.MinMSE,
             activation_type=QuantType.QUInt8,
             weight_type=QuantType.QInt8,
-            enable_ipu_cnn=True,
+            enable_npu_cnn=True,
             extra_options={"ActivationSymmetric": True},
         )
 
     @staticmethod
-    def ipu_transformer_config():
+    def npu_transformer_config():
         return QuantizationConfig(
             calibrate_method=CalibrationMethod.MinMax,
             activation_type=QuantType.QInt8,
             weight_type=QuantType.QInt8,
-            enable_ipu_transformer=True,
+            enable_npu_transformer=True,
         )
 
     @staticmethod

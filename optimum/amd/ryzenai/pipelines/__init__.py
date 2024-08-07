@@ -128,7 +128,7 @@ def pipeline(
             The model that will be used by the pipeline to make predictions. This can be a model identifier or an
             actual instance of a pretrained model. If not provided, the default model for the specified task will be loaded.
         vaip_config (`Optional[str]`, defaults to `None`):
-            Runtime configuration file for inference with Ryzen IPU. A default config file can be found in the Ryzen AI VOE package,
+            Runtime configuration file for inference with Ryzen NPU. A default config file can be found in the Ryzen AI VOE package,
             extracted during installation under the name `vaip_config.json`.
         model_type (`Optional[str]`, defaults to `None`):
             Model type for the model

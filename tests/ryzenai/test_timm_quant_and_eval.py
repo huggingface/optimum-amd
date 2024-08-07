@@ -73,7 +73,7 @@ def parse_args():
     parser.add_argument("-b", "--batch-size", default=1, type=int, metavar="N", help="mini-batch size (default: 1)")
     
     # execution provider options
-    parser.add_argument('--ep', type=str, default ='cpu',choices = ['cpu','ipu'], help='EP backend selection')
+    parser.add_argument('--ep', type=str, default ='cpu',choices = ['cpu','npu'], help='EP backend selection')
 
     args, _ = parser.parse_known_args()
     if args.val_path is None and (args.calib_data_path is None and args.eval_data_path is None):
@@ -154,9 +154,9 @@ def main(args):
 
     # # quantize
     quantizer = RyzenAIOnnxQuantizer.from_pretrained(onnx_model)
-    # determine whether to use ipu config
-    if args.ep == "ipu":
-        quantization_config = AutoQuantizationConfig.ipu_cnn_config()
+    # determine whether to use npu config
+    if args.ep == "npu":
+        quantization_config = AutoQuantizationConfig.npu_cnn_config()
     else:
         quantization_config = AutoQuantizationConfig.cpu_cnn_config()
     quantization_config.include_fast_ft = True
@@ -225,8 +225,8 @@ def main(args):
     if args.onnx_output_opt:
         sess_options.optimized_model_filepath = args.onnx_output_opt
 
-    if args.ep == "ipu":
-        print("Run evaluation on IPU")
+    if args.ep == "npu":
+        print("Run evaluation on NPU")
         # clear modelcachekey if it exist
         if os.path.exists("modelcachekey") and os.path.isdir("modelcachekey"):
             shutil.rmtree("modelcachekey")
