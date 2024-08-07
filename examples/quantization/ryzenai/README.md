@@ -7,10 +7,10 @@ The quantization process is abstracted via the AutoQuantizationConfig and the Ry
 You can read the [Vitis AI Quantizer for ONNX](https://ryzenai.docs.amd.com/en/latest/vai_quant/vai_q_onnx.html) to learn about VAI_Q_ONNX quantization.
 
 ### Creating an AutoQuantizationConfig
-The AutoQuantizationConfig class is used to specify how quantization should be done. The class can be initialized using the ipu_cnn_config() method.
+The AutoQuantizationConfig class is used to specify how quantization should be done. The class can be initialized using the npu_cnn_config() method.
 ```python
 from optimum.amd.ryzenai import AutoQuantizationConfig
-quantization_config = AutoQuantizationConfig.ipu_cnn_config()
+quantization_config = AutoQuantizationConfig.npu_cnn_config()
 
 ```
 

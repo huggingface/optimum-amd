@@ -43,7 +43,7 @@ def main(args):
 
     # quantize
     quantizer = RyzenAIOnnxQuantizer.from_pretrained(onnx_model)
-    quantization_config = AutoQuantizationConfig.ipu_cnn_config()
+    quantization_config = AutoQuantizationConfig.npu_cnn_config()
 
     calibration_dataset = quantizer.get_calibration_dataset(
         args.dataset,

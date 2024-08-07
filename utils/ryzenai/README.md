@@ -1,7 +1,7 @@
 # Utilities
 
 
-## Generate IPU Baseline Operators
+## Generate NPU Baseline Operators
 
 * Setup the Ryzen testing environment.
 

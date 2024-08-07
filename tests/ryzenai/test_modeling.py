@@ -97,14 +97,14 @@ class RyzenAIModelForImageClassificationIntegrationTest(unittest.TestCase, Ryzen
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        outputs_ipu, outputs_cpu = self.prepare_outputs(
+        outputs_npu, outputs_cpu = self.prepare_outputs(
             model_id, RyzenAIModelForImageClassification, ort_input, cache_dir, cache_key, file_name
         )
 
-        self.assertIn("logits", outputs_ipu)
+        self.assertIn("logits", outputs_npu)
         self.assertIn("logits", outputs_cpu)
 
-        self.assertTrue(np.allclose(outputs_ipu.logits, outputs_cpu.logits, atol=1e-4))
+        self.assertTrue(np.allclose(outputs_npu.logits, outputs_cpu.logits, atol=1e-4))
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
@@ -147,12 +147,12 @@ class RyzenAIModelForObjectDetectionIntegrationTest(unittest.TestCase, RyzenAITe
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        outputs_ipu, outputs_cpu = self.prepare_outputs(
+        outputs_npu, outputs_cpu = self.prepare_outputs(
             model_id, RyzenAIModelForObjectDetection, ort_input, cache_dir, cache_key, file_name
         )
 
-        for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
-            self.assertTrue(np.allclose(output_ipu, output_cpu, atol=1e-4))
+        for output_npu, output_cpu in zip(outputs_npu.values(), outputs_cpu.values()):
+            self.assertTrue(np.allclose(output_npu, output_cpu, atol=1e-4))
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
@@ -212,12 +212,12 @@ class RyzenAIModelForSemanticSegmentationIntegrationTest(unittest.TestCase, Ryze
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        outputs_ipu, outputs_cpu = self.prepare_outputs(
+        outputs_npu, outputs_cpu = self.prepare_outputs(
             model_id, RyzenAIModelForSemanticSegmentation, ort_input, cache_dir, cache_key, file_name
         )
 
-        for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
-            self.assertTrue(np.allclose(output_ipu, output_cpu, atol=1e-4))
+        for output_npu, output_cpu in zip(outputs_npu.values(), outputs_cpu.values()):
+            self.assertTrue(np.allclose(output_npu, output_cpu, atol=1e-4))
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
@@ -237,12 +237,12 @@ class RyzenAIModelForImageToImageIntegrationTest(unittest.TestCase, RyzenAITestC
 
         file_name, ort_input, input_name = load_model_and_input(model_id)
 
-        outputs_ipu, outputs_cpu = self.prepare_outputs(
+        outputs_npu, outputs_cpu = self.prepare_outputs(
             model_id, RyzenAIModelForImageToImage, ort_input, cache_dir, cache_key, file_name
         )
 
-        for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
-            self.assertTrue(np.allclose(output_ipu, output_cpu, atol=1e-4))
+        for output_npu, output_cpu in zip(outputs_npu.values(), outputs_cpu.values()):
+            self.assertTrue(np.allclose(output_npu, output_cpu, atol=1e-4))
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
@@ -263,12 +263,12 @@ class RyzenAIModelForCustomTasksIntegrationTest(unittest.TestCase, RyzenAITestCa
         file_name, ort_input, input_name = load_model_and_input(model_id)
         ort_input = {input_name: ort_input}
 
-        outputs_ipu, outputs_cpu = self.prepare_outputs(
+        outputs_npu, outputs_cpu = self.prepare_outputs(
             model_id, RyzenAIModelForCustomTasks, ort_input, cache_dir, cache_key, file_name
         )
 
-        for output_ipu, output_cpu in zip(outputs_ipu.values(), outputs_cpu.values()):
-            self.assertTrue(np.allclose(output_ipu, output_cpu, atol=1e-4))
+        for output_npu, output_cpu in zip(outputs_npu.values(), outputs_cpu.values()):
+            self.assertTrue(np.allclose(output_npu, output_cpu, atol=1e-4))
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)
