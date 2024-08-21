@@ -47,7 +47,6 @@ RUN pip install --no-cache-dir --pre torch==2.1.2 torchvision torchaudio --index
 # Copy and install ZenTorch wheel
 RUN pip install zentorch==4.2.0
 RUN pip install git+https://github.com/huggingface/optimum-benchmark.git
+RUN pip install git+https://github.com/huggingface/optimum-amd.git@fbd225616ef5a16b3cb762bc762e83d30b8ee1c9
 
-COPY . /workspace
 WORKDIR /workspace
-RUN pip install -e .

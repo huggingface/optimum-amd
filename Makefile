@@ -47,6 +47,6 @@ benchmark:
 			numa_node=1; \
 		fi; \
 		echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node"; \
-        python benchmark_model.py --physcpubind $$start_core-$$end_core --mint $$numa_node & \
+        python examples/benchmarks/epyc/benchmark_model.py --physcpubind $$start_core-$$end_core --membind $$numa_node & \
 	done; \
 	wait

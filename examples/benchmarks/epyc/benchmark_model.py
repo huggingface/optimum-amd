@@ -5,8 +5,8 @@ from optimum_benchmark import Benchmark, BenchmarkConfig, InferenceConfig, Proce
 def argparser():
     import argparse
     parser = argparse.ArgumentParser(description="Benchmark models")
-    parser.add_argument("--phycpubind", type=int, help="Physical CPU binding")
-    parser.add_argument("--membind", type=int, help="Memory binding")
+    parser.add_argument("--physcpubind", type=str, help="Physical CPU binding", required=True)
+    parser.add_argument("--membind", type=int, help="Memory binding", required=True)
     return parser.parse_args()
 
 REPO_ID = "optimum-amd/zendnn-benchmarks"
@@ -113,7 +113,7 @@ def benchmark(phycpubind_str, membind):
 
 if __name__ == "__main__":
     args = argparser()
-    phycpubind = f"{args.phycpubind}"
+    phycpubind = f"{args.physcpubind}"
     membind = int(args.membind)
     print(f"Running benchmarks for models with CPU binding {phycpubind} and memory binding {membind}")
     benchmark(phycpubind, membind)
