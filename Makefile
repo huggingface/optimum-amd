@@ -36,3 +36,17 @@ clean:
 	rm -rf build/
 	rm -rf dist/
 	rm -rf optimum_amd.egg-info/
+
+benchmark:
+	for i in {0..23}; do \
+		start_core=$$((i * 8)); \
+		end_core=$$((start_core + 7)); \
+		if [ $$start_core -lt 96 ]; then \
+			numa_node=0; \
+		else \
+			numa_node=1; \
+		fi; \
+		echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node"; \
+        python benchmark_model.py --physcpubind $$start_core-$$end_core --mint $$numa_node & \
+	done; \
+	wait

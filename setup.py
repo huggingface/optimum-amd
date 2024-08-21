@@ -14,7 +14,8 @@ except Exception as error:
     assert False, "Error: Could not open '%s' due %s\n" % (filepath, error)
 
 # ORT 1.16 is not compatible: https://github.com/Xilinx/Vitis-AI/issues/1343
-INSTALL_REQUIRE = ["optimum", "transformers>=4.38", "onnx", "onnxruntime-extensions"]
+# INSTALL_REQUIRE = ["optimum", "transformers>=4.38", "onnx", "onnxruntime-extensions"]
+INSTALL_REQUIRE = ["optimum"]
 
 # TODO: unpin pytest once https://github.com/huggingface/transformers/pull/29154 is merged & released
 TESTS_REQUIRE = [

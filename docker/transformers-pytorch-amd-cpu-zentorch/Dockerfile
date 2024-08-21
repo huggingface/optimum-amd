@@ -16,8 +16,6 @@ ARG UBUNTU_VERSION=20.04
 
 FROM ubuntu:${UBUNTU_VERSION}
 
-ARG TORCH_VERSION=2.2.1
-
 # Install python and g++ compiler
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="/home/user/.local/bin:${PATH}"
@@ -28,31 +26,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3.8-dev \
     build-essential \
-    libjemalloc-dev && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
+    libjemalloc-dev \
+    numactl && \
     update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1 && \
     pip install --upgrade pip
 
 # Create a non-root user
-ARG GROUP_ID
-ARG USER_ID
+# ARG GROUP_ID
+# ARG USER_ID
 
-RUN addgroup --gid $GROUP_ID group
-RUN adduser --disabled-password --gecos '' --uid $USER_ID --gid $GROUP_ID user
+# RUN addgroup --gid $GROUP_ID group
+# RUN adduser --disabled-password --gecos '' --uid $USER_ID --gid $GROUP_ID user
 
-USER user
-WORKDIR /home/user
+# USER user
+# WORKDIR /home/user
 
 # Install PyTorch
-RUN if [ "${TORCH_VERSION}" = "stable" ]; then \
-    pip install --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu ; \
-elif [ "${TORCH_VERSION}" = "nighly" ]; then \
-    pip install --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cpu ; \
-else \
-    pip install --no-cache-dir torch==${TORCH_VERSION} torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu ; \
-fi
+RUN pip install --no-cache-dir --pre torch==2.1.2 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # Copy and install ZenTorch wheel
-COPY zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl /home/user/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl
-RUN pip install --no-cache-dir /home/user/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl
+RUN pip install zentorch==4.2.0
+RUN pip install git+https://github.com/huggingface/optimum-benchmark.git
+
+COPY . /workspace
+WORKDIR /workspace
+RUN pip install -e .
