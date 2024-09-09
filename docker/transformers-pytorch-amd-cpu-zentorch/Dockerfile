@@ -42,7 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # WORKDIR /home/user
 
 # Install PyTorch
-RUN pip install --no-cache-dir --pre torch==2.1.2 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # Copy and install ZenTorch wheel
 RUN pip install zentorch==4.2.0
