@@ -42,6 +42,8 @@ GENERATE_KWARGS = {
     "min_new_tokens": 128,
 }
 
+version = "5.0.0"
+
 def benchmark(phycpubind_str, membind, model_id):
     task = "text-generation"
     for dtype in ["bfloat16"]:
@@ -83,7 +85,7 @@ def benchmark(phycpubind_str, membind, model_id):
                     sl = INPUT_SHAPES["sequence_length"]
                     maxt = GENERATE_KWARGS["max_new_tokens"]
 
-                    BENCHMARK_NAME = f"benchmark_epyc_turin_{backend}_multi_instance/dtype_{dtype}/{task}/batch_{bs}_cores_8_instances_64/batch_{bs}_prompt_{sl}_gen_{maxt}_cores_{phycpubind_str}"
+                    BENCHMARK_NAME = f"benchmark_epyc_genoa_{backend}_{version}_multi_instance/dtype_{dtype}/{task}/batch_{bs}_cores_8_instances_24/batch_{bs}_prompt_{sl}_gen_{maxt}_cores_{phycpubind_str}"
                     subfolder = f"{BENCHMARK_NAME}/{model.replace('/', '_')}"
 
                     benchmark_config = BenchmarkConfig(

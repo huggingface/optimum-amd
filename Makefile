@@ -46,7 +46,7 @@ interact:
 			--volume /home/mohit/.cache/huggingface/hub:/data/hf_cache/ \
 			--workdir /workspace \
 			--entrypoint /bin/bash \
-			optimum-amd-zentorch-mht:4.2.0
+			optimum-amd-zentorch-mht:5.0
 
 models = \
     "google/gemma-2-9b-it" \

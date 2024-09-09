@@ -44,8 +44,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install PyTorch
 RUN pip install --no-cache-dir --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
+COPY zentorch-5.0.0-cp38-cp38-manylinux_2_28_x86_64.whl .
+RUN pip install zentorch-5.0.0-cp38-cp38-manylinux_2_28_x86_64.whl
 # Copy and install ZenTorch wheel
-RUN pip install zentorch==4.2.0
+# RUN pip install zentorch==4.2.0
 RUN pip install git+https://github.com/huggingface/optimum-benchmark.git
 RUN pip install git+https://github.com/huggingface/optimum-amd.git@fbd225616ef5a16b3cb762bc762e83d30b8ee1c9
 
