@@ -31,6 +31,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1 && \
     pip install --upgrade pip
 
+RUN apt-get update && apt-get install -y software-properties-common
+RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test
+RUN apt-get install -y g++-11
+
 # Create a non-root user
 # ARG GROUP_ID
 # ARG USER_ID
