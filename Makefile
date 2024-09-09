@@ -66,8 +66,6 @@ benchmark:
 			if [ $$start_core -lt 96 ]; then \
 				numa_node=0; \
 			else \
-				start_core=$$((start_core + 32)); \
-				end_core=$$((end_core + 32)); \
 				numa_node=1; \
 			fi; \
 			echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
@@ -75,6 +73,25 @@ benchmark:
 		done; \
 		wait; \
 	done
+
+
+# benchmark:
+# 	for model in $(models); do \
+# 		for i in {0..23}; do \
+# 			start_core=$$((i * 8)); \
+# 			end_core=$$((start_core + 7)); \
+# 			if [ $$start_core -lt 96 ]; then \
+# 				numa_node=0; \
+# 			else \
+# 				start_core=$$((start_core + 32)); \
+# 				end_core=$$((end_core + 32)); \
+# 				numa_node=1; \
+# 			fi; \
+# 			echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
+# 			python examples/benchmarks/epyc/benchmark_model.py --physcpubind $$start_core-$$end_core --membind $$numa_node --model_id $$model & \
+# 		done; \
+# 		wait; \
+# 	done
 
 
 benchmark2:
