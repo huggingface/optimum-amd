@@ -166,15 +166,15 @@ if __name__ == "__main__":
     num_cores = physical_cores // num_instances
     os.environ["OMP_NUM_THREADS"] = str(num_cores*threads_per_core)
 
-    print(f"Running benchmark for {model} with dtype {dtype} and backend {backend} and task {task}")
-    print(f"Batch size: {batch_size}")
-    print(f"Sequence length: {sequence_length}")
-    print(f"Decode length: {decode_length}")
-    print(f"Numactl kwargs: {numactl_kwargs}")
-    print(f"Device: {device}")
-    print(f"Instance: {instance}")
-    print(f"Num instances: {num_instances}")
-    print(f"Num cores: {num_cores}")
+    # print(f"Running benchmark for {model} with dtype {dtype} and backend {backend} and task {task}")
+    # print(f"Batch size: {batch_size}")
+    # print(f"Sequence length: {sequence_length}")
+    # print(f"Decode length: {decode_length}")
+    # print(f"Numactl kwargs: {numactl_kwargs}")
+    # print(f"Device: {device}")
+    # print(f"Instance: {instance}")
+    # print(f"Num instances: {num_instances}")
+    # print(f"Num cores: {num_cores}")
 
     benchmark(
         model=model,

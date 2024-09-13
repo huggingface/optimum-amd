@@ -76,6 +76,23 @@ benchmark:
 		wait; \
 	done
 
+# benchmark:
+# 	for model in $(models); do \
+# 		for i in {0..23}; do \
+# 			start_core=$$((i * 8)); \
+# 			end_core=$$((start_core + 7)); \
+# 			if [ $$start_core -lt 96 ]; then \
+# 				numa_node=0; \
+# 			else \
+# 				start_core=$$((start_core + 32)); \
+# 				end_core=$$((end_core + 32)); \
+# 				numa_node=1; \
+# 			fi; \
+# 			echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
+# 			python examples/benchmarks/epyc/benchmark_model.py --physcpubind $$start_core-$$end_core --membind $$numa_node --model_id $$model & \
+# 		done; \
+# 		wait; \
+# 	done
 # benchmark-turin:
 # 	for model in $(models); do \
 # 			for i in {0..63}; do \
@@ -114,9 +131,7 @@ benchmark-run-inner:
 		for i in $$(seq 0 $$(($(N_INSTANCES) - 1))); do \
 			start_core=$$((i * $$cores_per_instance)); \
 			end_core=$$((start_core + $$cores_per_instance - 1)); \
-			if [ $$cores_per_instance -eq 0 ]; then \
-				numa_node=0; \
-			elif [ $$start_core -lt $(NUMA_THRESHOLD) ] || [ $$start_core -ge 256 -a $$start_core -lt 384 ]; then \
+			if [ $$start_core -lt $(NUMA_THRESHOLD) ] || [ $$start_core -ge 256 -a $$start_core -lt 384 ]; then \
 				numa_node=0; \
 			else \
 				numa_node=1; \
@@ -161,21 +176,3 @@ benchmark-turin:
 
 benchmark-genoa:
 	$(MAKE) run-benchmark DEVICE=genoa N_INSTANCES="2 6 12" NUMA_THRESHOLD=96
-
-# benchmark:
-# 	for model in $(models); do \
-# 		for i in {0..23}; do \
-# 			start_core=$$((i * 8)); \
-# 			end_core=$$((start_core + 7)); \
-# 			if [ $$start_core -lt 96 ]; then \
-# 				numa_node=0; \
-# 			else \
-# 				start_core=$$((start_core + 32)); \
-# 				end_core=$$((end_core + 32)); \
-# 				numa_node=1; \
-# 			fi; \
-# 			echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
-# 			python examples/benchmarks/epyc/benchmark_model.py --physcpubind $$start_core-$$end_core --membind $$numa_node --model_id $$model & \
-# 		done; \
-# 		wait; \
-# 	done
