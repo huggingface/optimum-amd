@@ -52,11 +52,6 @@ def benchmark(
         f"batch_{batch_size}_prompt_{sequence_length}_gen_{decode_length}/instance_{instance}"
     )
 
-    print(BENCHMARK_NAME, flush=True)
-
-
-    return
-
     launcher_config = ProcessConfig(
         start_method="spawn",
         numactl=True,
