@@ -38,7 +38,7 @@ clean:
 	rm -rf optimum_amd.egg-info/
 
 interact:
-	docker run -it --rm \
+		docker run -it --rm \
 			--shm-size 64G \
 			--net=host \
 			--cap-add=sys_nice \
@@ -46,7 +46,7 @@ interact:
 			--volume /home/mohit/.cache/huggingface/hub:/data/hf_cache/ \
 			--workdir /workspace \
 			--entrypoint /bin/bash \
-			optimum-amd-zentorch-mht:5.0
+			optimum-amd-zentorch-mht:5.0.0
 
 models = \
     "google/gemma-2-9b-it" \
@@ -57,6 +57,8 @@ models = \
     "mistralai/Mistral-7B-Instruct-v0.3" \
     "Qwen/Qwen2-7B-Instruct" \
     "Qwen/Qwen1.5-14B-Chat"
+
+models = "google/gemma-2-9b-it"
 
 benchmark:
 	for model in $(models); do \
@@ -74,6 +76,91 @@ benchmark:
 		wait; \
 	done
 
+# benchmark-turin:
+# 	for model in $(models); do \
+# 			for i in {0..63}; do \
+# 					start_core=$$((i * 8)); \
+# 					end_core=$$((start_core + 7)); \
+# 					if [ $$start_core -lt 128 ] || [ $$start_core -ge 256 -a $$start_core -lt 384 ]; then \
+# 							numa_node=0; \
+# 					else \
+# 							numa_node=1; \
+# 					fi; \
+# 					echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
+# 					python examples/benchmarks/epyc/benchmark_model.py --physcpubind $$start_core-$$end_core --membind $$numa_node --model_id $$model & \
+# 			done; \
+# 			wait; \
+# 	done
+
+
+BACKEND := zentorch
+DTYPE := bfloat16
+TASK := "text-generation"
+
+BATCH_SIZES := 1
+SEQUENCE_LENGTHS := 128
+DECODE_LENGTHS := 128
+
+CORE_COUNT := $(shell nproc)
+SOCKET_COUNT := $(shell lscpu | grep 'Socket(s):' | awk '{print $$2}')
+THREADS_PER_CORE := $(shell lscpu | grep 'Thread(s) per core:' | awk '{print $$4}')
+
+NUMA_THRESHOLD := $(shell expr $(CORE_COUNT) / $(SOCKET_COUNT) / $(THREADS_PER_CORE))
+
+benchmark-run-inner:
+	@echo "Running benchmark with N_INSTANCES=$(N_INSTANCES), BATCH_SIZE=$(BATCH_SIZE), SEQUENCE_LENGTH=$(SEQUENCE_LENGTH), DECODE_LENGTH=$(DECODE_LENGTH)"
+	@cores_per_instance=$$(($(CORE_COUNT) / $(N_INSTANCES))); \
+	for model in $(models); do \
+		for i in $$(seq 0 $$(($(N_INSTANCES) - 1))); do \
+			start_core=$$((i * $$cores_per_instance)); \
+			end_core=$$((start_core + $$cores_per_instance - 1)); \
+			if [ $$cores_per_instance -eq 0 ]; then \
+				numa_node=0; \
+			elif [ $$start_core -lt $(NUMA_THRESHOLD) ] || [ $$start_core -ge 256 -a $$start_core -lt 384 ]; then \
+				numa_node=0; \
+			else \
+				numa_node=1; \
+			fi; \
+			echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
+			python examples/benchmarks/epyc/benchmark_model.py \
+				$$(if [ $(N_INSTANCES) -ne 2 ]; then echo "--physcpubind $$start_core-$$end_core"; fi) \
+				--membind $$numa_node \
+				--model_id $$model \
+				--batch_size $(BATCH_SIZE) \
+				--sequence_length $(SEQUENCE_LENGTH) \
+				--decode_length $(DECODE_LENGTH) \
+				--backend $(BACKEND) \
+				--dtype $(DTYPE) \
+				--task $(TASK) \
+				--device $(DEVICE) \
+				--num_instances $(N_INSTANCES) \
+				--instance $$i & \
+		done; \
+		wait; \
+	done
+
+benchmark-run:
+	$(MAKE) benchmark-run-inner N_INSTANCES=$(N_INSTANCES) BATCH_SIZE=$(BATCH_SIZE) SEQUENCE_LENGTH=$(SEQUENCE_LENGTH) DECODE_LENGTH=$(DECODE_LENGTH)
+
+run-benchmark:
+	@echo "Running benchmark on device: $(DEVICE)"
+	@echo "NUMA threshold: $(NUMA_THRESHOLD)"
+	@for ninstances in $(N_INSTANCES); do \
+		for batch_size in $(BATCH_SIZES); do \
+			for seq_length in $(SEQUENCE_LENGTHS); do \
+				for decode_length in $(DECODE_LENGTHS); do \
+					echo "Running benchmark with N_INSTANCES=$$ninstances, BATCH_SIZE=$$batch_size, SEQUENCE_LENGTH=$$seq_length, DECODE_LENGTH=$$decode_length"; \
+					$(MAKE) benchmark-run N_INSTANCES=$$ninstances BATCH_SIZE=$$batch_size SEQUENCE_LENGTH=$$seq_length DECODE_LENGTH=$$decode_length; \
+				done; \
+			done; \
+		done; \
+	done
+
+benchmark-turin:
+	$(MAKE) run-benchmark DEVICE=turin N_INSTANCES="2 4 8 16" NUMA_THRESHOLD=128
+
+benchmark-genoa:
+	$(MAKE) run-benchmark DEVICE=genoa N_INSTANCES="2 6 12" NUMA_THRESHOLD=96
 
 # benchmark:
 # 	for model in $(models); do \
@@ -92,22 +179,3 @@ benchmark:
 # 		done; \
 # 		wait; \
 # 	done
-
-
-benchmark2:
-	for model in $(models); do \
-			for i in {0..63}; do \
-					start_core=$$((i * 8)); \
-					end_core=$$((start_core + 7)); \
-					if [ $$start_core -lt 128 ] || [ $$start_core -ge 256 -a $$start_core -lt 384 ]; then \
-							numa_node=0; \
-					else \
-							numa_node=1; \
-					fi; \
-					echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
-					python examples/benchmarks/epyc/benchmark_model.py --physcpubind $$start_core-$$end_core --membind $$numa_node --model_id $$model & \
-			done; \
-			wait; \
-	done
-
-
