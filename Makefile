@@ -172,7 +172,7 @@ run-benchmark:
 	done
 
 benchmark-turin:
-	$(MAKE) run-benchmark DEVICE=turin N_INSTANCES="2 4 8 16" NUMA_THRESHOLD=128
+	$(MAKE) run-benchmark DEVICE=turin N_INSTANCES="2 4 8 16"
 
 benchmark-genoa:
-	$(MAKE) run-benchmark DEVICE=genoa N_INSTANCES="2 6 12" NUMA_THRESHOLD=96
+	$(MAKE) run-benchmark DEVICE=genoa N_INSTANCES="2 6 12"
