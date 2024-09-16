@@ -24,6 +24,7 @@ STATIC_CACHE_MODELS = [
     "meta-llama/Llama-2-7b-chat-hf",
     "meta-llama/Llama-2-13b-chat-hf",
     "meta-llama/Meta-Llama-3-8B-Instruct",
+    "meta-llama/Meta-Llama-3.1-8B-Instruct",
     "mistralai/Mistral-7B-Instruct-v0.3",
 ]
 
@@ -51,6 +52,9 @@ def benchmark(
         f"cores_{num_cores}_instances_{num_instances}/"
         f"batch_{batch_size}_prompt_{sequence_length}_gen_{decode_length}/instance_{instance}"
     )
+    
+    with open("benchmarkxx.log", "a") as f:
+        f.write(f"Running benchmark for {model} with dtype {dtype} and backend {backend} Num instances: {num_instances} and and Instance: {instance}\n")
 
     launcher_config = ProcessConfig(
         start_method="spawn",
