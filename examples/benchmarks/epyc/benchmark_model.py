@@ -2,6 +2,9 @@ import os
 import torch
 import psutil
 from optimum_benchmark import Benchmark, BenchmarkConfig, InferenceConfig, ProcessConfig, PyTorchConfig
+import json
+from huggingface_hub import hf_hub_download
+
 
 # for list with static cache support
 # https://github.com/search?q=repo%3Ahuggingface%2Ftransformers+_setup_cache%28self&type=code
@@ -60,8 +63,12 @@ def benchmark(
         benchmark_report_path = hf_hub_download(repo_id=REPO_ID, filename=benchmark_report, repo_type="dataset")
         with open(benchmark_report_path, "r") as f:
             report = json.load(f)
+        with open("benchmarkxx.log", "a") as f:
+            f.write(f"Found {benchmark_report}\n")
     except Exception as e:
         benchmark_report_path = None
+        with open("benchmarkxx.log", "a") as f:
+            f.write(f"Not Found {e}\n")
         
     if benchmark_report_path is not None:
         return
