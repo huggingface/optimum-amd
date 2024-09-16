@@ -135,8 +135,7 @@ def benchmark(
         print(e, flush=True)
 
         with open("benchmark_error.log", "a") as f:
-            f.write(f"Failed to {result}\n")
-            f.write(str(e))
+            f.write(f"Failed to {result} {str(e)}\n")
 
 
 def argparser():
