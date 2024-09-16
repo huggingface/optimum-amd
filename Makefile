@@ -58,7 +58,7 @@ models = \
     "Qwen/Qwen2-7B-Instruct" \
     "Qwen/Qwen1.5-14B-Chat"
 
-models = "google/gemma-2-9b-it"
+models = "meta-llama/Meta-Llama-3.1-8B-Instruct"
 
 benchmark:
 	for model in $(models); do \
