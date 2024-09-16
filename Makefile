@@ -131,7 +131,9 @@ benchmark-run-inner:
 		for i in $$(seq 0 $$(($(N_INSTANCES) - 1))); do \
 			start_core=$$((i * $$cores_per_instance)); \
 			end_core=$$((start_core + $$cores_per_instance - 1)); \
-			if [ $$start_core -lt $(NUMA_THRESHOLD) ] || [ $$start_core -ge 256 -a $$start_core -lt 384 ]; then \
+			if [ $(N_INSTANCES) -eq 2 ] && [ $$i -eq 1 ] && [ "$(DEVICE)" = "turin" ]; then \
+				numa_node=1; \
+			elif [ $$start_core -lt $(NUMA_THRESHOLD) ] || [ $$start_core -ge 256 -a $$start_core -lt 384 ]; then \
 				numa_node=0; \
 			else \
 				numa_node=1; \
