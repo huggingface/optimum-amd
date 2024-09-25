@@ -56,25 +56,34 @@ def benchmark(
         f"batch_{batch_size}_prompt_{sequence_length}_gen_{decode_length}/instance_{instance}"
     )
 
+    benchmark_names = []
+    for i in range(num_instances):
+        benchmark_names.append(
+            f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_multi_instance/{version}/"
+            f"{model.replace('/', '_')}/"
+            f"cores_{num_cores}_instances_{num_instances}/"
+            f"batch_{batch_size}_prompt_{sequence_length}_gen_{decode_length}/instance_{i}"
+        )
 
     benchmark_report_path = None
     try:
-        benchmark_report = os.path.join(BENCHMARK_NAME, "benchmark_report.json")
-        benchmark_report_path = hf_hub_download(repo_id=REPO_ID, filename=benchmark_report, repo_type="dataset")
-        with open(benchmark_report_path, "r") as f:
-            report = json.load(f)
-        with open("benchmarkxx.log", "a") as f:
-            f.write(f"Found {benchmark_report}\n")
+        for benchmark_name in benchmark_names:
+            benchmark_report = os.path.join(benchmark_name, "benchmark_report.json")
+            benchmark_report_path = hf_hub_download(repo_id=REPO_ID, filename=benchmark_report, repo_type="dataset")
+            with open(benchmark_report_path, "r") as f:
+                report = json.load(f)
+            with open("benchmarkxx.log", "a") as f:
+                f.write(f"Found {benchmark_report}\n")
     except Exception as e:
         benchmark_report_path = None
         with open("benchmarkxx.log", "a") as f:
             f.write(f"Not Found {e}\n")
-        
+
     if benchmark_report_path is not None:
         return
-    
+
     result = f"Model: {model}, Backend: {backend}, Batch Size: {batch_size}, Sequence Length: {sequence_length}, Decode Length: {decode_length}, Num instances: {num_instances} and and Instance: {instance}, membind {numactl_kwargs['membind']}, Device: {device}, Instance: {instance}, Num Instances: {num_instances}, Num Cores: {num_cores}"
-    
+
     with open("benchmarkxx.log", "a") as f:
         f.write(f"Running benchmark for {result}\n")
 
@@ -184,7 +193,7 @@ if __name__ == "__main__":
     logical_cpus = psutil.cpu_count(logical=True)
     threads_per_core = logical_cpus // physical_cores
     num_cores = physical_cores // num_instances
-    os.environ["OMP_NUM_THREADS"] = str(num_cores*threads_per_core)
+    os.environ["OMP_NUM_THREADS"] = str(num_cores * threads_per_core)
 
     # print(f"Running benchmark for {model} with dtype {dtype} and backend {backend} and task {task}")
     # print(f"Batch size: {batch_size}")
