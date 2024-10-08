@@ -32,7 +32,7 @@ STATIC_CACHE_MODELS = [
 ]
 
 
-version = "5_rc"
+version = "5_rc7"
 
 
 def benchmark(
@@ -50,7 +50,7 @@ def benchmark(
     num_cores,
 ):
     BENCHMARK_NAME = (
-        f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_multi_instance/{version}/"
+        f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_single_instance/{version}/"
         f"{model.replace('/', '_')}/"
         f"cores_{num_cores}_instances_{num_instances}/"
         f"batch_{batch_size}_prompt_{sequence_length}_gen_{decode_length}/instance_{instance}"
@@ -59,7 +59,7 @@ def benchmark(
     benchmark_names = []
     for i in range(num_instances):
         benchmark_names.append(
-            f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_multi_instance/{version}/"
+            f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_single_instance/{version}/"
             f"{model.replace('/', '_')}/"
             f"cores_{num_cores}_instances_{num_instances}/"
             f"batch_{batch_size}_prompt_{sequence_length}_gen_{decode_length}/instance_{i}"
@@ -163,6 +163,7 @@ def argparser():
     parser.add_argument("--device", type=str, help="Device", default="turin")
     parser.add_argument("--num_instances", type=int, help="Number of instances", required=True)
     parser.add_argument("--instance", type=int, help="Instance", required=True)
+    parser.add_argument("--num_cores", type=int, help="Num cores", required=True, default=None)
     return parser.parse_args()
 
 
@@ -181,6 +182,7 @@ if __name__ == "__main__":
     device = args.device
     num_instances = args.num_instances
     instance = args.instance
+    num_cores_given = args.num_cores
 
     numactl_kwargs = {
         "cpunodebind": membind,
@@ -193,8 +195,13 @@ if __name__ == "__main__":
     logical_cpus = psutil.cpu_count(logical=True)
     threads_per_core = logical_cpus // physical_cores
     num_cores = physical_cores // num_instances
-    os.environ["OMP_NUM_THREADS"] = str(num_cores * threads_per_core)
-
+    
+    if num_cores_given:
+        os.environ["OMP_NUM_THREADS"] = str(num_cores_given)
+        num_cores = num_cores_given
+    else:
+        os.environ["OMP_NUM_THREADS"] = str(num_cores * threads_per_core)
+        
     # print(f"Running benchmark for {model} with dtype {dtype} and backend {backend} and task {task}")
     # print(f"Batch size: {batch_size}")
     # print(f"Sequence length: {sequence_length}")

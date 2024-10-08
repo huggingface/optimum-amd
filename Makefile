@@ -46,7 +46,7 @@ interact:
 			--volume /home/mohit/.cache/huggingface/hub:/data/hf_cache/ \
 			--workdir /workspace \
 			--entrypoint /bin/bash \
-			optimum-amd-zentorch-mht:5.0.0
+			optimum-amd-zentorch-mht:5.0.0-rc6
 
 models = \
     "google/gemma-2-9b-it" \
@@ -114,7 +114,7 @@ BACKEND := zentorch
 DTYPE := bfloat16
 TASK := "text-generation"
 
-BATCH_SIZES := 1 4 16 32
+BATCH_SIZES := 16 32
 SEQUENCE_LENGTHS := 128 1024
 DECODE_LENGTHS := 128 1024
 
@@ -156,8 +156,37 @@ benchmark-run-inner:
 		wait; \
 	done
 
+benchmark-run-single:
+	@echo "Running single instance benchmark with BATCH_SIZE=$(BATCH_SIZE), SEQUENCE_LENGTH=$(SEQUENCE_LENGTH), DECODE_LENGTH=$(DECODE_LENGTH)"
+	@end_cores_list="8 16 32 64 96"; \
+	for model in $(models); do \
+		for end_cores_one in $$end_cores_list; do \
+			start_core=0; \
+			numa_node=0; \
+			end_core=$$((end_cores_one - 1)); \
+			echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
+			python examples/benchmarks/epyc/benchmark_model.py \
+				--physcpubind $$start_core-$$end_core \
+				--membind $$numa_node \
+				--model_id $$model \
+				--batch_size $(BATCH_SIZE) \
+				--sequence_length $(SEQUENCE_LENGTH) \
+				--decode_length $(DECODE_LENGTH) \
+				--backend $(BACKEND) \
+				--dtype $(DTYPE) \
+				--task $(TASK) \
+				--device $(DEVICE) \
+				--num_instances 1 \
+				--num_cores $$end_cores_one \
+				--instance 0 & \
+			wait; \
+		done; \
+	done
+
 benchmark-run:
-	$(MAKE) benchmark-run-inner N_INSTANCES=$(N_INSTANCES) BATCH_SIZE=$(BATCH_SIZE) SEQUENCE_LENGTH=$(SEQUENCE_LENGTH) DECODE_LENGTH=$(DECODE_LENGTH)
+	$(MAKE) benchmark-run-single BATCH_SIZE=$(BATCH_SIZE) SEQUENCE_LENGTH=$(SEQUENCE_LENGTH) DECODE_LENGTH=$(DECODE_LENGTH); \
+
+# $(MAKE) benchmark-run-inner N_INSTANCES=$(N_INSTANCES) BATCH_SIZE=$(BATCH_SIZE) SEQUENCE_LENGTH=$(SEQUENCE_LENGTH) DECODE_LENGTH=$(DECODE_LENGTH); \
 
 run-benchmark:
 	@echo "Running benchmark on device: $(DEVICE)"
@@ -178,3 +207,9 @@ benchmark-turin:
 
 benchmark-genoa:
 	$(MAKE) run-benchmark DEVICE=genoa N_INSTANCES="2 6 12"
+
+benchmark-genoa-single:
+	$(MAKE) run-benchmark DEVICE=genoa N_INSTANCES="0"
+
+benchmark-turin-single:
+	$(MAKE) run-benchmark DEVICE=turin N_INSTANCES="0"
