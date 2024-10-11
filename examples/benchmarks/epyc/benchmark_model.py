@@ -5,34 +5,7 @@ from optimum_benchmark import Benchmark, BenchmarkConfig, InferenceConfig, Proce
 import json
 from huggingface_hub import hf_hub_download
 
-
-# for list with static cache support
-# https://github.com/search?q=repo%3Ahuggingface%2Ftransformers+_setup_cache%28self&type=code
-# MODELS_DECODER = [
-#     "google/gemma-2-9b-it",
-#     "EleutherAI/gpt-j-6B",
-#     "meta-llama/Llama-2-7b-chat-hf",
-#     "meta-llama/Llama-2-13b-chat-hf",
-#     "meta-llama/Meta-Llama-3-8B-Instruct",
-#     "mistralai/Mistral-7B-Instruct-v0.3",
-#     "Qwen/Qwen2-7B-Instruct",
-#     "Qwen/Qwen1.5-14B-Chat",
-# ]
-
-REPO_ID = "optimum-amd/zendnn-benchmarks"
 torch._dynamo.reset()
-
-STATIC_CACHE_MODELS = [
-    "google/gemma-2-9b-it",
-    "meta-llama/Llama-2-7b-chat-hf",
-    "meta-llama/Llama-2-13b-chat-hf",
-    "meta-llama/Meta-Llama-3-8B-Instruct",
-    "meta-llama/Meta-Llama-3.1-8B-Instruct",
-    "mistralai/Mistral-7B-Instruct-v0.3",
-]
-
-
-version = "5_rc7"
 
 
 def benchmark(
@@ -48,6 +21,9 @@ def benchmark(
     instance,
     num_instances,
     num_cores,
+    version,
+    repo_id,
+    cache_implementation,
 ):
     BENCHMARK_NAME = (
         f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_single_instance/{version}/"
@@ -69,14 +45,14 @@ def benchmark(
     try:
         for benchmark_name in benchmark_names:
             benchmark_report = os.path.join(benchmark_name, "benchmark_report.json")
-            benchmark_report_path = hf_hub_download(repo_id=REPO_ID, filename=benchmark_report, repo_type="dataset")
+            benchmark_report_path = hf_hub_download(repo_id=repo_id, filename=benchmark_report, repo_type="dataset")
             with open(benchmark_report_path, "r") as f:
                 report = json.load(f)
-            with open("benchmarkxx.log", "a") as f:
+            with open("benchmark_info.log", "a") as f:
                 f.write(f"Found {benchmark_report}\n")
     except Exception as e:
         benchmark_report_path = None
-        with open("benchmarkxx.log", "a") as f:
+        with open("benchmark_info.log", "a") as f:
             f.write(f"Not Found {e}\n")
 
     if benchmark_report_path is not None:
@@ -84,7 +60,7 @@ def benchmark(
 
     result = f"Model: {model}, Backend: {backend}, Batch Size: {batch_size}, Sequence Length: {sequence_length}, Decode Length: {decode_length}, Num instances: {num_instances} and and Instance: {instance}, membind {numactl_kwargs['membind']}, Device: {device}, Instance: {instance}, Num Instances: {num_instances}, Num Cores: {num_cores}"
 
-    with open("benchmarkxx.log", "a") as f:
+    with open("benchmark_info.log", "a") as f:
         f.write(f"Running benchmark for {result}\n")
 
     launcher_config = ProcessConfig(
@@ -119,7 +95,7 @@ def benchmark(
             },
             task=task,
             torch_dtype=dtype,
-            cache_implementation="static" if model in STATIC_CACHE_MODELS else None,
+            cache_implementation=cache_implementation,
         )
 
         benchmark_config = BenchmarkConfig(
@@ -130,13 +106,13 @@ def benchmark(
         benchmark_config.push_to_hub(
             commit_message=f"Added {result}",
             subfolder=BENCHMARK_NAME,
-            repo_id=REPO_ID,
+            repo_id=repo_id,
             private=True,
         )
         benchmark_report.push_to_hub(
             commit_message=f"Added {result}",
             subfolder=BENCHMARK_NAME,
-            repo_id=REPO_ID,
+            repo_id=repo_id,
             private=True,
         )
     except Exception as e:
@@ -163,7 +139,10 @@ def argparser():
     parser.add_argument("--device", type=str, help="Device", default="turin")
     parser.add_argument("--num_instances", type=int, help="Number of instances", required=True)
     parser.add_argument("--instance", type=int, help="Instance", required=True)
-    parser.add_argument("--num_cores", type=int, help="Num cores", required=True, default=None)
+    parser.add_argument("--num_cores", type=int, help="Num cores", required=False, default=None)
+    parser.add_argument("--version", type=str, help="Zendnn library version", required=False, default="5_rc7")
+    parser.add_argument("--repo_id", type=str, help="Repo id to upload benchmark", required=True)
+    parser.add_argument("--cache_implementation", type=str, help="Cache implementation", required=True)
     return parser.parse_args()
 
 
@@ -183,6 +162,9 @@ if __name__ == "__main__":
     num_instances = args.num_instances
     instance = args.instance
     num_cores_given = args.num_cores
+    version = args.version
+    repo_id = args.repo_id
+    cache_implementation = args.cache_implementation
 
     numactl_kwargs = {
         "cpunodebind": membind,
@@ -195,22 +177,12 @@ if __name__ == "__main__":
     logical_cpus = psutil.cpu_count(logical=True)
     threads_per_core = logical_cpus // physical_cores
     num_cores = physical_cores // num_instances
-    
+
     if num_cores_given:
         os.environ["OMP_NUM_THREADS"] = str(num_cores_given)
         num_cores = num_cores_given
     else:
-        os.environ["OMP_NUM_THREADS"] = str(num_cores * threads_per_core)
-        
-    # print(f"Running benchmark for {model} with dtype {dtype} and backend {backend} and task {task}")
-    # print(f"Batch size: {batch_size}")
-    # print(f"Sequence length: {sequence_length}")
-    # print(f"Decode length: {decode_length}")
-    # print(f"Numactl kwargs: {numactl_kwargs}")
-    # print(f"Device: {device}")
-    # print(f"Instance: {instance}")
-    # print(f"Num instances: {num_instances}")
-    # print(f"Num cores: {num_cores}")
+        os.environ["OMP_NUM_THREADS"] = str(num_cores)
 
     benchmark(
         model=model,
@@ -225,4 +197,7 @@ if __name__ == "__main__":
         instance=instance,
         num_instances=num_instances,
         num_cores=num_cores,
+        version=version,
+        repo_id=repo_id,
+        cache_implementation=cache_implementation,
     )

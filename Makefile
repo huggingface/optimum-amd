@@ -60,69 +60,24 @@ models = \
 
 models = "meta-llama/Meta-Llama-3.1-8B-Instruct"
 
-benchmark:
-	for model in $(models); do \
-		for i in {0..23}; do \
-			start_core=$$((i * 8)); \
-			end_core=$$((start_core + 7)); \
-			if [ $$start_core -lt 96 ]; then \
-				numa_node=0; \
-			else \
-				numa_node=1; \
-			fi; \
-			echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
-			python examples/benchmarks/epyc/benchmark_model.py --physcpubind $$start_core-$$end_core --membind $$numa_node --model_id $$model & \
-		done; \
-		wait; \
-	done
-
-# benchmark:
-# 	for model in $(models); do \
-# 		for i in {0..23}; do \
-# 			start_core=$$((i * 8)); \
-# 			end_core=$$((start_core + 7)); \
-# 			if [ $$start_core -lt 96 ]; then \
-# 				numa_node=0; \
-# 			else \
-# 				start_core=$$((start_core + 32)); \
-# 				end_core=$$((end_core + 32)); \
-# 				numa_node=1; \
-# 			fi; \
-# 			echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
-# 			python examples/benchmarks/epyc/benchmark_model.py --physcpubind $$start_core-$$end_core --membind $$numa_node --model_id $$model & \
-# 		done; \
-# 		wait; \
-# 	done
-# benchmark-turin:
-# 	for model in $(models); do \
-# 			for i in {0..63}; do \
-# 					start_core=$$((i * 8)); \
-# 					end_core=$$((start_core + 7)); \
-# 					if [ $$start_core -lt 128 ] || [ $$start_core -ge 256 -a $$start_core -lt 384 ]; then \
-# 							numa_node=0; \
-# 					else \
-# 							numa_node=1; \
-# 					fi; \
-# 					echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
-# 					python examples/benchmarks/epyc/benchmark_model.py --physcpubind $$start_core-$$end_core --membind $$numa_node --model_id $$model & \
-# 			done; \
-# 			wait; \
-# 	done
-
+CACHE_IMPLEMENTATION := static
+REPO_ID := "optimum-amd/zendnn-benchmark"
+VERSION := 5_rc7
 
 BACKEND := zentorch
 DTYPE := bfloat16
 TASK := "text-generation"
 
-BATCH_SIZES := 16 32
-SEQUENCE_LENGTHS := 128 1024
-DECODE_LENGTHS := 128 1024
+BATCH_SIZES := 32
+SEQUENCE_LENGTHS := 1024
+DECODE_LENGTHS := 1024
 
 CORE_COUNT := $(shell nproc)
 SOCKET_COUNT := $(shell lscpu | grep 'Socket(s):' | awk '{print $$2}')
 THREADS_PER_CORE := $(shell lscpu | grep 'Thread(s) per core:' | awk '{print $$4}')
 
 NUMA_THRESHOLD := $(shell expr $(CORE_COUNT) / $(SOCKET_COUNT) / $(THREADS_PER_CORE))
+CORE_COUNT := $(shell expr $(CORE_COUNT) / $(THREADS_PER_CORE))
 
 benchmark-run-inner:
 	@echo "Running benchmark with N_INSTANCES=$(N_INSTANCES), BATCH_SIZE=$(BATCH_SIZE), SEQUENCE_LENGTH=$(SEQUENCE_LENGTH), DECODE_LENGTH=$(DECODE_LENGTH)"
@@ -140,32 +95,6 @@ benchmark-run-inner:
 			fi; \
 			echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
 			python examples/benchmarks/epyc/benchmark_model.py \
-				$$(if [ $(N_INSTANCES) -ne 2 ]; then echo "--physcpubind $$start_core-$$end_core"; fi) \
-				--membind $$numa_node \
-				--model_id $$model \
-				--batch_size $(BATCH_SIZE) \
-				--sequence_length $(SEQUENCE_LENGTH) \
-				--decode_length $(DECODE_LENGTH) \
-				--backend $(BACKEND) \
-				--dtype $(DTYPE) \
-				--task $(TASK) \
-				--device $(DEVICE) \
-				--num_instances $(N_INSTANCES) \
-				--instance $$i & \
-		done; \
-		wait; \
-	done
-
-benchmark-run-single:
-	@echo "Running single instance benchmark with BATCH_SIZE=$(BATCH_SIZE), SEQUENCE_LENGTH=$(SEQUENCE_LENGTH), DECODE_LENGTH=$(DECODE_LENGTH)"
-	@end_cores_list="8 16 32 64 96"; \
-	for model in $(models); do \
-		for end_cores_one in $$end_cores_list; do \
-			start_core=0; \
-			numa_node=0; \
-			end_core=$$((end_cores_one - 1)); \
-			echo "Starting core $$start_core to core $$end_core on NUMA node $$numa_node with model $$model"; \
-			python examples/benchmarks/epyc/benchmark_model.py \
 				--physcpubind $$start_core-$$end_core \
 				--membind $$numa_node \
 				--model_id $$model \
@@ -176,17 +105,17 @@ benchmark-run-single:
 				--dtype $(DTYPE) \
 				--task $(TASK) \
 				--device $(DEVICE) \
-				--num_instances 1 \
-				--num_cores $$end_cores_one \
-				--instance 0 & \
-			wait; \
+				--num_instances $(N_INSTANCES) \
+				--cache_implementation $(CACHE_IMPLEMENTATION) \
+				--repo_id $(REPO_ID) \
+				--version $(VERSION) \
+				--instance $$i & \
 		done; \
+		wait; \
 	done
 
 benchmark-run:
-	$(MAKE) benchmark-run-single BATCH_SIZE=$(BATCH_SIZE) SEQUENCE_LENGTH=$(SEQUENCE_LENGTH) DECODE_LENGTH=$(DECODE_LENGTH); \
-
-# $(MAKE) benchmark-run-inner N_INSTANCES=$(N_INSTANCES) BATCH_SIZE=$(BATCH_SIZE) SEQUENCE_LENGTH=$(SEQUENCE_LENGTH) DECODE_LENGTH=$(DECODE_LENGTH); \
+	$(MAKE) benchmark-run-inner N_INSTANCES=$(N_INSTANCES) BATCH_SIZE=$(BATCH_SIZE) SEQUENCE_LENGTH=$(SEQUENCE_LENGTH) DECODE_LENGTH=$(DECODE_LENGTH); \
 
 run-benchmark:
 	@echo "Running benchmark on device: $(DEVICE)"
@@ -207,9 +136,3 @@ benchmark-turin:
 
 benchmark-genoa:
 	$(MAKE) run-benchmark DEVICE=genoa N_INSTANCES="2 6 12"
-
-benchmark-genoa-single:
-	$(MAKE) run-benchmark DEVICE=genoa N_INSTANCES="0"
-
-benchmark-turin-single:
-	$(MAKE) run-benchmark DEVICE=turin N_INSTANCES="0"
