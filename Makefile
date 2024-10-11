@@ -68,9 +68,9 @@ BACKEND := zentorch
 DTYPE := bfloat16
 TASK := "text-generation"
 
-BATCH_SIZES := 32
-SEQUENCE_LENGTHS := 1024
-DECODE_LENGTHS := 1024
+BATCH_SIZES := 16 32
+SEQUENCE_LENGTHS := 128 1024
+DECODE_LENGTHS := 128 1024
 
 CORE_COUNT := $(shell nproc)
 SOCKET_COUNT := $(shell lscpu | grep 'Socket(s):' | awk '{print $$2}')
