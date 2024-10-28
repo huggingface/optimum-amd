@@ -26,7 +26,7 @@ def benchmark(
     cache_implementation,
 ):
     BENCHMARK_NAME = (
-        f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_single_instance/{version}/"
+        f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_multi_instance/{version}/"
         f"{model.replace('/', '_')}/"
         f"cores_{num_cores}_instances_{num_instances}/"
         f"batch_{batch_size}_prompt_{sequence_length}_gen_{decode_length}/instance_{instance}"
@@ -35,7 +35,7 @@ def benchmark(
     benchmark_names = []
     for i in range(num_instances):
         benchmark_names.append(
-            f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_single_instance/{version}/"
+            f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_multi_instance/{version}/"
             f"{model.replace('/', '_')}/"
             f"cores_{num_cores}_instances_{num_instances}/"
             f"batch_{batch_size}_prompt_{sequence_length}_gen_{decode_length}/instance_{i}"
@@ -48,11 +48,11 @@ def benchmark(
             benchmark_report_path = hf_hub_download(repo_id=repo_id, filename=benchmark_report, repo_type="dataset")
             with open(benchmark_report_path, "r") as f:
                 report = json.load(f)
-            with open("benchmark_info.log", "a") as f:
+            with open("benchmark_exists.log", "a") as f:
                 f.write(f"Found {benchmark_report}\n")
     except Exception as e:
         benchmark_report_path = None
-        with open("benchmark_info.log", "a") as f:
+        with open("benchmark_exists.log", "a") as f:
             f.write(f"Not Found {e}\n")
 
     if benchmark_report_path is not None:
@@ -69,7 +69,7 @@ def benchmark(
         numactl_kwargs=numactl_kwargs,
     )  # isolated process
     scenario_config = InferenceConfig(
-        memory=True,
+        memory=False,
         latency=True,
         input_shapes={
             "batch_size": batch_size,
@@ -78,6 +78,7 @@ def benchmark(
         generate_kwargs={
             "max_new_tokens": decode_length,
             "min_new_tokens": decode_length,
+            "num_beams": 4
         },
         iterations=3,
         warmup_runs=2,
@@ -183,7 +184,7 @@ if __name__ == "__main__":
         num_cores = num_cores_given
     else:
         os.environ["OMP_NUM_THREADS"] = str(num_cores)
-
+        
     benchmark(
         model=model,
         task=task,

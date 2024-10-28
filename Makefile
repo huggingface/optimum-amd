@@ -61,16 +61,16 @@ models = \
 models = "meta-llama/Meta-Llama-3.1-8B-Instruct"
 
 CACHE_IMPLEMENTATION := static
-REPO_ID := "optimum-amd/zendnn-benchmark"
-VERSION := 5_rc7
+REPO_ID := "your_user_name_on_hf_hub/zendnn-benchmarks"
+VERSION := 5_rc7_beams4
 
 BACKEND := zentorch
 DTYPE := bfloat16
 TASK := "text-generation"
 
-BATCH_SIZES := 16 32
-SEQUENCE_LENGTHS := 128 1024
-DECODE_LENGTHS := 128 1024
+BATCH_SIZES := 16
+SEQUENCE_LENGTHS := 1024
+DECODE_LENGTHS := 1024
 
 CORE_COUNT := $(shell nproc)
 SOCKET_COUNT := $(shell lscpu | grep 'Socket(s):' | awk '{print $$2}')
@@ -132,7 +132,7 @@ run-benchmark:
 	done
 
 benchmark-turin:
-	$(MAKE) run-benchmark DEVICE=turin N_INSTANCES="2 4 8 16"
+	$(MAKE) run-benchmark DEVICE=turin N_INSTANCES="8"
 
 benchmark-genoa:
 	$(MAKE) run-benchmark DEVICE=genoa N_INSTANCES="2 6 12"

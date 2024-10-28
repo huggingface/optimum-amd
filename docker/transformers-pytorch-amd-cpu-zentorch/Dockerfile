@@ -53,6 +53,7 @@ RUN conda install -c conda-forge llvm-openmp=18.1.8=hf5423f3_1 -y
 
 COPY zentorch-5.0.0-cp310-cp310-manylinux_2_28_x86_64.whl .
 RUN pip install zentorch-5.0.0-cp310-cp310-manylinux_2_28_x86_64.whl
+RUN pip install intel-extension-for-pytorch==2.4.0
 
 ENV OMP_WAIT_POLICY=ACTIVE
 ENV OMP_DYNAMIC=FALSE
