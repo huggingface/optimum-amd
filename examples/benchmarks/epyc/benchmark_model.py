@@ -3,7 +3,7 @@ import torch
 import psutil
 from optimum_benchmark import Benchmark, BenchmarkConfig, InferenceConfig, ProcessConfig, PyTorchConfig
 import json
-from huggingface_hub import hf_hub_download
+from huggingface_hub import HfApi, hf_hub_download, create_repo
 
 torch._dynamo.reset()
 
@@ -25,6 +25,12 @@ def benchmark(
     repo_id,
     cache_implementation,
 ):
+    try:
+        create_repo(repo_id, private=True, exist_ok=True, repo_type="dataset")
+    except Exception as e:
+        print(f"Please verify that the Hugging Face token is valid and has the correct permissions: {e}", flush=True)
+        exit()
+
     BENCHMARK_NAME = (
         f"benchmark_epyc_{device}_{backend}_dtype_{dtype}_multi_instance/{version}/"
         f"{model.replace('/', '_')}/"
@@ -75,11 +81,7 @@ def benchmark(
             "batch_size": batch_size,
             "sequence_length": sequence_length,
         },
-        generate_kwargs={
-            "max_new_tokens": decode_length,
-            "min_new_tokens": decode_length,
-            "num_beams": 4
-        },
+        generate_kwargs={"max_new_tokens": decode_length, "min_new_tokens": decode_length, "num_beams": 4},
         iterations=3,
         warmup_runs=2,
     )
@@ -117,8 +119,7 @@ def benchmark(
             private=True,
         )
     except Exception as e:
-        print(f"Failed to run {result}", flush=True)
-        print(e, flush=True)
+        print(f"Failed to run {result}, {e}", flush=True)
 
         with open("benchmark_error.log", "a") as f:
             f.write(f"Failed to {result} {str(e)}\n")
@@ -184,7 +185,7 @@ if __name__ == "__main__":
         num_cores = num_cores_given
     else:
         os.environ["OMP_NUM_THREADS"] = str(num_cores)
-        
+
     benchmark(
         model=model,
         task=task,

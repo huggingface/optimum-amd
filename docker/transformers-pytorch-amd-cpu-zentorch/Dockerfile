@@ -46,7 +46,7 @@ RUN /opt/conda/bin/conda update -y conda &&  \
 # # Install PyTorch
 RUN pip install --no-cache-dir --pre torch==2.4 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-RUN pip install git+https://github.com/huggingface/optimum-benchmark.git
+RUN pip install git+https://github.com/huggingface/optimum-benchmark.git@791776b827ad0c4780c70127cb9525d29a605310
 RUN pip install git+https://github.com/huggingface/optimum-amd.git@fbd225616ef5a16b3cb762bc762e83d30b8ee1c9
 RUN pip install optimum==v1.21.4
 RUN conda install -c conda-forge llvm-openmp=18.1.8=hf5423f3_1 -y
