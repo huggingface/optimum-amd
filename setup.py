@@ -39,7 +39,7 @@ EXTRAS_REQUIRE = {
     "ryzenai": ["opencv-python", "timm"],
     "zentorch": ["torch==2.2.1"],
     "brevitas": [
-        "brevitas",
+        "brevitas>=0.11",
         "torch>=2.2",
         "datasets>=2.17",
         "onnx",
