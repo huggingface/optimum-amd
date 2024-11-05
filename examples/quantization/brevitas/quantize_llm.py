@@ -130,7 +130,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--device",
         type=str,
-        choices=["cpu", "cuda:0", "auto"],
         default="auto",
         help='Device to run the example on (e.q., "cpu", "cuda:0", "auto"). "auto" will automatically select the device using HuggingFace Accelerate (choices: [%(choices)s], default: %(default)s).',
     )
