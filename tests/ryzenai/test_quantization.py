@@ -94,7 +94,7 @@ class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
 
         # quantize model
         quantizer = RyzenAIOnnxQuantizer.from_pretrained(export_dir.name)
-        quantization_config = AutoQuantizationConfig.ipu_cnn_config()
+        quantization_config = AutoQuantizationConfig.npu_cnn_config()
 
         train_calibration_dataset = quantizer.get_calibration_dataset(
             "imagenet-1k",
@@ -116,11 +116,11 @@ class TestTimmQuantization(unittest.TestCase, RyzenAITestCaseMixin):
         evaluation_set = load_dataset(dataset_name, split="validation", streaming=True, trust_remote_code=True)
         ort_inputs = preprocess_fn(next(iter(evaluation_set)), transforms)["pixel_values"].unsqueeze(0)
 
-        outputs_ipu, outputs_cpu = self.prepare_outputs(
+        outputs_npu, outputs_cpu = self.prepare_outputs(
             quantization_dir.name, RyzenAIModelForImageClassification, ort_inputs, cache_dir, cache_key
         )
 
-        self.assertTrue(torch.allclose(outputs_ipu.logits, outputs_cpu.logits, atol=1e-4))
+        self.assertTrue(torch.allclose(outputs_npu.logits, outputs_cpu.logits, atol=1e-4))
 
         current_ops = self.get_ops(cache_dir, cache_key)
         baseline_ops = self.get_baseline_ops(cache_key)

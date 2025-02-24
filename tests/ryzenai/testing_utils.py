@@ -57,7 +57,7 @@ class RyzenAITestCaseMixin:
 
     def prepare_outputs(self, model_id, model_class, ort_input, cache_dir=None, cache_key=None, file_name=None):
         set_seed(SEED)
-        output_ipu = self.run_model(
+        output_npu = self.run_model(
             model_class,
             model_id,
             ort_input,
@@ -77,7 +77,7 @@ class RyzenAITestCaseMixin:
             file_name=file_name,
         )
 
-        return output_ipu, output_cpu
+        return output_npu, output_cpu
 
     def get_ops(self, cache_dir, cache_key):
         result = parse_json(os.path.join(cache_dir, cache_key, "vitisai_ep_report.json"))

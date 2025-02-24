@@ -71,7 +71,7 @@ setup(
         "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
-    keywords="transformers, amd, ryzen, ipu, quantization, on-device, instinct",
+    keywords="transformers, amd, ryzen, npu, quantization, on-device, instinct",
     url="https://github.com/huggingface/optimum-amd",
     author="HuggingFace Inc. Special Ops Team",
     author_email="hardware@huggingface.co",
