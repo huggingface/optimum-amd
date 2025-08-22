@@ -25,4 +25,4 @@ RUN git clone --depth 1 --branch v3.5 https://github.com/Xilinx/Vitis-AI.git && 
 
 RUN git clone $clone_url && cd optimum-amd && git checkout $commit_sha
 RUN pip install --no-cache-dir ./optimum-amd[brevitas,tests]
-RUN pip install onnxruntime==1.14.0
+RUN pip install "onnxruntime==1.14.0" "diffusers<0.35.0"
