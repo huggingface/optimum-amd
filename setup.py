@@ -28,7 +28,7 @@ TESTS_REQUIRE = [
     "torchvision==0.17.1",
     "opencv-python",
     "pytest-xdist",
-    "diffusers",
+    "diffusers<0.35.0",
 ]
 
 QUALITY_REQUIRE = ["black~=23.1", "ruff>=0.0.241,<=0.0.259"]
