@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.10.12
 
 ARG commit_sha
 ARG clone_url
@@ -19,10 +19,12 @@ RUN npm install npm@9.8.1 -g && \
     npm install n -g && \
     n latest
 
-RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir git+https://github.com/huggingface/doc-builder.git
-RUN git clone --depth 1 --branch v3.5 https://github.com/Xilinx/Vitis-AI.git && cd Vitis-AI/src/vai_quantizer/vai_q_onnx && sh build.sh && pip install pkgs/*.whl
+RUN pip install --no-cache-dir --upgrade pip uv
 
-RUN git clone $clone_url && cd optimum-amd && git checkout $commit_sha
-RUN pip install --no-cache-dir ./optimum-amd[brevitas,tests]
-RUN pip install "onnxruntime==1.14.0" "diffusers<0.35.0"
+ENV UV_SYSTEM_PYTHON=1
+RUN uv pip install --no-cache-dir git+https://github.com/huggingface/doc-builder.git
+
+RUN git clone $clone_url && cd optimum-amd && git checkout $commit_sha && uv pip install .[brevitas,tests]
+RUN git clone --depth 1 --branch v3.5 https://github.com/Xilinx/Vitis-AI.git && cd Vitis-AI/src/vai_quantizer/vai_q_onnx && sh build.sh && uv pip install pkgs/*.whl
+RUN uv pip uninstall torchao diffusers
+RUN uv pip install "onnxruntime==1.14"
