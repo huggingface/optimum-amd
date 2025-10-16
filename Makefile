@@ -3,6 +3,7 @@
 # Run code quality checks
 SHELL := /bin/bash
 CURRENT_DIR = $(shell pwd)
+COMMIT_SHA_SUBPACKAGE := $(shell git rev-parse HEAD)
 DEFAULT_CLONE_URL := https://github.com/huggingface/optimum-amd.git
 # If CLONE_URL is empty, revert to DEFAULT_CLONE_URL
 REAL_CLONE_URL = $(if $(CLONE_URL),$(CLONE_URL),$(DEFAULT_CLONE_URL))
