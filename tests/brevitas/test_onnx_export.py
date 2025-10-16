@@ -15,12 +15,12 @@ from parameterized import parameterized
 from testing_utils import SUPPORTED_MODELS_TINY, VALIDATE_EXPORT_ON_SHAPES, get_quantized_model
 
 from optimum.amd.brevitas.export import find_and_insert_matmulinteger
-from optimum.exporters import TasksManager
 from optimum.exporters.onnx import (
     export_models,
     validate_models_outputs,
 )
 from optimum.exporters.onnx.utils import _get_submodels_and_onnx_configs
+from optimum.exporters.tasks import TasksManager
 from optimum.utils import DEFAULT_DUMMY_SHAPES
 from optimum.utils.testing_utils import grid_parameters
 from transformers.modeling_utils import get_parameter_dtype

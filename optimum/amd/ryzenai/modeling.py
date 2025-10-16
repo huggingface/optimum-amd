@@ -17,8 +17,8 @@ from huggingface_hub.utils import EntryNotFoundError
 from onnx import shape_inference
 from onnx.tools import update_model_dims
 
-from optimum.exporters import TasksManager
 from optimum.exporters.onnx import main_export
+from optimum.exporters.tasks import TasksManager
 from optimum.modeling_base import FROM_PRETRAINED_START_DOCSTRING, OptimizedModel
 from optimum.onnx.utils import _get_external_data_paths
 from optimum.utils.save_utils import maybe_load_preprocessors

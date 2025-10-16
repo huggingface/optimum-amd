@@ -4,7 +4,7 @@
 
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-from optimum.exporters import TasksManager
+from optimum.exporters.tasks import TasksManager
 from transformers import ImageClassificationPipeline, Pipeline, PretrainedConfig
 from transformers import pipeline as transformers_pipeline
 from transformers.image_processing_utils import BaseImageProcessor

@@ -13,7 +13,7 @@ from brevitas_examples.common.generative.quantize import quantize_model
 from brevitas_examples.llm.llm_quant.equalize import apply_weight_equalization
 from tqdm import tqdm
 
-from optimum.exporters import TasksManager
+from optimum.exporters.tasks import TasksManager
 from optimum.quantization_base import OptimumQuantizer
 from transformers.utils.fx import symbolic_trace
 
