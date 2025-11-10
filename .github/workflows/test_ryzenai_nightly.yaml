@@ -26,7 +26,7 @@ jobs:
       slow_test: true
       timeout_minutes: 1200
     secrets:
-      hf_hub_read_token: ${{ secrets.HF_READ_TOKEN }}
+      hf_hub_read_token: ${{ secrets.HF_HUB_READ_TOKEN }}
   send_results:
     name: Send results to webhook
     runs-on: ubuntu-22.04
