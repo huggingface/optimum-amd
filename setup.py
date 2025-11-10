@@ -77,7 +77,12 @@ setup(
     author_email="hardware@huggingface.co",
     license="MIT",
     packages=find_namespace_packages(include=["optimum*"]),
-    entry_points={"console_scripts": ["amdrun=optimum.amd.cli:amdrun"]},
+    entry_points={
+        "console_scripts": ["amdrun=optimum.amd.cli:amdrun"],
+        "hf_quantizers": [
+            "quark = optimum.amd.quantizers:QuarkPlugin"
+        ]
+    },
     install_requires=INSTALL_REQUIRE,
     extras_require=EXTRAS_REQUIRE,
     package_data={"optimum": ["amd/ryzenai/configs/*.json"]},
