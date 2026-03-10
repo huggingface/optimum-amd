@@ -48,7 +48,6 @@ EXTRAS_REQUIRE = {
         "onnx-tool",
         "optimum>=1.17",
     ],
-    "doc": ["numpy<2"],
 }
 
 setup(
