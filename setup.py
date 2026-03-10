@@ -5,7 +5,7 @@ import re
 from setuptools import find_namespace_packages, setup
 
 
-# Ensure we match the version set in optimum/intel/version.py
+# Ensure we match the version set in optimum/amd/version.py
 try:
     filepath = "optimum/amd/version.py"
     with open(filepath) as version_file:
@@ -14,7 +14,7 @@ except Exception as error:
     assert False, "Error: Could not open '%s' due %s\n" % (filepath, error)
 
 # ORT 1.16 is not compatible: https://github.com/Xilinx/Vitis-AI/issues/1343
-INSTALL_REQUIRE = ["optimum<2.0.0", "transformers>=4.38,<=5.0.0", "onnx", "onnxruntime-extensions"]
+INSTALL_REQUIRE = ["optimum", "transformers>=4.38,<=5.0.0", "onnx", "onnxruntime-extensions"]
 
 # TODO: unpin pytest once https://github.com/huggingface/transformers/pull/29154 is merged & released
 TESTS_REQUIRE = [
