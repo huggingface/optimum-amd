@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir --upgrade pip uv
 ENV UV_SYSTEM_PYTHON=1
 RUN uv pip install --no-cache-dir git+https://github.com/huggingface/doc-builder.git
 
-RUN git clone $clone_url && cd optimum-amd && git checkout fix_doc_build && uv pip install .[brevitas,tests,doc]
+RUN git clone $clone_url && cd optimum-amd && git checkout $commit_sha && uv pip install .[brevitas,tests,doc]
 RUN git clone --depth 1 --branch v3.5 https://github.com/Xilinx/Vitis-AI.git && cd Vitis-AI/src/vai_quantizer/vai_q_onnx && sh build.sh && uv pip install pkgs/*.whl
 RUN uv pip uninstall torchao diffusers
 RUN uv pip install "onnxruntime==1.14"
