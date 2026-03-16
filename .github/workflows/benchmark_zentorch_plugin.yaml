@@ -1,0 +1,56 @@
+name: ZenTorch Plugin - Benchmark
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/zentorch/**/*.py"
+      - ".github/workflows/benchmark_zentorch_plugin.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "benchmarks/zentorch/**/*.py"
+      - ".github/workflows/benchmark_zentorch_plugin.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_benchmark:
+    runs-on: [self-hosted, amd-cpu, epyc, genoa]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy zentorch binary to current directory
+        run: cp
+          /home/github_actions/actions-runner/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl
+          docker/transformers-pytorch-amd-cpu-zentorch/zentorch-0.1.0-cp38-cp38-manylinux2014_x86_64.whl
+
+      - name: Build Docker image
+        run: docker build
+          --build-arg USER_ID=$(id -u)
+          --build-arg GROUP_ID=$(id -g)
+          --tag optimum-amd-zentorch:2.2.1
+          docker/transformers-pytorch-amd-cpu-zentorch
+
+      - name: Run benchmarks
+        uses: addnab/docker-run-action@v3
+        env:
+          HF_WRITE_TOKEN: ${{ secrets.HF_WRITE_TOKEN }}
+        with:
+          image: optimum-amd-zentorch:2.2.1
+          options: |
+            --rm
+            --shm-size 64G
+            --env HF_WRITE_TOKEN
+            --volume ${{ github.workspace }}:/workspace
+            --workdir /workspace
+          run: |
+            pip install .[zentorch,benchmarks]
+            huggingface-cli login --token $HF_WRITE_TOKEN
+            amdrun python benchmarks/zentorch/benchmark_encoder_models.py
+            amdrun python benchmarks/zentorch/benchmark_text_generation_models.py
+            amdrun python benchmarks/zentorch/benchmark_image_diffusion_pipelines.py
