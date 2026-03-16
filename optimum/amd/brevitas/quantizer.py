@@ -221,8 +221,15 @@ class BrevitasQuantizer(OptimumQuantizer):
             quantize_input_zero_point=quantization_config.quantize_zero_point,
         )
 
+        model(**calibration_dataset[0])
+
         if use_accelerate:
             model = offload_model(model, quantization_config.gpu_device_map, quantization_config.cpu_device_map)
+
+        if not quantization_config.weights_only and quantization_config.is_static:
+            logger.info("Applying activation calibration...")
+            apply_calibration(model, calibration_dataset)
+            logger.info("Activation calibration applied.")
 
         if quantization_config.apply_gptq:
             logger.info("Applying gptq...")
@@ -233,11 +240,6 @@ class BrevitasQuantizer(OptimumQuantizer):
                 group_of_parallel_layers=self.group_of_parallel_layers,
             )
             logger.info("GPTQ applied.")
-
-        if not quantization_config.weights_only and quantization_config.is_static:
-            logger.info("Applying activation calibration...")
-            apply_calibration(model, calibration_dataset)
-            logger.info("Activation calibration applied.")
 
         if quantization_config.apply_bias_correction:
             logger.info("Applying Bias Correction...")
