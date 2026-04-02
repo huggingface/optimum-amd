@@ -22,7 +22,7 @@ jobs:
     runs-on: [self-hosted, amd-cpu, epyc, genoa]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Copy zentorch binary to current directory
         run: cp
@@ -37,7 +37,7 @@ jobs:
           docker/transformers-pytorch-amd-cpu-zentorch
 
       - name: Run tests
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185  # v3
         with:
           image: optimum-amd-zentorch:2.2.1
           options: |
