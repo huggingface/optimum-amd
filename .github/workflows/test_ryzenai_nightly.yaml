@@ -11,14 +11,14 @@ concurrency:
 
 jobs:
   run_tests_prequantized_models:
-    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
+    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@a88e7fa2eaee28de5a4d6142381b1fb792349b67  # main
     with:
       pytest_marker: "prequantized_model_test"
       test_file: "tests/ryzenai/test_modeling.py"
       report_name: "tests_prequantized_models"
       
   run_tests_quantization:
-    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
+    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@a88e7fa2eaee28de5a4d6142381b1fb792349b67  # main
     with:
       pytest_marker: "quant_test"
       test_file: "tests/ryzenai/test_quantization.py"
@@ -36,9 +36,9 @@ jobs:
       run_tests_quantization,
     ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3
         with:
           path: ./reports/
       - name: Send message to Slack
@@ -58,7 +58,7 @@ jobs:
       # Upload complete failure tables, as they might be big and only truncated versions could be sent to Slack.
       - name: Failure table artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5  # v3
         with:
           name: prev_ci_results
           path: prev_ci_results
