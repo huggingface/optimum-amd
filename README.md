@@ -2,7 +2,7 @@
 
 🤗 Optimum-AMD is an extension to Hugging Face libraries enabling performance optimizations for [ROCm for AMD GPUs](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html) and [Ryzen AI for AMD](https://ryzenai.docs.amd.com/en/latest/index.html) NPU accelerator.
 
-## Install
+## Install test
 
 Optimum-AMD library can be installed through pip:
 
