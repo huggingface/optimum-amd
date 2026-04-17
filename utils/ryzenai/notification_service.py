@@ -136,6 +136,8 @@ class Message:
         # Failures and success of the modeling tests
         self.n_success = sum(r["success"] for r in results.values())
         self.n_failures = sum(r["failed"] for r in results.values())
+        self.n_category_failures = sum(r["error"] for r in results.values())
+        self.n_categories = len(results.keys())
         self.n_tests = self.n_failures + self.n_success
 
         self.model_results = results
@@ -171,6 +173,7 @@ class Message:
 
     @property
     def no_failures(self) -> Dict:
+        f"🌞 There were no failures: all {self.n_tests} tests passed.\nThe suite ran in {self.time}."
         return {
             "type": "section",
             "text": {
@@ -205,11 +208,49 @@ class Message:
         }
 
     @property
+    def category_error(self) -> Dict:
+        if self.n_failures:
+            text = f"There were {self.n_failures} failures out of {self.n_tests} tests from other categories.\n"
+        elif self.n_tests > 0:
+            text = f"All {self.n_tests} tests pass from other categories.\n"
+        else:
+            text = "💔 No tests were run!.\n"
+
+        category_failure = []
+        for key in self.model_results:
+            if self.model_results[key]["error"]:
+                category_failure.append(key)
+
+        text_category = (
+            f"The following category tests failed: {' ,'.join(category_failure).strip(',')}.\n"
+            "CI runners have problems! Tests are not run!\n"
+            "Please ensure the communication link is intact, and also investigate other potential causes. Ensure the machine"
+            "is running, has a stable network connection, and review your workflow for any actions that might impact the runner process."
+        )
+
+        return {
+            "type": "section",
+            "text": {
+                "type": "plain_text",
+                "text": (f"{text_category}\n\n" f"{text}" f"The suite ran in {self.time}."),
+                "emoji": True,
+            },
+            "accessory": {
+                "type": "button",
+                "text": {"type": "plain_text", "text": "Check Action results", "emoji": True},
+                "url": f"https://github.com/huggingface/optimum-amd/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+            },
+        }
+
+    @property
     def category_failures(self) -> Dict:
         category_failures = []
         for key in self.model_results:
             report = self.model_results[key]
-            report = f"{str(report['failed']).rjust(6)} | {str(report['success']).rjust(7)} | {key}"
+            if self.model_results[key]["error"]:
+                report = f"{'-'.rjust(6)} | {'-'.rjust(7)} | {key}"
+            else:
+                report = f"{str(report['failed']).rjust(6)} | {str(report['success']).rjust(7)} | {key}"
             category_failures.append((f"{report}"))
 
         header = "Failed | Success | Category \n"
@@ -375,13 +416,18 @@ class Message:
         if self.ci_title:
             blocks.append(self.ci_title_section)
 
+        if self.n_category_failures > 0:
+            blocks.append(self.category_error)
+        else:
+            if self.n_failures > 0:
+                blocks.append(self.failures)
+            else:
+                blocks.append(self.no_failures)
+
         if self.n_failures > 0:
-            blocks.append(self.failures)
             blocks.append(self.category_failures)
             for block in self.model_failures:
                 blocks.append(block)
-        else:
-            blocks.append(self.no_failures)
 
         return json.dumps(blocks)
 
