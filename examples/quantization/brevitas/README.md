@@ -12,7 +12,7 @@ The example shows an example on how to quantize a decoder-class LLM model throug
 
 The examples were tested using:
 - `python>=3.9` (required for QOP ONNX export)
-- `brevitas` installed from dev (`pip install git+https://github.com/Xilinx/brevitas.git@dev`)
+- `brevitas>=0.11`
 - `torch>=2.2`
 - `transformers>=4.38.0`
 - `optimum>=1.17.0`
@@ -22,7 +22,7 @@ The examples were tested using:
 Note, you can install all the prerequisites with:
 
 ```bash
-pip install 'brevitas @ git+https://github.com/Xilinx/brevitas.git@dev' 'optimum-amd[brevitas] @ git+https://github.com/huggingface/optimum-amd.git@main'
+pip install 'optimum-amd[brevitas] @ git+https://github.com/huggingface/optimum-amd.git@main'
 ```
 
 ## Running the Example
