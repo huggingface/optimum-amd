@@ -161,7 +161,10 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
 
         suffix = f"_{file_suffix}" if file_suffix else ""
         quantized_model_path = save_dir.joinpath(f"{self.onnx_model_path.stem}{suffix}").with_suffix(".onnx")
-
+        if quantization_config.extra_options is None:
+            quantization_config.extra_options = {}
+        quantization_config.extra_options["WeightSymmetric"] = quantization_config.weights_symmetric
+        quantization_config.extra_options["ActivationSymmetric"] = quantization_config.activations_symmetric
         LOGGER.info("Quantizing model...")
         quantize_static(
             model_input=Path(self.onnx_model_path).as_posix(),
@@ -172,10 +175,12 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
             weight_type=quantization_config.weights_dtype,
             activation_type=quantization_config.activations_dtype,
             enable_dpu=quantization_config.enable_dpu,
-            extra_options={
-                "WeightSymmetric": quantization_config.weights_symmetric,
-                "ActivationSymmetric": quantization_config.activations_symmetric,
-            },
+            use_external_data_format=quantization_config.use_external_data_format,
+            include_cle=quantization_config.include_cle,
+            include_sq=quantization_config.include_sq,
+            include_fast_ft=quantization_config.include_fast_ft,
+            include_auto_mp=quantization_config.include_auto_mp,
+            extra_options=quantization_config.extra_options,
         )
 
         LOGGER.info(f"Saved quantized model at: {save_dir}")
