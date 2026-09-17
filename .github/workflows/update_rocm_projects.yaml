@@ -5,8 +5,12 @@ on:
   schedule:
     - cron: "0 */3 * * *"
 
+permissions: {}
+
 jobs:
   update_rocm_projects:
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -24,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.machine.runner }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build image
         run: docker build
