@@ -36,3 +36,23 @@ clean:
 	rm -rf build/
 	rm -rf dist/
 	rm -rf optimum_amd.egg-info/
+
+build-quark:
+	docker build -t quark-mht docker/quantization-quark/
+
+interact:
+	docker run --rm -it   --entrypoint bash \
+	--cap-add=SYS_PTRACE --security-opt seccomp=unconfined --device=/dev/kfd \
+	--device=/dev/dri --group-add video --ipc=host --shm-size 64g --net host \
+	-v /home/amd/.cache/huggingface/hub:/data \
+	-v $(PWD):/tgi \
+	tgi-mht:2.5
+
+interact-quark:
+	docker run --rm -it   --entrypoint bash \
+	--cap-add=SYS_PTRACE --security-opt seccomp=unconfined --device=/dev/kfd \
+	--device=/dev/dri --group-add video --ipc=host --shm-size 64g --net host \
+	-v /home/amd/.cache/huggingface/hub:/data \
+	-v $(PWD):/quark \
+	-v $(PWD)/../transformers:/tr \
+	quark-mht
