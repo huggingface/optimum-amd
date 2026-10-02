@@ -163,19 +163,35 @@ class RyzenAIOnnxQuantizer(OptimumQuantizer):
         quantized_model_path = save_dir.joinpath(f"{self.onnx_model_path.stem}{suffix}").with_suffix(".onnx")
 
         LOGGER.info("Quantizing model...")
+
         quantize_static(
             model_input=Path(self.onnx_model_path).as_posix(),
             model_output=quantized_model_path.as_posix(),
             calibration_data_reader=reader,
             quant_format=quantization_config.format,
             calibrate_method=quantization_config.calibration_method,
-            weight_type=quantization_config.weights_dtype,
+            input_nodes=quantization_config.input_nodes,
+            output_nodes=quantization_config.output_nodes,
+            op_types_to_quantize=quantization_config.op_types_to_quantize,
+            random_data_reader_input_shape=quantization_config.random_data_reader_input_shape,
+            per_channel=quantization_config.per_channel,
+            reduce_range=quantization_config.reduce_range,
             activation_type=quantization_config.activations_dtype,
-            enable_dpu=quantization_config.enable_dpu,
-            extra_options={
-                "WeightSymmetric": quantization_config.weights_symmetric,
-                "ActivationSymmetric": quantization_config.activations_symmetric,
-            },
+            weight_type=quantization_config.weights_dtype,
+            nodes_to_quantize=quantization_config.nodes_to_quantize,
+            nodes_to_exclude=quantization_config.nodes_to_exclude,
+            optimize_model=quantization_config.optimize_model,
+            use_external_data_format=quantization_config.use_external_data_format,
+            execution_providers=quantization_config.execution_providers,
+            enable_ipu_cnn=quantization_config.enable_ipu_cnn,
+            convert_fp16_to_fp32=quantization_config.convert_fp16_to_fp32,
+            convert_nchw_to_nhwc=quantization_config.convert_nchw_to_nhwc,
+            include_cle=quantization_config.include_cle,
+            extra_options=(
+                quantization_config.extra_options.to_diff_dict(camel_case=True)
+                if quantization_config.extra_options
+                else {}
+            ),
         )
 
         LOGGER.info(f"Saved quantized model at: {save_dir}")

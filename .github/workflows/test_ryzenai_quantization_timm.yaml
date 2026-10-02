@@ -27,4 +27,4 @@ jobs:
     with:
       test_file: "tests/ryzenai/test_quantization.py"
     secrets:
-      hf_hub_read_token: ${{ secrets.HF_READ_TOKEN }}
+      hf_hub_read_token: ${{ secrets.HF_HUB_READ_TOKEN }}
