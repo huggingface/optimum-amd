@@ -17,8 +17,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
   build_and_test:
+    permissions:
+      contents: read
     runs-on: [self-hosted, amd-cpu, epyc, genoa]
     steps:
       - name: Checkout code
