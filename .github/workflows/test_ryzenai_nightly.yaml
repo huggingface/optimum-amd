@@ -28,6 +28,8 @@ jobs:
     secrets:
       hf_hub_read_token: ${{ secrets.HF_READ_TOKEN }}
   send_results:
+    permissions:
+      contents: read
     name: Send results to webhook
     runs-on: ubuntu-22.04
     if: always()

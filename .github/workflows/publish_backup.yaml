@@ -3,8 +3,11 @@ name: Publish Backup Dataset to Dana Server
 on:
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   publish_backup:
+    permissions: {}
     runs-on: ubuntu-latest
     steps:
       - name: Set up Python
