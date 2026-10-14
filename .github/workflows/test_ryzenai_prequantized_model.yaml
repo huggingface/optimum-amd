@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   build:
-    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@main
+    uses: huggingface/hf-workflows/.github/workflows/ryzenai_ci.yaml@74d74410045b1a50c8372e1b285886ebcebcdcc9  # main
     with:
       pytest_marker: "prequantized_model_test"
       test_file: "tests/ryzenai/test_modeling.py"
