@@ -5,8 +5,12 @@ on:
   schedule:
     - cron: "0 */3 * * *"
 
+permissions: {}
+
 jobs:
   update_rocm_projects:
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
