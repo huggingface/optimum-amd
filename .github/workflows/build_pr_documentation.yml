@@ -29,8 +29,8 @@ jobs:
         run: |
           make doc BUILD_DIR=./doc-build VERSION=pr_$PR_NUMBER
           sudo mv ./doc-build/optimum.amd ./doc-build/optimum-amd
-          echo ${{ env.COMMIT_SHA }} > ./commit_sha
-          echo ${{ env.PR_NUMBER }} > ./pr_number
+          echo ${COMMIT_SHA} > ./commit_sha
+          echo ${PR_NUMBER} > ./pr_number
         env:
           COMMIT_SHA_SUBPACKAGE: ${{ github.event.pull_request.head.sha }}
 
