@@ -137,5 +137,8 @@ class BrevitasQuantizationConfig:
             self.activations_group_size = None
             self.activations_param_method = None
 
+    def add_bias_to_linear(self):
+        return self.apply_bias_correction and self.device == "auto"
+
     def requires_fx_graph(self):
         return self.activations_equalization == "cross_layer" or self.apply_weight_equalization
